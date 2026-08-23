@@ -34,7 +34,7 @@ The more hooks we run these file diff checks on, the more granular user edits we
 
 This is inspired by Jujutsu (https://github.com/jj-vcs/jj) and Entire (https://entire.io). Jujutsu detects file edits whenever a `jj` command is run, and Entire checks the git state before and after an agent turn (one user prompt + one agent response).
 
-Since we plan to run `sun` commands in agent hooks, we'll get the same effect. Whenever a human or an agent hook triggers a `sun` command, we'll detect changes in files and commit the human edits. In between an agent turn end and an agent turn start, we can commit the human changes.
+Since we plan to run `sun` commands in agent hooks, we'll get the same effect. Whenever a human or an agent hook triggers a `sun` command, we'll detect changes in files and commit the human edits. In between an agent tool call end and an agent tool call start, we can commit the human changes.
 
 Whenever a human edit has been detected by a `sun` command, we'll create a commit on the branch the human edit was made on.
 Typically, this will be main. However, a human can checkout an agent branch or go on a collaborator's branch and make edits on top of it.
@@ -43,22 +43,28 @@ Typically, this will be main. However, a human can checkout an agent branch or g
 
 The same thing can be said for detecting agent edits.
 
-1. At the start of an agent turn, we can record the `git` state before.
+1. At the start of an agent tool call, in PreToolUse, we can record the `git` state before.
 2. Then, an agent, let's call it `Agent A`, works.
-3. At the end, we can read the transcript, find edit/write tool calls to get files and changes `Agent A` made, then compare the `git` state before vs after.
+3. At the end of the tool call, we can read the transcript, find the files and changes `Agent A` made, then compare the `git` state before vs after.
 4. We create a commit, and record `Agent A` changes as an "event".
+
+We want a commit per tool call, that gets squashed into a commit per turn. This is kind of like the commits that get edited in jujutsu, but get saved in the operation log. These commits should still be stored, but in git, it should be squashed into commits per turn.
 
 The reason why an agent edit is a commit and not a branch (contrary to what Belinda suggested) is for simplicity in the case of many agents running at once. A local git repo can only be on one branch at a time, unless there are multiple worktrees. To support `Agent A` and `Agent B` running at the same time in separate branches, they would need to be in separate worktrees, or we would have to switch between branches at the right time. The problem with these approaches is that in an agent like Claude, if `Agent A` and `Agent B` are running at once, they can actually detect each others edits, as well as human edits, causing the agent sessions to update on their own. Users should have the option to create worktrees for isolation, but I view isolation and attribution as separate problems. We should not force isolation to be able to properly attribute agent and human edits.
 
-If another agent `B` starts making edits during `Agent A`'s turn, a few things can happen
+If another agent `B` starts making edits during `Agent A`'s tool call, a few things can happen
 
-1. `Agent B` turn finished before `Agent A` : `Agent B` creates a commit and an event for itself pointing to the commit, then `Agent A` finishes, creates another commit and a event for itself. The system works fine.
-2. `Agent B` turn finished after `Agent A` : reverse of ^
+1. `Agent B` tool call finished before `Agent A` : `Agent B` creates a commit and an event for itself pointing to the commit, then `Agent A` finishes, creates another commit and a event for itself. The system works fine.
+2. `Agent B` tool call finished after `Agent A` : reverse of ^
 
-If another human `H` starts making edits during `Agent A`'s turn:
+If another human `H` starts making edits during `Agent A`'s tool call:
 
 1. `H` finished before `A`: nothing happens when `H` is done because the hook is run after `A` is done. We'll log `A`'s edits and everything not changed by `A` is attributed to `H`. Create events for both A and H.
 2. H finishes after A: We'll only log an event for A, and we'll log for H when the next sun command is run.
+
+These types of conflicts will be rare. If we decided to make the commits happen per turn, then there would be more opportunity for conflicts since turns can take minutes to hours.
+
+One thing to make sure of: concurrent agent work can edit our operation log in .git/sun while working concurrently. You might want to think about how git makes it possible to have many terminal sessions or agent session run git commands at the same tim.
 
 This also conflicts a bit with the blog post's idea of having a separate commit per human and agent. Again, since we don't control when we log human commits, and we commit during agent hooks, the state change from one agent hook to another agent hook run can include changes from humans and agents.
 
@@ -67,6 +73,7 @@ We can maybe explore running a diff check before the agent's edit tool. Maybe if
 #### Suggestions
 
 We create a `git` branch when we want to branch off from a state to edit it. This means the branch can get stale.
+Avoid implementing suggestions for now.
 
 #### Logging changes
 
@@ -133,4 +140,51 @@ Objects are not exact yet.
     }
   ]
 }
+
+
+This makes sense
+```
+
+```
+human edits
+human edits
+human edits
+
+PreToolUse(Edit)
+    ↓
+Sun snapshots/commits all current dirty state
+    ↓
+everything before this point = human
+    ↓
+agent Edit runs
+    ↓
+PostToolUse(Edit)
+    ↓
+Sun records pre-tool → post-tool diff
+    ↓
+everything in this diff = agent
+
+Also, I think if there is some conflict between agent tool call and human edit, it's fine, we can still record the agent tool call changes and overlay those diffs and realize that the human made it instead. 
+
+Entire actually just stores
+- **Checkpointed file state**
+    - During a session, Entire creates ephemeral checkpoints containing the **full worktree state** on a shadow branch.
+    - After the user makes a Git commit, that gets condensed into a permanent checkpoint linked to the Git commit.
+- **The raw agent transcript**
+    - `full.jsonl` stores the agent session, including prompts, responses, tool calls, etc.
+    - Entire can parse that transcript to learn things like which files the agent touched
+
+It's actually kinda expensive for entire 
+checkpoint C1
+├── repo state
+└── transcript: messages 1–10
+
+checkpoint C2
+├── repo state
+└── transcript: messages 1–11
+
+checkpoint C3
+├── repo state
+└── transcript: messages 1–12
+
 ```

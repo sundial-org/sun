@@ -3,10 +3,13 @@
 
 Every change is committed and attributed to the human or agent that made it.
 Human edits are detected jj-style (a diff check whenever any sun command or
-agent hook runs); agent edits are captured per turn via harness hooks by
-comparing git state before/after and reading the transcript's edit tool calls.
-Events live in .git/sun/events.jsonl and point at commits; several events
-(e.g. one agent + one human) may point at the same commit.
+agent hook runs; PreToolUse commits everything dirty as human). Agent edits are
+captured per tool call (PreToolUse -> PostToolUse diff = one commit + event),
+then squashed into one commit per turn at Stop; the per-call commits stay in
+the op log under refs/sun/ops. Events live in .git/sun/events.jsonl and point
+at commits; several events (agent + concurrent human) may share a commit.
+Concurrency: like git's index.lock, .git/sun/lock (flock) serializes every
+sun command/hook, and events.jsonl is append-only.
 """
 import argparse, difflib, fcntl, json, os, subprocess, sys, time, uuid
 
@@ -139,9 +142,9 @@ def char_edits(patch):
     return edits
 
 def sync(exclude=frozenset()):
-    """Commit any pending changes not owned by an active agent turn as human."""
+    """Commit pending changes not claimed by an in-flight agent tool call as human."""
     active = state("active.json", {})
-    exclude = set(exclude) | {f for s in active.values() for f in s["agent_files"]}
+    exclude = set(exclude) | {f for s in active.values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
     if not files:
         return None
@@ -153,7 +156,7 @@ def sync(exclude=frozenset()):
                           "char_edits": char_edits(p[f])} for f in files])
 
 def maybe_sync():
-    if not state("active.json", {}):  # skip while an agent turn is in flight
+    if not state("active.json", {}):  # skip while an agent tool call is in flight
         sync()
 
 # ------------------------------------------------------------ hook entrypoint
@@ -165,56 +168,76 @@ def rel_to_root(path):
     # realpath: harness payloads may use unresolved paths (macOS /var vs /private/var)
     return os.path.relpath(os.path.realpath(path), root())
 
-def transcript_calls(path, offset=0):
-    calls = []
-    try:
-        with open(path) as f:
-            f.seek(offset)  # only this turn's lines; a torn first line is skipped
-            for line in f:
-                try:
-                    obj = json.loads(line)
-                except ValueError:
-                    continue
-                content = (obj.get("message") or {}).get("content")
-                if obj.get("type") != "assistant" or not isinstance(content, list):
-                    continue
-                for blk in content:
-                    if blk.get("type") == "tool_use" and blk.get("name") in EDIT_TOOLS:
-                        f_ = tool_file(blk.get("input", {}))
-                        if f_:
-                            calls.append({"id": blk.get("id"), "tool": blk["name"],
-                                          "input": {"file": f_}})
-    except OSError:
-        pass
-    return calls
+agent = lambda sid: f"agent:claude/{sid[:8]}"
+# parallel subagents share a session_id, so claims are keyed per tool call
+call_key = lambda sid, payload: f"{sid}/{payload.get('tool_use_id') or ''}"
 
-def finish_turn(sid, active, payload):
-    st = active.pop(sid, None) or {"pre": head(), "turn": 0, "agent_files": [],
-                                   "transcript": ""}
+def finish_call(sid, active, payload):
+    """PostToolUse: the pre-tool -> post-tool diff is this agent's tool call."""
+    st = (active.pop(call_key(sid, payload), None)  # fall back to an id-less claim
+          or active.pop(call_key(sid, {}), None) or {"files": []})
     save_state("active.json", active)
-    others = {f for s in active.values() for f in s["agent_files"]}
+    others = {f for s in active.values() for f in s["files"]}
     files = [f for f in changed_files() if f not in others]
-    if not files:
-        return
-    calls = transcript_calls(payload.get("transcript_path") or st["transcript"],
-                             st.get("toffset", 0))
-    by_file = {rel_to_root(c["input"]["file"]): c["id"] for c in calls}
-    agent_files = set(st["agent_files"]) | set(by_file)
-    actor, pre = f"agent:claude/{sid[:8]}", head()
-    msg = (f"sun: {actor} turn {st['turn']}" if agent_files & set(files)
-           else "sun: human edits")
-    c = commit_files(files, msg, actor if agent_files & set(files) else human())
+    if not files: return
+    tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
+    call = {"id": payload.get("tool_use_id"), "tool": tool,
+            "input": {"file": rel_to_root(tool_file(inp))} if tool_file(inp) else inp}
+    claimed = set(st["files"]) | ({call["input"]["file"]} if tool_file(inp) else set())
+    # an Edit/Write can only have touched its own file: anything else in the
+    # diff is a concurrent human edit (overlay, per proposal); for other tools
+    # (Bash, ...) the whole diff is the agent's
+    a_files = [f for f in files if f in claimed] if tool in EDIT_TOOLS else files
+    h_files = [f for f in files if f not in a_files]
+    actor, pre = agent(sid), head()
+    turn = state("turns.json", {}).get(sid, {}).get("n", 0)
+    c = commit_files(files, f"sun: {actor} {tool}" if a_files else "sun: human edits",
+                     actor if a_files else human())
     p = patches(pre, c, files)
-    a_edits = [{"file": f, "patch": p[f], "tool_call_id": by_file.get(f),
-                "attribution": {"method": "edit_tool" if f in by_file else "hook_diff"}}
-               for f in files if f in agent_files]
-    h_edits = [{"file": f, "patch": p[f], "char_edits": char_edits(p[f])}
-               for f in files if f not in agent_files]
-    if a_edits:
-        record(type="edit", actor=actor, turn=f"turn{st['turn']}", commit=c,
-               edits=a_edits, tool_calls=calls)
-    if h_edits:
-        record(type="edit", actor=human(), commit=c, edits=h_edits)
+    if a_files:
+        git("update-ref", f"refs/sun/ops/{c}", c)  # survives the turn squash + gc
+        record(type="edit", actor=actor, turn=f"turn{turn}", commit=c, tool_calls=[call],
+               edits=[{"file": f, "patch": p[f], "tool_call_id": call["id"],
+                       "attribution": {"method": "edit_tool" if f in st["files"]
+                                       else "hook_diff"}} for f in a_files])
+    if h_files:
+        record(type="edit", actor=human(), commit=c,
+               edits=[{"file": f, "patch": p[f], "char_edits": char_edits(p[f])}
+                      for f in h_files])
+
+def squash_turn(sid):
+    """Stop: squash this turn's tool-call commits into one commit per turn.
+    Per-call commits stay in the op log (events + refs/sun/ops). Skipped when a
+    foreign commit (human sync, another agent, manual commit) landed mid-turn."""
+    t = state("turns.json", {}).get(sid)
+    if not t: return
+    start, actor = t["start"], agent(sid)
+    if subprocess.run(["git", "merge-base", "--is-ancestor", start, "HEAD"],
+                      capture_output=True).returncode:
+        return
+    rng = git("rev-list", f"{start}..HEAD").split()
+    ops = [e for e in events() if e.get("commit") in rng]
+    mine = [e for e in ops if e["actor"] == actor and "squashes" not in e]
+    if not rng or set(rng) - {e["commit"] for e in mine}:  # foreign commit mid-turn
+        return
+    # commit-tree + update-ref: never touches the worktree/index, so human
+    # edits made after the last tool call stay dirty (and human) instead of
+    # being folded into the turn
+    c = git("-c", f"user.name={actor}", "-c", "user.email=sun@sun", "commit-tree",
+            git("rev-parse", "HEAD^{tree}").strip(), "-p", start,
+            "-m", f"sun: {actor} turn {t['n']} ({len(rng)} tool calls)").strip()
+    git("update-ref", "HEAD", c, head())
+    files = git("diff", "--name-only", start, c).splitlines()
+    p = patches(start, c, files)
+    record(type="edit", actor=actor, turn=f"turn{t['n']}", commit=c,
+           squashes=[e["id"] for e in mine],  # events() is chronological
+           tool_calls=[tc for e in mine for tc in e["tool_calls"]],
+           edits=[{"file": f, "patch": p[f],
+                   "attribution": {"method": "squash"}} for f in files])
+    for e in ops:  # human overlays inside the agent's commits follow the squash
+        if e not in mine:
+            record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"],
+                   overlay_of=e["id"])
 
 def cmd_hook(a):
     try:
@@ -236,27 +259,21 @@ def cmd_hook(a):
     event, sid = payload.get("hook_event_name", ""), payload.get("session_id", "?")
     active = state("active.json", {})
     if event in ("SessionStart", "UserPromptSubmit", "PreToolUse"):
-        sync()  # pending non-agent changes are human edits
+        sync()  # everything dirty before an agent tool runs is human
     if event == "UserPromptSubmit":
-        sessions = state("sessions.json", {})
-        sessions[sid] = sessions.get(sid, 0) + 1
-        save_state("sessions.json", sessions)
-        tp = payload.get("transcript_path", "")
-        active[sid] = {"pre": head(), "turn": sessions[sid], "agent_files": [],
-                       "transcript": tp,
-                       "toffset": os.path.getsize(tp) if os.path.exists(tp) else 0}
+        turns = state("turns.json", {})
+        turns[sid] = {"n": turns.get(sid, {}).get("n", 0) + 1, "start": head()}
+        save_state("turns.json", turns)
+    elif event == "PreToolUse":
+        # claim the file BEFORE the write exists, so a concurrent session's
+        # sync can never misattribute it to the human
+        f = tool_file(payload.get("tool_input") or {})
+        active[call_key(sid, payload)] = {"files": [rel_to_root(f)] if f else []}
         save_state("active.json", active)
-    elif event in ("PreToolUse", "PostToolUse") and sid in active:
-        # PreToolUse claims the file BEFORE the write exists, so a concurrent
-        # session's sync can never misattribute it to the human
-        f = tool_file(payload.get("tool_input", {}))
-        if f and payload.get("tool_name") in EDIT_TOOLS:
-            rel = rel_to_root(f)
-            if rel not in active[sid]["agent_files"]:
-                active[sid]["agent_files"].append(rel)
-                save_state("active.json", active)
+    elif event == "PostToolUse":
+        finish_call(sid, active, payload)
     elif event == "Stop":
-        finish_turn(sid, active, payload)
+        squash_turn(sid)
 
 # -------------------------------------------------------------------- init
 
@@ -267,17 +284,13 @@ def install_hooks():
     hooks = cfg.setdefault("hooks", {})
     if not isinstance(hooks, dict):
         sys.exit("sun: unexpected 'hooks' format in .claude/settings.json")
-    matcher = "|".join(sorted(EDIT_TOOLS))
     for event in ("SessionStart", "UserPromptSubmit", "PreToolUse",
                   "PostToolUse", "Stop"):
         group = cfg["hooks"].setdefault(event, [])
         if any(h.get("command") == "sun hook"
                for g in group for h in g.get("hooks", [])):
             continue
-        entry = {"hooks": [{"type": "command", "command": "sun hook"}]}
-        if event in ("PreToolUse", "PostToolUse"):
-            entry["matcher"] = matcher
-        group.append(entry)
+        group.append({"hooks": [{"type": "command", "command": "sun hook"}]})
     jwrite(path, cfg)
     return "claude (.claude/settings.json)"
 

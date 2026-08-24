@@ -1,49 +1,49 @@
 # sun
 
-An operation log for humans + agents on top of git. Every change becomes a commit attributed
-as `<user>/<source>` — `<user>/local` for changes on `<user>`'s machine not made by a tracked
-agent, `<user>/agent:<harness>/<session>` for agent tool calls. Live attribution runs from
-harness hooks: `PreToolUse` commits dirty state as local, `PostToolUse` commits the pre→post
-diff as the agent's (one commit per tool call), `Stop` squashes the turn into one commit —
-per-call commits stay in the op log under `refs/sun/ops`. Events (`.git/sun/events.jsonl`,
-mirrored to `refs/sun/log/<user>`, one writer each) point at commits; a commit can carry
-several events. Sessions are tracked in git too: transcripts live as objects under
-`refs/sun/sessions/<user>/<id>` (chunked per turn, never in the worktree) and travel with the
-repo via the fetch refspec + fail-soft `pre-push` hook that `sun init` installs. Agents find
-them through `.git/sun/sessions/` (exported in the `~/.claude/projects` layout, with a
-`sessions-index.json`) via a `SessionStart` context line and an optional `CLAUDE.md` line.
+Your repo has two histories: the code, and the conversations that produced it. git keeps the
+first and loses the second. sun keeps both. It is an operation log on top of git that records
+who made every change, whether that was you or a specific agent session, and it stores the
+sessions themselves in the repo so your whole team's agents can use them.
 
-## Install
+## One command
 
 ```sh
-./install.sh                    # copies sun.py to ~/.local/bin/sun
-cd your-repo && sun init        # git repo + hooks + session import + backfill + viz link
+curl -fsSL https://raw.githubusercontent.com/sundial-org/sun/main/install.sh | sh
+cd your-repo && sun init
 ```
 
-`sun init` also imports the folder's existing Claude Code sessions (root, worktrees) and
-backfills attribution over existing commits by matching transcripts within a time window
-(`method: transcript_backfill`; unmatched commits become `<author>/local`, `method: import`).
-Benchmark (sundial-md clone: 6,489 commits, 25 sessions + 53 subagent transcripts, 33 MB):
-cold `sun init` 6.4s, warm rerun 0.7s (idempotent by file size+mtime and per-commit events).
+`sun init` imports every Claude Code session that ever touched this repo (worktrees and
+subagents included) and backfills attribution across your existing commits. It ends with a
+link to an HTML replay of your history. 6,489 commits plus 33 MB of transcripts import in
+6.4s; reruns take 0.7s. From then on, hooks keep the log current automatically: each agent
+tool call becomes a commit that is squashed into one commit per turn, and human edits are
+detected jj-style in between.
 
-## Commands
+## 1 · Analyze your past sessions
 
-| command | what it does |
+| command | what you learn |
 | --- | --- |
-| `sun init [--claude-md]` | git repo + `.git/sun` + hooks + import; writes `.git/sun/viz.html` |
-| `sun import` | re-run just the session import + attribution backfill |
-| `sun log` / `sun show <c>` | git log with actors + turns / the events behind one commit (patch-id fallback) |
-| `sun undo [--op ID] [--commit H]` | reverse one operation (default: latest) or revert a commit |
-| `sun sessions [id] [--grep re] [--file p]` / `sessions export` | list/read team sessions / mirror to `.git/sun/sessions/` |
-| `sun sync` / `sun gc --older-than N` / `sun viz` / `sun hook` | commit local edits / drop old session refs / HTML replay / hook entrypoint |
+| `sun log` | git log annotated with the actor and turn behind each commit |
+| `sun show <commit>` | a commit's events and patches, even after a squash-merge (patch-id) |
+| `sun viz` | self-contained HTML visualization, with replay from the beginning |
+| `sun sessions [id] [--grep re] [--file p]` | search every session that ran here |
+| `sun undo [--op ID] [--commit H]` | reverse any single operation or commit |
+
+## 2 · Share sessions with your team's agents
+
+Sessions live as git objects under `refs/sun/*`, never in your worktree and invisible to
+`git status` and PR diffs. They travel with plain `git push` and `git pull`. On a
+teammate's clone, `sun init` surfaces them, and their agents are pointed at
+`.git/sun/sessions/` (the exact `~/.claude/projects` layout, now including teammates'
+sessions) via a `SessionStart` context line and one line in `CLAUDE.md`. An agent debugging
+auth can read the session where auth was built, whoever's machine it ran on. No server needed.
+
+`sun sync` · `sun import` · `sun gc --older-than N` · `sun hook` round out the CLI.
 
 ## Demos & tests
 
 ```sh
-python3 example/demo_init.py    # pick any local repo with Claude sessions -> timed sun init
-python3 example/demo_fresh.py   # synthetic end-to-end story -> example/demo.html
-python3 -m unittest test_sun    # 33 tests
+python3 example/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
+python3 example/demo_fresh.py  # synthetic end-to-end story -> example/demo.html
+python3 -m unittest test_sun   # 33 tests
 ```
-
-Not yet implemented (see proposals): `env`, `sft`, suggestions, `sun doctor`, `--redact`,
-review-granularity stats, LFS transcript backend. Assumes sha1 repos (loose-object writer).

@@ -1,5 +1,5 @@
 __pycache__/
 example/demo/
 example/demo.html
-example/sundial-md/
-example/sundial.html
+.DS_Store
+dist/

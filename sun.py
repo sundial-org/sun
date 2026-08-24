@@ -441,36 +441,33 @@ def cmd_viz(a):
     out = a.output or os.path.join(sun_dir(), "viz.html")
     open(out, "w").write(VIZ.replace("__DATA__", data))
     print(f"sun: wrote {out}")
-VIZ = """<!doctype html><meta charset="utf-8"><title>sun — operation log</title>
-<style>body{margin:0;font:13px/1.45 ui-monospace,Menlo,monospace;background:#0d1117;color:#e6edf3}
-header{padding:12px 20px;border-bottom:1px solid #30363d;display:flex;gap:16px;align-items:center;flex-wrap:wrap}h1{font-size:16px;margin:0}
-#ctl{margin-left:auto;display:flex;gap:8px;align-items:center}main{display:grid;grid-template-columns:minmax(360px,1fr) 1.2fr;height:calc(100vh - 55px)}
-#commits{list-style:none;margin:0;padding:10px;overflow:auto;border-right:1px solid #30363d}
-#commits li{padding:5px 8px;border-radius:6px;cursor:pointer;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-#commits li:hover{background:#161b22}#commits li.sel{background:#1f2733}.h{color:#79c0ff}.d{color:#8b949e}.ref{color:#d29922;font-size:11px}
-.chip{font-size:11px;padding:0 6px;border-radius:8px;color:#0d1117;font-weight:600}#detail{overflow:auto;padding:14px 18px;white-space:pre-wrap;margin:0}
-.add{color:#3fb950}.del{color:#f85149}.file{color:#d2a8ff;font-weight:700}input[type=range]{width:170px}
-button{background:#21262d;color:#e6edf3;border:1px solid #30363d;border-radius:6px;cursor:pointer;padding:2px 10px}</style>
-<header><h1>&#9728; sun</h1><div id=ctl><button id=play>&#9654; replay</button><input type=range id=slider min=0 value=0><span id=pos></span></div></header>
-<main><ol id=commits></ol><pre id=detail>select a commit to see its operations</pre></main>
-<script>const DATA=__DATA__,evs=DATA.events,byC={};evs.forEach(e=>(byC[e.commit]=byC[e.commit]||[]).push(e));
-const commits=DATA.commits.slice().reverse(),actors=[...new Set(evs.map(e=>e.actor))];
-const color=a=>`hsl(${(actors.indexOf(a)*73+200)%360},65%,60%)`,esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-slider.max=commits.length;slider.value=commits.length;
-function render(){const n=+slider.value;document.getElementById('commits').innerHTML='';pos.textContent=`${n}/${commits.length}`;
-commits.slice(0,n).reverse().forEach(c=>{const chips=(byC[c.hash]||[]).map(e=>`<span class=chip style="background:${color(e.actor)}">${esc(e.actor)}${e.turn?' '+esc(e.turn):''}${e.pr?' pr#'+e.pr:''}${e.type=='undo'?' undo':''}</span>`).join('');
-const li=document.createElement('li');li.innerHTML=`<span class=h>${c.short}</span><span class=d>${c.date.slice(0,10)}</span><span>${esc(c.subject)}</span>${c.refs?`<span class=ref>${esc(c.refs)}</span>`:''}${chips}`;
-li.onclick=()=>{document.querySelectorAll('#commits li').forEach(x=>x.classList.remove('sel'));li.classList.add('sel');detail(c);};
-document.getElementById('commits').appendChild(li);});}
-function detail(c){let out=`commit ${c.hash}\\n${c.subject}\\n${c.date}\\n`;
-if(!(byC[c.hash]||[]).length)out+='\\n(no sun operations recorded for this commit)\\n';
-for(const e of byC[c.hash]||[]){out+=`\\nop ${e.id} \\u00b7 ${e.type} \\u00b7 ${e.actor}${e.turn?' \\u00b7 '+e.turn:''}${e.target_op?' \\u00b7 undoes op '+e.target_op:''}\\n`;
-for(const ed of e.edits||[])out+=`  <f>${ed.file}</f>`+(ed.tool_call_id?` (tool ${ed.tool_call_id})`:'')+'\\n'+(ed.patch||'').split('\\n').map(l=>'    '+l).join('\\n')+'\\n';}
-document.getElementById('detail').innerHTML=out.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/&lt;f>(.*?)&lt;\\/f>/g,'<span class=file>$1</span>')
-.replace(/^( *\\+.*)$/gm,'<span class=add>$1</span>').replace(/^( *-.*)$/gm,'<span class=del>$1</span>');}
-let timer=null;play.onclick=()=>{if(timer){clearInterval(timer);timer=null;return;}slider.value=0;render();
-timer=setInterval(()=>{if(+slider.value>=commits.length){clearInterval(timer);timer=null;return;}slider.value=+slider.value+1;render();},600);};
-slider.oninput=render;render();</script>
+VIZ = """<!doctype html><meta charset="utf-8"><title>sun</title>
+<style>body{margin:0;font:12px/1.5 ui-monospace,Menlo,monospace;background:#fff;color:#000}
+header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid #000}#st{margin-left:auto}
+main{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 40px)}
+#c{margin:0;padding:6px 0;list-style:none;overflow:auto;border-right:1px solid #000}
+#c li{padding:1px 14px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#c li:hover{background:#eee}#c li.sel{background:#000;color:#fff}
+#d{margin:0;padding:10px 14px;overflow:auto;white-space:pre-wrap}
+button,input{font:inherit;background:#fff;border:1px solid #000;accent-color:#000}</style>
+<header><b>sun</b><button id=play>replay</button><input type=range id=s min=0><span id=pos></span><span id=st></span></header>
+<main><ol id=c></ol><pre id=d>select a commit</pre></main>
+<script>const D=__DATA__,cs=D.commits,byC={};D.events.forEach(e=>(byC[e.commit]=byC[e.commit]||[]).push(e));
+const esc=t=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const cnt={};D.events.forEach(e=>cnt[e.actor]=(cnt[e.actor]||0)+Math.max((e.edits||[]).length,1));
+const tot=Object.values(cnt).reduce((a,b)=>a+b,0)||1;
+st.innerHTML=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([a,n])=>`<b>${esc(a)}</b> ${Math.round(100*n/tot)}%`).join(' | ');
+c.innerHTML=cs.map(x=>`<li>${x.short} ${x.date.slice(0,10)} ${esc(x.subject)}${(byC[x.hash]||[]).map(e=>` <b>[${esc(e.actor)}${e.turn?' '+e.turn:''}${e.pr?' pr#'+e.pr:''}${e.type=='undo'?' undo':''}]</b>`).join('')}</li>`).join('');
+const rows=[...c.children];rows.forEach((li,i)=>li.onclick=()=>{rows.forEach(r=>r.classList.remove('sel'));li.classList.add('sel');detail(cs[i]);});
+s.max=cs.length;s.value=cs.length;
+function cut(){const n=+s.value;pos.textContent=n+'/'+cs.length;rows.forEach((li,i)=>li.style.display=cs.length-1-i<n?'':'none');}
+function detail(x){let o=`commit ${x.hash}\\n${x.date}${x.refs?'  ('+x.refs+')':''}\\n${x.subject}\\n`;
+for(const e of byC[x.hash]||[]){o+=`\\nop ${e.id} | ${e.type} | ${e.actor}${e.turn?' | '+e.turn:''}${e.target_op?' | undoes op '+e.target_op:''}${e.target_commit?' | undoes '+e.target_commit.slice(0,8):''}\\n`;
+for(const ed of e.edits||[])o+=`  ${ed.file}${ed.tool_call_id?` (tool ${ed.tool_call_id})`:''}\\n`+(ed.patch||'').split('\\n').map(l=>'    '+l).join('\\n')+'\\n';}
+if(!(byC[x.hash]||[]).length)o+='\\n(no sun operations recorded for this commit)';d.textContent=o;}
+let t=null;play.onclick=()=>{if(t){clearInterval(t);t=null;return}s.value=0;cut();
+t=setInterval(()=>{s.value=+s.value+Math.max(1,Math.ceil(cs.length/150));cut();if(+s.value>=cs.length){clearInterval(t);t=null}},80)};
+s.oninput=cut;cut();</script>
 """
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="sun", description=__doc__)

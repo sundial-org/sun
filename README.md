@@ -5,19 +5,19 @@ first and loses the second. sun keeps both. It is an operation log on top of git
 who made every change, whether that was you or a specific agent session, and it stores the
 sessions themselves in the repo so your whole team's agents can use them.
 
+![the sun operation log: attributed commits on the left, one commit's events on the right](example/viz.png)
+
 ## One command
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/sundial-org/sun/main/install.sh | sh
+uv tool install git+https://github.com/sundial-org/sun
 cd your-repo && sun init
 ```
 
 `sun init` imports every Claude Code session that ever touched this repo (worktrees and
-subagents included) and backfills attribution across your existing commits. It ends with a
-link to an HTML replay of your history. 6,489 commits plus 33 MB of transcripts import in
-6.4s; reruns take 0.7s. From then on, hooks keep the log current automatically: each agent
-tool call becomes a commit that is squashed into one commit per turn, and human edits are
-detected jj-style in between.
+subagents included) and backfills attribution across your existing commits: 6,489 commits plus
+33 MB of transcripts import in 6.4s, and reruns take 0.7s. From then on, hooks keep the log
+current: one commit per agent tool call (squashed per turn), human edits detected in between.
 
 ## 1 · Analyze your past sessions
 
@@ -29,6 +29,8 @@ detected jj-style in between.
 | `sun sessions [id] [--grep re] [--file p]` | search every session that ran here |
 | `sun undo [--op ID] [--commit H]` | reverse any single operation or commit |
 
+Real output for all of these, plus the refs layout, is in [EXAMPLE.md](EXAMPLE.md).
+
 ## 2 · Share sessions with your team's agents
 
 Sessions live as git objects under `refs/sun/*`, never in your worktree and invisible to
@@ -37,8 +39,6 @@ teammate's clone, `sun init` surfaces them, and their agents are pointed at
 `.git/sun/sessions/` (the exact `~/.claude/projects` layout, now including teammates'
 sessions) via a `SessionStart` context line and one line in `CLAUDE.md`. An agent debugging
 auth can read the session where auth was built, whoever's machine it ran on. No server needed.
-
-`sun sync` · `sun import` · `sun gc --older-than N` · `sun hook` round out the CLI.
 
 ## Demos & tests
 

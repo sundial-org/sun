@@ -9,6 +9,7 @@ Install the CLI via a curl command
 
 - A git repository
 - Initial .git/sun state
+- Import of existing sessions (see *3_init and storage.md*)
 
 It can work with various editors. The curl command installation route will work with supported harnesses. For non-supported harnesses, users can probably get the agent to edit its own hooks to use `sun`.
 
@@ -45,7 +46,7 @@ The same thing can be said for detecting agent edits.
 
 1. At the start of an agent tool call, in PreToolUse, we can record the `git` state before.
 2. Then, an agent, let's call it `Agent A`, works.
-3. At the end of the tool call, we can read the transcript, find the files and changes `Agent A` made, then compare the `git` state before vs after.
+3. At the end of the tool call, in PostToolUse, the hook payload already tells us the tool, its input file and its tool_use_id; we compare the `git` state before vs after. (Transcripts are still read, but for session storage and import-time backfill — see *3_init and storage.md* — not for live attribution.)
 4. We create a commit, and record `Agent A` changes as an "event".
 
 We want a commit per tool call, that gets squashed into a commit per turn. This is kind of like the commits that get edited in jujutsu, but get saved in the operation log. These commits should still be stored, but in git, it should be squashed into commits per turn.
@@ -64,7 +65,7 @@ If another human `H` starts making edits during `Agent A`'s tool call:
 
 These types of conflicts will be rare. If we decided to make the commits happen per turn, then there would be more opportunity for conflicts since turns can take minutes to hours.
 
-One thing to make sure of: concurrent agent work can edit our operation log in .git/sun while working concurrently. You might want to think about how git makes it possible to have many terminal sessions or agent session run git commands at the same tim.
+One thing to make sure of: concurrent agent work can edit our operation log in .git/sun while working concurrently. You might want to think about how git makes it possible to have many terminal sessions or agent session run git commands at the same time.
 
 This also conflicts a bit with the blog post's idea of having a separate commit per human and agent. Again, since we don't control when we log human commits, and we commit during agent hooks, the state change from one agent hook to another agent hook run can include changes from humans and agents.
 
@@ -82,13 +83,13 @@ These are the previously mentioned "events" in .git/sun/.
 To support a commit possibly attributing to multiple users and agents, we need to store observed "events".
 
 These events point to commits. Multiple events can point to the same commit.
-Objects are not exact yet.
+Actors and attribution methods follow *3_init and storage.md*, which is authoritative: `<user>/<source>` actors and methods `hook`, `import`, `transcript_backfill`. The examples below use that scheme.
 
 ```
 {
   "id": "a125",
   "type": "edit",
-  "actor": "human:emma",
+  "actor": "emma/local",
 
   "commit": commit-hash
 
@@ -96,6 +97,7 @@ Objects are not exact yet.
 	{
 	  "file": "foo.ts",
 	  "patch": "@@ -10,2 +10,2 @@\n-const name = \"Alice\";\n+const name = \"Emma\";\n console.log(name);",
+	  "attribution": { "method": "hook" },
 	  "char_edits": [
 	    {
 	      "old_line": 10,
@@ -113,7 +115,7 @@ Objects are not exact yet.
 {
   "id": "a124",
   "type": "edit",
-  "actor": "agent:claude/session123",
+  "actor": "emma/agent:claude/session123",
   "timestamp": "...",
   "turn": "turn7",
 
@@ -125,7 +127,7 @@ Objects are not exact yet.
       "patch": "...",
       "tool_call_id": "tool42",
       "attribution": {
-        "method": "edit_tool",
+        "method": "hook",
       }
     }
   ],

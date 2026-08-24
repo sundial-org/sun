@@ -8,6 +8,7 @@ a human edits during and between agent turns, and one operation is undone.
 Usage: python3 example/demo_fresh.py   ->  example/demo/ + example/demo.html
 """
 import json, os, shutil, subprocess, sys
+sys.stdin = open(os.devnull)  # demos never prompt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
@@ -56,7 +57,7 @@ subprocess.run(["git", "config", "user.email", "belinda@sundial.md"], check=True
 # 1. human scaffolds the app, then `sun init` snapshots it
 write("README.md", "# sundial demo\nA tiny app used to demo the sun op log.\n")
 write("src/app.ts", 'export const app = () => "hello";\n')
-sun.main(["init"])
+sun.main(["init", "--no-claude-md"])
 
 # 2. Claude session 1: implements auth over two turns
 agent_turn("claude-auth-001", {

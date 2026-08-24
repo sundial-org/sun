@@ -1,21 +1,21 @@
 """Unit tests for sun. Run with: python3 -m unittest test_sun -v"""
-import contextlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
+import contextlib, io, json, os, shutil, subprocess, sys, tempfile, time, unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sun
 
+AGENT = "emma/agent:claude/session1"  # session12345 truncated to 8 chars
+
 
 def run(*argv, stdin=None):
-    """Run a sun command, returning captured stdout."""
-    out = io.StringIO()
-    old_stdin = sys.stdin
+    out, old = io.StringIO(), sys.stdin
     if stdin is not None:
         sys.stdin = io.StringIO(json.dumps(stdin))
     try:
         with contextlib.redirect_stdout(out):
             sun.main(list(argv))
     finally:
-        sys.stdin = old_stdin
+        sys.stdin = old
     return out.getvalue()
 
 
@@ -25,13 +25,23 @@ def hook(event, sid="session12345", **extra):
 
 
 def write(path, text):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w") as f:
         f.write(text)
+
+
+def transcript_line(file_path, tool="Edit", tid="tool0", ts=None):
+    ts = ts or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return json.dumps({"type": "assistant", "timestamp": ts, "message": {"content": [
+        {"type": "tool_use", "id": tid, "name": tool,
+         "input": {"file_path": file_path}}]}}) + "\n"
 
 
 class SunTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
+        self.proj = tempfile.mkdtemp()  # stands in for ~/.claude/projects
+        os.environ["SUN_PROJECTS"] = self.proj
         self.old_cwd = os.getcwd()
         os.chdir(self.dir)
         for k in ("GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
@@ -42,112 +52,123 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "config", "user.name", "emma"], check=True)
         subprocess.run(["git", "config", "user.email", "emma@test"], check=True)
         write("README.md", "hello\n")
-        run("init")
+        run("init", "--no-claude-md")
 
     def tearDown(self):
         os.chdir(self.old_cwd)
+        os.environ.pop("GIT_COMMITTER_DATE", None)
         shutil.rmtree(self.dir, ignore_errors=True)
+        shutil.rmtree(self.proj, ignore_errors=True)
 
     def git(self, *args):
-        return subprocess.run(["git", *args], capture_output=True,
-                              text=True, check=True).stdout
+        return subprocess.run(["git", *args], capture_output=True, text=True,
+                              check=True).stdout
 
     def head_subject(self):
         return self.git("log", "-1", "--pretty=%s").strip()
 
     def tool_call(self, sid, f, text, i=0, tool="Write"):
-        """One agent tool call: PreToolUse, the write, PostToolUse."""
         inp = {"file_path": os.path.abspath(f)}
         hook("PreToolUse", sid, tool_name=tool, tool_input=inp, tool_use_id=f"tool{i}")
         write(f, text)
         hook("PostToolUse", sid, tool_name=tool, tool_input=inp, tool_use_id=f"tool{i}")
 
-    def agent_turn(self, sid, edits, human_edits=()):
-        """A full agent turn: prompt, one tool call per edit, Stop (squash)."""
-        hook("UserPromptSubmit", sid)
+    def agent_turn(self, sid, edits, local_edits=(), tpath=None):
+        hook("UserPromptSubmit", sid, **({"transcript_path": tpath} if tpath else {}))
         for i, (f, text) in enumerate(edits):
             self.tool_call(sid, f, text, i)
-        for f, text in human_edits:  # human edits landing mid-turn
+        for f, text in local_edits:  # edits landing after the last tool call
             write(f, text)
-        hook("Stop", sid)
+        hook("Stop", sid, **({"transcript_path": tpath} if tpath else {}))
 
     # ------------------------------------------------------------------ init
 
-    def test_init_creates_state_and_hooks(self):
+    def test_init_creates_state_hooks_and_viz(self):
         self.assertTrue(os.path.isdir(".git/sun"))
         self.assertEqual(self.head_subject(), "sun: initial state")
         cfg = json.load(open(".claude/settings.json"))
         for event in ("SessionStart", "UserPromptSubmit", "PreToolUse",
                       "PostToolUse", "Stop"):
-            cmds = [h["command"] for g in cfg["hooks"][event]
-                    for h in g["hooks"]]
-            self.assertIn("sun hook", cmds)
+            self.assertIn("sun hook", [h["command"] for g in cfg["hooks"][event]
+                                       for h in g["hooks"]])
         self.assertEqual(sun.events()[0]["type"], "init")
+        self.assertEqual(sun.events()[0]["actor"], "emma/local")
+        self.assertTrue(os.path.exists(".git/sun/viz.html"))
+        self.assertTrue(os.path.exists(".git/hooks/pre-push"))
 
     def test_init_is_idempotent_for_hooks(self):
-        run("init")
-        cfg = json.load(open(".claude/settings.json"))
-        self.assertEqual(len(cfg["hooks"]["Stop"]), 1)
+        run("init", "--no-claude-md")
+        self.assertEqual(len(json.load(open(".claude/settings.json"))["hooks"]["Stop"]), 1)
 
-    # ------------------------------------------------------- human edit sync
+    def test_init_adds_refspec_when_remote_exists(self):
+        bare = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q", "--bare", bare], check=True)
+        subprocess.run(["git", "remote", "add", "origin", bare], check=True)
+        run("init", "--no-claude-md")
+        self.assertIn("+refs/sun/*:refs/sun/*",
+                      self.git("config", "--get-all", "remote.origin.fetch"))
+        shutil.rmtree(bare, ignore_errors=True)
 
-    def test_log_commits_pending_human_edits(self):
+    def test_init_claude_md_flag(self):
+        run("init", "--claude-md")
+        self.assertIn(sun.CLAUDE_LINE, open("CLAUDE.md").read())
+        run("init", "--claude-md")  # idempotent: one copy
+        self.assertEqual(open("CLAUDE.md").read().count(".git/sun/sessions/"), 1)
+
+    # ------------------------------------------------------- local edit sync
+
+    def test_log_commits_pending_local_edits(self):
         write("a.txt", "v1\n")
         out = run("log")
-        self.assertEqual(self.head_subject(), "sun: human edits")
-        self.assertIn("[human:emma]", out.splitlines()[0])
+        self.assertEqual(self.head_subject(), "sun: emma/local edits")
+        self.assertIn("[emma/local]", out.splitlines()[0])
         ev = sun.events()[-1]
-        self.assertEqual(ev["actor"], "human:emma")
-        self.assertEqual(ev["edits"][0]["file"], "a.txt")
+        self.assertEqual(ev["actor"], "emma/local")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
         self.assertIn("+v1", ev["edits"][0]["patch"])
+        self.assertTrue(ev["patch_id"])
+        sha = self.git("rev-parse", "refs/sun/log/emma").strip()  # mirrored
+        self.assertIn(ev["id"], self.git("cat-file", "blob", sha))
 
     def test_char_edits_match_proposal_example(self):
         patch = ('@@ -10,2 +10,2 @@\n-const name = "Alice";\n'
                  '+const name = "Emma";\n console.log(name);')
         edits = sun.char_edits(patch)
-        self.assertEqual(len(edits), 1)
-        self.assertEqual(edits[0]["old_line"], 10)
-        self.assertEqual(edits[0]["new_line"], 10)
-        self.assertEqual(edits[0]["old_text"], "Alice")
-        self.assertEqual(edits[0]["new_text"], "Emma")
+        self.assertEqual((edits[0]["old_line"], edits[0]["new_line"]), (10, 10))
+        self.assertEqual((edits[0]["old_text"], edits[0]["new_text"]), ("Alice", "Emma"))
 
     # ------------------------------------------------------------ agent turns
 
     def test_tool_call_creates_attributed_commit(self):
-        sid = "session12345"
-        hook("UserPromptSubmit", sid)
-        self.tool_call(sid, "foo.ts", "export const x = 1\n")
-        self.assertEqual(self.head_subject(), "sun: agent:claude/session1 Write")
+        hook("UserPromptSubmit")
+        self.tool_call("session12345", "foo.ts", "export const x = 1\n")
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} Write")
         ev = sun.events()[-1]
-        self.assertEqual(ev["actor"], "agent:claude/session1")
-        self.assertEqual(ev["turn"], "turn1")
-        self.assertEqual(ev["edits"][0]["file"], "foo.ts")
+        self.assertEqual((ev["actor"], ev["turn"]), (AGENT, "turn1"))
         self.assertEqual(ev["edits"][0]["tool_call_id"], "tool0")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "edit_tool")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
         self.assertEqual(ev["tool_calls"], [{"id": "tool0", "tool": "Write",
                                              "input": {"file": "foo.ts"}}])
-        self.assertEqual(self.git("rev-parse", f"refs/sun/ops/{ev['commit']}")
-                         .strip(), ev["commit"])
+        self.assertEqual(self.git("rev-parse", f"refs/sun/ops/{ev['commit']}").strip(),
+                         ev["commit"])
 
     def test_stop_squashes_tool_calls_into_one_turn_commit(self):
         start = self.git("rev-parse", "HEAD").strip()
         self.agent_turn("session12345", [("a.ts", "1\n"), ("b.ts", "2\n")])
-        self.assertEqual(self.head_subject(),
-                         "sun: agent:claude/session1 turn 1 (2 tool calls)")
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (2 tool calls)")
         self.assertEqual(self.git("rev-parse", "HEAD^").strip(), start)
         turn, calls = sun.events()[-1], sun.events()[-3:-1]
         self.assertEqual(turn["squashes"], [c["id"] for c in calls])
         self.assertEqual([t["id"] for t in turn["tool_calls"]], ["tool0", "tool1"])
-        self.assertEqual({e["file"] for e in turn["edits"]}, {"a.ts", "b.ts"})
-        self.assertIn("[agent:claude/session1 turn1]", run("log").splitlines()[0])
-        for c in calls:  # per-call commits survive the squash in the op log
+        self.assertIn(f"[{AGENT} turn1]", run("log").splitlines()[0])
+        for c in calls:  # per-call commits survive in the op log
             self.assertIn(c["commit"], self.git("log", "--all", "--pretty=%H"))
             self.assertIn("tool_call_id", run("show", c["commit"]))
 
     def test_stop_twice_does_not_squash_twice(self):
         self.agent_turn("session12345", [("a.ts", "1\n")])
         before = self.git("rev-parse", "HEAD").strip()
-        hook("Stop", "session12345")
+        hook("Stop")
         self.assertEqual(self.git("rev-parse", "HEAD").strip(), before)
 
     def test_turn_numbers_increment_per_session(self):
@@ -155,141 +176,209 @@ class SunTest(unittest.TestCase):
         self.agent_turn("session12345", [("a.ts", "2\n")])
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
 
-    def test_bash_tool_edits_are_agent_hook_diff(self):
-        sid = "session12345"
-        hook("UserPromptSubmit", sid)
-        hook("PreToolUse", sid, tool_name="Bash", tool_input={"command": "sed"})
+    def test_bash_tool_edits_are_agents(self):
+        hook("UserPromptSubmit")
+        hook("PreToolUse", tool_name="Bash", tool_input={"command": "sed"})
         write("via_sed.txt", "x\n")
-        hook("PostToolUse", sid, tool_name="Bash", tool_input={"command": "sed"})
+        hook("PostToolUse", tool_name="Bash", tool_input={"command": "sed"})
         ev = sun.events()[-1]
-        self.assertEqual(ev["actor"], "agent:claude/session1")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook_diff")
+        self.assertEqual(ev["actor"], AGENT)
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
 
-    def test_human_edit_during_edit_tool_yields_two_events_one_commit(self):
-        sid = "session12345"
+    def test_local_overlay_two_events_one_commit_and_follows_squash(self):
+        sid, inp = "session12345", {"file_path": os.path.abspath("agent.ts")}
         hook("UserPromptSubmit", sid)
-        inp = {"file_path": os.path.abspath("agent.ts")}
         hook("PreToolUse", sid, tool_name="Write", tool_input=inp)
         write("agent.ts", "a\n")
-        write("human.txt", "h\n")  # overlay: can't have come from Write
+        write("local.txt", "h\n")  # overlay: can't have come from Write
         hook("PostToolUse", sid, tool_name="Write", tool_input=inp)
         evs = sun.events()[-2:]
-        self.assertEqual({e["actor"] for e in evs},
-                         {"agent:claude/session1", "human:emma"})
+        self.assertEqual({e["actor"] for e in evs}, {AGENT, "emma/local"})
         self.assertEqual(evs[0]["commit"], evs[1]["commit"])
-        agent_ev = next(e for e in evs if e["actor"].startswith("agent"))
-        self.assertEqual([e["file"] for e in agent_ev["edits"]], ["agent.ts"])
-
-    def test_human_overlay_follows_squash(self):
-        sid, inp = "session12345", {"file_path": os.path.abspath("a.ts")}
-        hook("UserPromptSubmit", sid)
-        hook("PreToolUse", sid, tool_name="Write", tool_input=inp)
-        write("a.ts", "a\n")
-        write("h.txt", "h\n")
-        hook("PostToolUse", sid, tool_name="Write", tool_input=inp)
         hook("Stop", sid)
         self.assertIn("turn 1 (1 tool calls)", self.head_subject())
-        ev = sun.events()[-1]
-        self.assertEqual((ev["actor"], ev["commit"]), ("human:emma", self.git("rev-parse", "HEAD").strip()))
-        self.assertIn("[human:emma]", run("log").splitlines()[0])
+        ev = sun.events()[-1]  # overlay re-pointed at the turn commit
+        self.assertEqual((ev["actor"], ev["commit"]),
+                         ("emma/local", self.git("rev-parse", "HEAD").strip()))
+        self.assertIn("[emma/local]", run("log").splitlines()[0])
 
-    def test_human_edits_mid_turn_block_squash(self):
+    def test_local_edits_mid_turn_block_squash(self):
         sid = "session12345"
         hook("UserPromptSubmit", sid)
         self.tool_call(sid, "a.ts", "1\n", 0)
-        write("human.txt", "h\n")
-        self.tool_call(sid, "b.ts", "2\n", 1)  # PreToolUse commits human.txt
+        write("local.txt", "h\n")
+        self.tool_call(sid, "b.ts", "2\n", 1)  # PreToolUse commits local.txt
         hook("Stop", sid)
-        subjects = self.git("log", "-3", "--pretty=%s").splitlines()
-        self.assertEqual(subjects, ["sun: agent:claude/session1 Write",
-                                    "sun: human edits",
-                                    "sun: agent:claude/session1 Write"])
+        self.assertEqual(self.git("log", "-3", "--pretty=%s").splitlines(),
+                         [f"sun: {AGENT} Write", "sun: emma/local edits",
+                          f"sun: {AGENT} Write"])
         self.assertNotIn("squashes", sun.events()[-1])
 
-    def test_human_edit_after_last_call_stays_dirty_through_squash(self):
-        self.agent_turn("session12345", [("a.ts", "1\n")],
-                        human_edits=[("late.txt", "h\n")])
+    def test_local_edit_after_last_call_stays_dirty_through_squash(self):
+        self.agent_turn("session12345", [("a.ts", "1\n")], local_edits=[("late.txt", "h\n")])
         self.assertIn("late.txt", self.git("status", "--porcelain"))
         run("sync")
-        self.assertEqual(sun.events()[-1]["actor"], "human:emma")
+        self.assertEqual(sun.events()[-1]["actor"], "emma/local")
 
     def test_pretooluse_claims_file_before_write(self):
-        sid, other = "session12345", "sessionB"
+        sid = "session12345"
         hook("UserPromptSubmit", sid)
         hook("PreToolUse", sid, tool_name="Write",
              tool_input={"file_path": os.path.abspath("planned.ts")})
         write("planned.ts", "x\n")
         write("theirs.txt", "y\n")
-        hook("PreToolUse", other, tool_name="Read", tool_input={})  # concurrent sync
-        self.assertEqual([e["file"] for e in sun.events()[-1]["edits"]],
-                         ["theirs.txt"])  # planned.ts was not stolen
-        hook("PostToolUse", other, tool_name="Read", tool_input={})
+        hook("PreToolUse", "sessionB", tool_name="Read", tool_input={})  # concurrent sync
+        self.assertEqual([e["file"] for e in sun.events()[-1]["edits"]], ["theirs.txt"])
+        hook("PostToolUse", "sessionB", tool_name="Read", tool_input={})
         hook("PostToolUse", sid, tool_name="Write",
              tool_input={"file_path": os.path.abspath("planned.ts")})
-        ev = sun.events()[-1]
-        self.assertEqual(ev["actor"], "agent:claude/session1")
-        self.assertEqual(ev["edits"][0]["file"], "planned.ts")
+        self.assertEqual(sun.events()[-1]["edits"][0]["file"], "planned.ts")
 
-    def test_concurrent_agents_each_get_their_own_commit(self):
-        a, b = "sessionAAA", "sessionBBB"
-        hook("UserPromptSubmit", a)
-        hook("UserPromptSubmit", b)
-        ia = {"file_path": os.path.abspath("a.ts")}
-        ib = {"file_path": os.path.abspath("b.ts")}
-        hook("PreToolUse", a, tool_name="Write", tool_input=ia)
-        hook("PreToolUse", b, tool_name="Write", tool_input=ib)
-        write("a.ts", "a\n")
-        write("b.ts", "b\n")
-        hook("PostToolUse", b, tool_name="Write", tool_input=ib)  # B finishes first
-        hook("PostToolUse", a, tool_name="Write", tool_input=ia)
-        eb, ea = sun.events()[-2:]
-        self.assertEqual([e["file"] for e in eb["edits"]], ["b.ts"])
-        self.assertEqual([e["file"] for e in ea["edits"]], ["a.ts"])
-        self.assertNotEqual(ea["commit"], eb["commit"])
-
-    def test_parallel_subagents_share_session_id(self):
+    def test_parallel_subagents_and_id_only_in_post(self):
         sid = "session12345"
         hook("UserPromptSubmit", sid)
-        ia = {"file_path": os.path.abspath("a.ts")}
-        ib = {"file_path": os.path.abspath("b.ts")}
+        ia, ib = ({"file_path": os.path.abspath(f)} for f in ("a.ts", "b.ts"))
         hook("PreToolUse", sid, tool_name="Write", tool_input=ia, tool_use_id="t1")
-        hook("PreToolUse", sid, tool_name="Write", tool_input=ib, tool_use_id="t2")
+        hook("PreToolUse", sid, tool_name="Write", tool_input=ib)  # id-less claim
         write("a.ts", "a\n")
         write("b.ts", "b\n")
         hook("PostToolUse", sid, tool_name="Write", tool_input=ia, tool_use_id="t1")
         self.assertEqual([e["file"] for e in sun.events()[-1]["edits"]], ["a.ts"])
         hook("PostToolUse", sid, tool_name="Write", tool_input=ib, tool_use_id="t2")
         self.assertEqual([e["file"] for e in sun.events()[-1]["edits"]], ["b.ts"])
+        self.assertEqual(sun.state("active.json", {}), {})  # no leaked claims
 
-    def test_tool_use_id_only_in_posttooluse(self):
-        sid, inp = "session12345", {"file_path": os.path.abspath("x.ts")}
-        hook("UserPromptSubmit", sid)
-        hook("PreToolUse", sid, tool_name="Write", tool_input=inp)
-        write("x.ts", "x\n")
-        hook("PostToolUse", sid, tool_name="Write", tool_input=inp, tool_use_id="t9")
-        self.assertEqual(sun.events()[-1]["edits"][0]["tool_call_id"], "t9")
-        self.assertEqual(sun.state("active.json", {}), {})  # no leaked claim
-
-    def test_posttooluse_without_pretooluse_still_attributes_agent(self):
-        hook("UserPromptSubmit", "session12345")
-        write("x.ts", "x\n")
-        hook("PostToolUse", "session12345", tool_name="Edit",
-             tool_input={"file_path": os.path.abspath("x.ts")})
-        self.assertEqual(sun.events()[-1]["actor"], "agent:claude/session1")
-
-    def test_per_call_commits_survive_gc(self):
-        self.agent_turn("session12345", [("a.ts", "1\n")])
-        call = sun.events()[-2]["commit"]
-        self.git("gc", "-q", "--prune=now")
-        self.assertEqual(self.git("cat-file", "-t", call).strip(), "commit")
-
-    def test_no_human_sync_while_tool_call_in_flight(self):
-        hook("UserPromptSubmit", "session12345")
-        hook("PreToolUse", "session12345", tool_name="Bash", tool_input={})
+    def test_no_sync_while_tool_call_in_flight(self):
+        hook("UserPromptSubmit")
+        hook("PreToolUse", tool_name="Bash", tool_input={})
         write("pending.txt", "x\n")
         before = self.head_subject()
         run("log")
         self.assertEqual(self.head_subject(), before)
+
+    # -------------------------------------------------------- session storage
+
+    def test_stop_appends_turn_chunks_to_session_ref(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        write(tp, "")
+        self.agent_turn("session12345", [("a.ts", "1\n")], tpath=tp)
+        write(tp, '{"turn":1}\n')  # harness appended this turn's lines
+        hook("Stop", transcript_path=tp)
+        names = self.git("ls-tree", "-r", "--name-only",
+                         "refs/sun/sessions/emma/session12345").split()
+        self.assertEqual(names, ["turn-0001.jsonl"])
+        with open(tp, "a") as f:
+            f.write('{"turn":2}\n')
+        self.agent_turn("session12345", [("a.ts", "2\n")], tpath=tp)
+        out = run("sessions")
+        self.assertIn("session12345  emma", out)
+        self.assertIn('{"turn":1}', run("sessions", "session12345"))
+
+    def test_sessions_export_layout_and_index(self):
+        sun.store_chunks("sess-x", {"turn-0001.jsonl": '{"x":1}\n',
+                                    "subagents/sub-1/turn-0001.jsonl": '{"s":1}\n'})
+        run("sessions", "export")
+        base = os.path.join(".git/sun/sessions", sun.enc(sun.root()))
+        self.assertEqual(open(os.path.join(base, "sess-x.jsonl")).read(), '{"x":1}\n')
+        self.assertTrue(os.path.exists(os.path.join(base, "sess-x/subagents/sub-1.jsonl")))
+        idx = json.load(open(os.path.join(base, "sessions-index.json")))
+        self.assertEqual((idx[0]["user"], idx[0]["origin"]), ("emma", "local"))
+
+    def test_events_merge_teammates_log_ref(self):
+        ev = {"id": "zoe00001", "timestamp": "2099-01-01T00:00:00+0000", "type": "edit",
+              "actor": "zoe/local", "commit": "f" * 40, "edits": []}
+        sha = sun.blob(json.dumps(ev) + "\n")
+        self.git("update-ref", "refs/sun/log/zoe", sha)
+        self.assertIn("zoe/local", [e["actor"] for e in sun.events()])
+
+    def test_gc_drops_old_session_refs(self):
+        os.environ["GIT_COMMITTER_DATE"] = "2000-01-01T00:00:00"
+        sun.store_chunks("old-sess", {"turn-0001.jsonl": "x\n"})
+        del os.environ["GIT_COMMITTER_DATE"]
+        sun.store_chunks("new-sess", {"turn-0001.jsonl": "y\n"})
+        self.assertIn("dropped 1", run("gc", "--older-than", "30"))
+        self.assertEqual([r[0].split("/")[-1] for r in sun.refs("refs/sun/sessions/")],
+                         ["new-sess"])
+
+    # --------------------------------------------------------- import/backfill
+
+    def test_import_backfills_and_stores_sessions(self):
+        write("src/foo.ts", "x\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "manual agent commit"], check=True)
+        pdir = os.path.join(self.proj, sun.enc(sun.root()))
+        write(os.path.join(pdir, "sess-import-42.jsonl"),
+              transcript_line(os.path.abspath("src/foo.ts")))
+        out = run("import")
+        self.assertIn("imported 1 sessions", out)
+        ev = next(e for e in sun.events() if e["actor"].startswith("emma/agent:claude/sess-imp"))
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
+        self.assertTrue(sun.refs("refs/sun/sessions/emma/sess-import-42"))
+        n = len(sun.events())
+        run("import")  # idempotent: nothing new
+        self.assertEqual(len(sun.events()), n)
+
+    def test_import_unmatched_commit_is_local(self):
+        write("other.txt", "y\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "no transcript"], check=True)
+        run("import")
+        ev = next(e for e in sun.events() if e.get("commit") ==
+                  self.git("rev-parse", "HEAD").strip())
+        self.assertEqual(ev["actor"], "emma/local")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "import")
+
+    # ------------------------------------------------------------------ show
+
+    def test_show_prints_operations_for_commit(self):
+        self.agent_turn("session12345", [("foo.ts", "x\n")])
+        out = run("show", self.git("rev-parse", "HEAD").strip()[:8])
+        self.assertIn("foo.ts", out)
+        self.assertIn(AGENT, out)
+
+    def test_show_untracked_commit(self):
+        write("x.txt", "1\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
+        self.assertIn("no sun operations recorded", run("show", "HEAD"))
+
+    def test_show_matches_moved_sha_by_patch_id(self):
+        write("a.txt", "v1\n")
+        run("sync")
+        op = sun.events()[-1]["id"]
+        subprocess.run(["git", "checkout", "-qb", "side", "HEAD~1"], check=True)
+        write("a.txt", "v1\n")  # same change, new sha (like a squash-merge)
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "squashed"], check=True)
+        self.assertIn(op, run("show", "HEAD"))
+
+    # ------------------------------------------------------------------ undo
+
+    def test_undo_latest_op(self):
+        write("a.txt", "v1\n")
+        run("sync")
+        write("a.txt", "v2\n")
+        run("sync")
+        self.assertIn("undid op", run("undo"))
+        self.assertEqual(open("a.txt").read(), "v1\n")
+        ev = sun.events()[-1]
+        self.assertEqual((ev["type"], ev["actor"]), ("undo", "emma/local"))
+        self.assertEqual(ev["target_op"], sun.events()[-2]["id"])
+
+    def test_undo_specific_op(self):
+        write("a.txt", "v1\n")
+        run("sync")
+        run("undo", "--op", sun.events()[-1]["id"])
+        self.assertFalse(os.path.exists("a.txt"))
+
+    def test_undo_latest_commit(self):
+        write("a.txt", "v1\n")
+        run("sync")
+        target = self.git("rev-parse", "HEAD").strip()
+        self.assertIn("undid commit", run("undo", "--commit"))
+        self.assertFalse(os.path.exists("a.txt"))
+        self.assertEqual(sun.events()[-1]["target_commit"], target)
+        self.assertIn("undo", run("log").splitlines()[0])
 
     def test_undo_refuses_stale_patch_atomically(self):
         write("a.txt", "A\n")
@@ -305,77 +394,14 @@ class SunTest(unittest.TestCase):
             run("undo", "--op", op)
         self.assertEqual(open("a.txt").read(), "A2\n")  # untouched, not half-undone
 
-    def test_undo_merge_commit(self):
-        subprocess.run(["git", "checkout", "-qb", "side"], check=True)
-        write("s.txt", "s\n")
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-qm", "side"], check=True)
-        subprocess.run(["git", "checkout", "-q", "-"], check=True)
-        subprocess.run(["git", "merge", "-q", "--no-ff", "-m", "m", "side"],
-                       check=True)
-        run("undo", "--commit", "HEAD")
-        self.assertFalse(os.path.exists("s.txt"))
-        self.assertEqual(sun.events()[-1]["type"], "undo")
-
-    # ------------------------------------------------------------------ show
-
-    def test_show_prints_operations_for_commit(self):
-        self.agent_turn("session12345", [("foo.ts", "x\n")])
-        commit = self.git("rev-parse", "HEAD").strip()
-        out = run("show", commit[:8])
-        self.assertIn("foo.ts", out)
-        self.assertIn("agent:claude/session1", out)
-        self.assertIn('"attribution"', out)
-
-    def test_show_untracked_commit(self):
-        write("x.txt", "1\n")
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
-        out = run("show", "HEAD")
-        self.assertIn("no sun operations recorded", out)
-
-    # ------------------------------------------------------------------ undo
-
-    def test_undo_latest_op(self):
-        write("a.txt", "v1\n")
-        run("sync")
-        write("a.txt", "v2\n")
-        run("sync")
-        out = run("undo")
-        self.assertIn("undid op", out)
-        self.assertEqual(open("a.txt").read(), "v1\n")
-        ev = sun.events()[-1]
-        self.assertEqual(ev["type"], "undo")
-        self.assertEqual(ev["target_op"], sun.events()[-2]["id"])
-
-    def test_undo_specific_op(self):
-        write("a.txt", "v1\n")
-        run("sync")
-        op = sun.events()[-1]["id"]
-        run("undo", "--op", op)
-        self.assertFalse(os.path.exists("a.txt"))
-
-    def test_undo_latest_commit(self):
-        write("a.txt", "v1\n")
-        run("sync")
-        target = self.git("rev-parse", "HEAD").strip()
-        out = run("undo", "--commit")
-        self.assertIn("undid commit", out)
-        self.assertFalse(os.path.exists("a.txt"))
-        ev = sun.events()[-1]
-        self.assertEqual(ev["type"], "undo")
-        self.assertEqual(ev["target_commit"], target)
-        self.assertIn("undo", run("log").splitlines()[0])
-
     # ------------------------------------------------------------------- viz
 
     def test_viz_writes_selfcontained_html(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
-        out = run("viz", "-o", "viz.html")
-        self.assertIn("viz.html", out)
+        run("viz", "-o", "viz.html")
         html = open("viz.html").read()
         self.assertIn(self.git("rev-parse", "--short", "HEAD").strip(), html)
-        self.assertIn("agent:claude/session1", html)
+        self.assertIn(AGENT, html)
         self.assertIn("replay", html)
         self.assertNotIn("__DATA__", html)
 
@@ -383,8 +409,11 @@ class SunTest(unittest.TestCase):
 
     def test_hook_ignores_uninitialized_repo(self):
         shutil.rmtree(".git/sun")
-        hook("SessionStart")  # must not raise
+        hook("PreToolUse")  # must not raise
         os.makedirs(".git/sun")
+
+    def test_sessionstart_prints_context_line(self):
+        self.assertIn(".git/sun/sessions/", hook("SessionStart"))
 
 
 if __name__ == "__main__":

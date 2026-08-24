@@ -6,14 +6,16 @@ Start with these
 
 - `log`: same as git log but with agent sessions/turn number attached to each commit
 - `show <commit>`: show operations for a specific commit
-- `undo <—op|—commit>`: undo either one operation or commit
+- `undo <--op|--commit>`: undo either one operation or commit
 - `viz` : to visualize branch, commit, operation. with replay since the beginning
+- `init`: (must be near-instant; benchmark it) also imports the folder's existing agent sessions and backfills attribution over existing commits; `import` reruns just that
+- `sessions [--file <path>] [--grep <re>] [<session-id>]`: list / read sessions stored in `refs/sun/sessions` (own + teammates'); `sessions export` mirrors them to `.git/sun/sessions/` in the same layout as `~/.claude/projects`, which is where agents are pointed; see *Sessions* in the operation log proposal
 
 
 
 Later add these
 
-- `env <commit> <—with-chats>` : export a state of the repo as an RL environment, optionally with chats
+- `env <commit> <--with-chats>` : export a state of the repo as an RL environment, optionally with chats
 - `sft <suggestions|github>`: export SFT data from accept/reject and issues/PRs. 
 
 
@@ -22,7 +24,7 @@ Later add these
 
 
 
-Generate HTML visualizations. 
+Generate HTML visualizations.
 
 - Visualizes branches, commits, operations
 - Replay from the beginning of history
@@ -38,7 +40,7 @@ Later add these
 
 # Example & Unit tests
 
-## Create example 
+## Create example
 
 1. On Belinda’s computer, ingest the sundial repo (sundial-org/sundial) with my personal claude code sessions in ~/.claude and Github PRs/issues
 2. Synthetically (programmatically?) populate the entire operations log.
@@ -51,7 +53,7 @@ Later add these
 - show: a random commit
 - undo: undo latest operation, undo latest commit
 
-## 
+
 
 
 

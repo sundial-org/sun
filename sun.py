@@ -11,11 +11,18 @@ hook init installs. .git/sun/lock (flock) serializes everything, like git's inde
 import argparse, difflib, fcntl, glob, hashlib, json, os, re, subprocess, sys
 import time, uuid, zlib
 from datetime import datetime
-EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
+EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"}
+HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
+CODEX_HOOK_EVENTS = HOOK_EVENTS + ("SubagentStart", "SubagentStop")
 CLAUDE_LINE = ("Past sessions for this repo, yours and other team members', are in "
                ".git/sun/sessions/ (same layout as ~/.claude/projects/, with a "
                "sessions-index.json). Look there instead of ~/.claude/projects/.")
+CODEX_LINE = ("Past sessions for this repo, yours and other team members', are in "
+              ".git/sun/sessions/ (with a sessions-index.json). Look there instead of "
+              "~/.codex/sessions/, or use `sun sessions` to search them.")
 projects = lambda: os.environ.get("SUN_PROJECTS", os.path.expanduser("~/.claude/projects"))
+codex_sessions = lambda: os.environ.get(
+    "SUN_CODEX_SESSIONS", os.path.expanduser("~/.codex/sessions"))
 def sh(*a, input=None, check=True, env=None):
     p = subprocess.run(a, capture_output=True, text=True, input=input, env=env)
     if check and p.returncode: sys.exit(f"sun: `{' '.join(a)}` failed: {p.stderr.strip()}")
@@ -97,10 +104,32 @@ def user():  # the git user on whose machine the change happened; owns every eve
     _u or _u.setdefault("u", (git("config", "user.name", check=False).strip()
                               or os.environ.get("USER", "unknown")).replace(" ", "-").lower())
     return _u["u"]
-local = lambda u=None: f"{u or user()}/local"; agent = lambda sid: f"{user()}/agent:claude/{sid[:8]}"
-call_key = lambda sid, payload: f"{sid}/{payload.get('tool_use_id') or ''}"
+local = lambda u=None: f"{u or user()}/local"
+agent = lambda sid, harness="claude", u=None: f"{u or user()}/agent:{harness}/{sid[:8]}"
+session_key = lambda sid, harness="claude": sid if harness == "claude" else f"{harness}/{sid}"
+call_key = lambda sid, payload, harness="claude": \
+    f"{session_key(sid, harness)}/{payload.get('tool_use_id') or ''}"
 tool_file = lambda inp: inp.get("file_path") or inp.get("notebook_path")
 rel_to_root = lambda path: os.path.relpath(os.path.realpath(path), root())
+def patch_files(text):
+    if not isinstance(text, str): return []
+    # Tool wrappers may carry the patch inside a JSON or JavaScript string.
+    text = text.replace("\\r\\n", "\n").replace("\\n", "\n")
+    paths = re.findall(r"^\*\*\* (?:Update|Add|Delete) File: (.+)$", text, re.M)
+    paths += re.findall(r"^\*\*\* Move to: (.+)$", text, re.M)
+    paths += [p for p in re.findall(r"^\+\+\+ (?:b/)?(.+)$", text, re.M)
+              if p != "/dev/null"]
+    cleaned = [p.strip().rstrip("\\\"'`,);") for p in paths]
+    return list(dict.fromkeys(p for p in cleaned if p and p != "/dev/null"))
+def tool_files(tool, inp):
+    if not isinstance(inp, dict): return patch_files(inp)
+    f = tool_file(inp)
+    if f: return [f]
+    if tool == "apply_patch":
+        return patch_files(inp.get("command") or inp.get("patch") or inp.get("input") or "")
+    return []
+def relative_tool_files(tool, inp):
+    return [rel_to_root(f) for f in tool_files(tool, inp)]
 def char_edits(patch):  # character-level ranges for paired -/+ lines of a unified patch
     out, o, n, minus = [], 0, 0, []
     for l in patch.splitlines():
@@ -132,23 +161,26 @@ def sync():  # commit unclaimed changes as <user>/local
                           "attribution": {"method": "hook"}} for f in files])
 def maybe_sync():  # skipped while an agent tool call is in flight
     state("active.json", {}) or sync()
-def finish_call(sid, active, payload):  # PostToolUse: pre->post diff is the agent's tool call
-    st = (active.pop(call_key(sid, payload), None)  # or an id-less claim
-          or active.pop(call_key(sid, {}), None) or {"files": []})
+def finish_call(sid, active, payload, harness="claude"):
+    # PostToolUse: the pre->post diff is the agent's tool call
+    st = (active.pop(call_key(sid, payload, harness), None)  # or an id-less claim
+          or active.pop(call_key(sid, {}, harness), None) or {"files": []})
     save_state("active.json", active)
     others = {f for s in active.values() for f in s["files"]}
     files = [f for f in changed_files() if f not in others]
     if not files: return
     tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
-    call = {"id": payload.get("tool_use_id"), "tool": tool,
-            "input": {"file": rel_to_root(tool_file(inp))} if tool_file(inp) else inp}
-    claimed = set(st["files"]) | ({call["input"]["file"]} if tool_file(inp) else set())
+    paths = relative_tool_files(tool, inp)
+    call_input = ({"file": paths[0]} if len(paths) == 1 else
+                  {"files": paths} if paths else inp)
+    call = {"id": payload.get("tool_use_id"), "tool": tool, "input": call_input}
+    claimed = set(st["files"]) | set(paths)
     # Edit/Write only touch their own file -> the rest of the diff is a concurrent local
     # overlay; for other tools (Bash, ...) the whole diff is the agent's
-    a_files = [f for f in files if f in claimed] if tool in EDIT_TOOLS else files
+    a_files = [f for f in files if f in claimed] if tool in EDIT_TOOLS and claimed else files
     h_files = [f for f in files if f not in a_files]
-    actor, pre = agent(sid), head()
-    turn = state("turns.json", {}).get(sid, {}).get("n", 0)
+    actor, pre = agent(sid, harness), head()
+    turn = state("turns.json", {}).get(session_key(sid, harness), {}).get("n", 0)
     c = commit_files(files, f"sun: {actor} {tool}" if a_files else f"sun: {local()} edits",
                      actor if a_files else local())
     p = patches(pre, c, files)
@@ -161,11 +193,12 @@ def finish_call(sid, active, payload):  # PostToolUse: pre->post diff is the age
         record(type="edit", actor=local(), commit=c,
                edits=[{"file": f, "patch": p[f], "char_edits": char_edits(p[f]),
                        "attribution": {"method": "hook"}} for f in h_files])
-def squash_turn(sid):  # Stop: squash the turn's tool-call commits into one commit per turn;
+def squash_turn(sid, harness="claude"):
+    # Stop: squash the turn's tool-call commits into one commit per turn;
     # skipped when a foreign commit landed mid-turn, and per-call commits stay either way
-    t = state("turns.json", {}).get(sid)
+    t = state("turns.json", {}).get(session_key(sid, harness))
     if not t or quiet("git", "merge-base", "--is-ancestor", t["start"], "HEAD").returncode: return
-    start, actor = t["start"], agent(sid)
+    start, actor = t["start"], agent(sid, harness)
     rng = git("rev-list", f"{start}..HEAD").split()
     ops = [e for e in events() if e.get("commit") in rng]
     mine = [e for e in ops if e["actor"] == actor and "squashes" not in e]
@@ -183,13 +216,18 @@ def squash_turn(sid):  # Stop: squash the turn's tool-call commits into one comm
     for e in ops:  # local overlays inside the agent's commits follow the squash
         if e not in mine:
             record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"], overlay_of=e["id"])
-def stop_chunk(sid, payload):  # Stop: append this turn's transcript slice to the session ref
-    turns = state("turns.json", {}); t = turns.get(sid)
+def stop_chunk(sid, payload, harness="claude"):
+    # Stop: append this turn's transcript slice to the session ref
+    turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
     tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
     if not (t and tp and os.path.exists(tp) and cfg_track()): return
     f = open(tp, errors="replace"); f.seek(t.get("toffset", 0)); data = f.read()
     if data: store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
     t["toffset"] = os.path.getsize(tp); save_state("turns.json", turns)
+def subagent_chunk(sid, payload):
+    tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
+    if not (tp and sub and os.path.exists(tp) and cfg_track()): return
+    store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": open(tp, errors="replace").read()})
 def cmd_hook(a):
     try: payload = json.load(sys.stdin)
     except (ValueError, OSError): payload = {}
@@ -200,27 +238,36 @@ def cmd_hook(a):
         return  # not a sun repo; hooks must never break the harness
     os.chdir(p.stdout.strip())
     lk = lock()  # serialize concurrent hooks (parallel sessions/subagents)
-    event, sid = payload.get("hook_event_name", ""), payload.get("session_id", "?")
+    event, sid, harness = (payload.get("hook_event_name", ""),
+                           payload.get("session_id", "?"), a.harness)
     active = state("active.json", {})
-    if event in ("SessionStart", "UserPromptSubmit", "PreToolUse"):
+    if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
         sync()  # everything dirty before an agent tool runs is <user>/local
     if event == "SessionStart":  # stdout lands in the agent's context
+        native = "~/.claude/projects" if harness == "claude" else "~/.codex/sessions"
         print(f"sun: past sessions for this repo (yours + teammates') are in "
-              f".git/sun/sessions/, not ~/.claude/projects; {export_sessions()} sessions")
+              f".git/sun/sessions/, not {native}; {export_sessions()} sessions")
+    elif event == "SubagentStart":
+        print("sun: past sessions for this repo are in .git/sun/sessions/; "
+              "use `sun sessions` to search them")
     elif event == "UserPromptSubmit":
         turns, tp = state("turns.json", {}), payload.get("transcript_path", "")
-        turns[sid] = {"n": turns.get(sid, {}).get("n", 0) + 1, "start": head(), "transcript": tp,
+        key = session_key(sid, harness)
+        turns[key] = {"n": turns.get(key, {}).get("n", 0) + 1, "start": head(),
+                      "transcript": tp,
                       "toffset": os.path.getsize(tp) if os.path.exists(tp) else 0}
         save_state("turns.json", turns)
     elif event == "PreToolUse":  # claim the file BEFORE the write exists
-        f = tool_file(payload.get("tool_input") or {})
-        active[call_key(sid, payload)] = {"files": [rel_to_root(f)] if f else []}
+        tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
+        active[call_key(sid, payload, harness)] = {"files": relative_tool_files(tool, inp)}
         save_state("active.json", active)
     elif event == "PostToolUse":
-        finish_call(sid, active, payload)
+        finish_call(sid, active, payload, harness)
     elif event == "Stop":
-        squash_turn(sid)
-        stop_chunk(sid, payload)
+        squash_turn(sid, harness)
+        stop_chunk(sid, payload, harness)
+    elif event == "SubagentStop":
+        subagent_chunk(sid, payload)
 enc = lambda path: re.sub(r"[/.]", "-", path)
 def project_dirs():  # every ~/.claude project dir that maps to this repo (worktrees too)
     wt = [l.split(" ", 1)[1] for l in git("worktree", "list", "--porcelain", check=False)
@@ -228,7 +275,34 @@ def project_dirs():  # every ~/.claude project dir that maps to this repo (workt
     names = {enc(p) for r in [root()] + wt for p in (r, os.path.realpath(r))}
     return [d for d in glob.glob(os.path.join(projects(), "*")) if os.path.basename(d) in names
             or any(os.path.basename(d).startswith(n + "--claude-worktrees-") for n in names)]
-def scan_transcript(path, sid):  # one pass: turn chunks + edit-tool calls (epoch, sid, id, path)
+def repo_locations():
+    wt = [l.split(" ", 1)[1] for l in git("worktree", "list", "--porcelain", check=False)
+          .splitlines() if l.startswith("worktree ")]
+    return {os.path.realpath(p) for p in [root()] + wt}
+def codex_meta(path):
+    try:
+        for line in open(path, errors="replace"):
+            try: obj = json.loads(line)
+            except ValueError: continue
+            if obj.get("type") == "session_meta": return obj.get("payload") or {}
+    except OSError: pass
+    return {}
+def transcript_sources(harness="claude"):
+    if harness == "claude":
+        for d in project_dirs():
+            for path in glob.glob(os.path.join(d, "**", "*.jsonl"), recursive=True):
+                rp = os.path.relpath(path, d).split(os.sep)
+                sid, sub = (rp[0], rp[-1][:-6]) if len(rp) > 1 else (rp[0][:-6], None)
+                yield path, sid, sub
+        return
+    roots = repo_locations()
+    for path in glob.glob(os.path.join(codex_sessions(), "**", "*.jsonl"), recursive=True):
+        meta = codex_meta(path); cwd = os.path.realpath(meta.get("cwd") or "")
+        if not cwd or not any(cwd == r or cwd.startswith(r + os.sep) for r in roots): continue
+        sid = meta.get("id") or os.path.basename(path)[:-6].rsplit("-", 5)[-1]
+        source = str(meta.get("source") or "").lower()
+        yield path, sid, sid if "subagent" in source else None
+def scan_claude_transcript(path, sid):
     chunks, cur, calls = [], [], []
     for line in open(path, errors="replace"):
         if cur and "tool_result" not in line \
@@ -248,6 +322,46 @@ def scan_transcript(path, sid):  # one pass: turn chunks + edit-tool calls (epoc
                 except ValueError: pass
     if cur: chunks.append("".join(cur))
     return chunks, calls
+def scan_codex_transcript(path, sid):
+    lines = open(path, errors="replace").readlines()
+    parsed = []
+    for line in lines:
+        try: parsed.append(json.loads(line))
+        except ValueError: parsed.append({})
+    task_boundaries = any(o.get("type") == "event_msg" and
+                          (o.get("payload") or {}).get("type") == "task_started" for o in parsed)
+    chunks, cur, calls, cwd = [], [], [], ""
+    for line, obj in zip(lines, parsed):
+        payload = obj.get("payload") or {}
+        if obj.get("type") in ("session_meta", "turn_context"):
+            cwd = payload.get("cwd") or cwd
+        boundary = (obj.get("type") == "event_msg" and payload.get("type") == "task_started")
+        if not task_boundaries:
+            boundary = ((obj.get("type") == "response_item" and
+                         payload.get("type") == "message" and payload.get("role") == "user") or
+                        (obj.get("type") == "event_msg" and payload.get("type") == "user_message"))
+        if boundary and cur: chunks.append("".join(cur)); cur = []
+        cur.append(line)
+        if obj.get("type") != "response_item" or payload.get("type") not in (
+                "function_call", "custom_tool_call"): continue
+        tool = payload.get("name") or ""
+        raw = payload.get("arguments") if payload.get("arguments") is not None \
+            else payload.get("input")
+        inp = raw
+        if isinstance(raw, str):
+            try: inp = json.loads(raw)
+            except ValueError: inp = {}
+        files = tool_files(tool, inp) or patch_files(raw)
+        if not (files and obj.get("timestamp")): continue
+        try: epoch = datetime.fromisoformat(obj["timestamp"].replace("Z", "+00:00")).timestamp()
+        except ValueError: continue
+        calls += [(epoch, sid, payload.get("call_id") or payload.get("id"), f, cwd)
+                  for f in files]
+    if cur: chunks.append("".join(cur))
+    return chunks, calls
+def scan_transcript(path, sid, harness="claude"):
+    return (scan_claude_transcript(path, sid) if harness == "claude" else
+            scan_codex_transcript(path, sid))
 def backfill(index):  # attribute pre-existing commits: transcript_backfill on a files+time
     # window match, else <author>/local with method import; commits with events are skipped
     have, att, tot, cs, cur = {e.get("commit") for e in events()}, 0, 0, [], None
@@ -260,33 +374,31 @@ def backfill(index):  # attribute pre-existing commits: transcript_backfill on a
         m = {f: c for f in files for c in
              [next((c for c in index.get(f, []) if abs(c[0] - int(at)) < 1800), None)] if c}
         u = an.replace(" ", "-").lower()
-        actor = f"{u}/agent:claude/{next(iter(m.values()))[1][:8]}" if m else local(u)
+        match = next(iter(m.values()), None)
+        actor = agent(match[1], match[3], u) if match else local(u)
         record(mirror=False, type="edit", actor=actor, commit=H, edits=[
             {"file": f, "patch": "", "tool_call_id": m[f][2] if f in m else None,
              "attribution": {"method": "transcript_backfill" if f in m else "import"}}
             for f in files])
         att += bool(m)
     return att, tot
-def do_import():
+def do_import(harness="claude"):
     t0, seen, index, ns, nsub = time.time(), state("imported.json", {}), {}, 0, 0
-    for d in project_dirs():
-        for path in glob.glob(os.path.join(d, "**", "*.jsonl"), recursive=True):
-            rp = os.path.relpath(path, d).split(os.sep)
-            sid, sub = (rp[0], rp[-1][:-6]) if len(rp) > 1 else (rp[0][:-6], None)
-            st = os.stat(path)
-            if seen.get(path) == [st.st_size, int(st.st_mtime)]:
-                continue  # idempotent: only new/changed transcripts are re-read
-            chunks, calls = scan_transcript(path, sid)
-            for t, s, tid, f, cw in calls:  # strip repo root or the transcript's own cwd,
-                pre = next((p + "/" for p in (root(), os.path.realpath(root()), cw)  # clones too
-                            if p and f.startswith(p + "/")), "")
-                fr = re.sub(r"^\.claude/worktrees/[^/]+/", "", f[len(pre):].lstrip("/"))
-                index.setdefault(fr, []).append((t, s, tid))
-            if cfg_track():
-                pre = f"subagents/{sub}/" if sub else ""
-                store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
-            seen[path] = [st.st_size, int(st.st_mtime)]
-            ns, nsub = ns + (not sub), nsub + bool(sub)
+    for path, sid, sub in transcript_sources(harness):
+        st = os.stat(path)
+        if seen.get(path) == [st.st_size, int(st.st_mtime)]:
+            continue  # idempotent: only new/changed transcripts are re-read
+        chunks, calls = scan_transcript(path, sid, harness)
+        for t, s, tid, f, cw in calls:  # strip repo root or the transcript's own cwd,
+            pre = next((p + "/" for p in (root(), os.path.realpath(root()), cw)  # clones too
+                        if p and f.startswith(p + "/")), "")
+            fr = re.sub(r"^\.claude/worktrees/[^/]+/", "", f[len(pre):].lstrip("/"))
+            index.setdefault(fr, []).append((t, s, tid, harness))
+        if cfg_track():
+            pre = f"subagents/{sub}/" if sub else ""
+            store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
+        seen[path] = [st.st_size, int(st.st_mtime)]
+        ns, nsub = ns + (not sub), nsub + bool(sub)
     save_state("imported.json", seen)
     att, tot = backfill(index); mirror_log()
     return (f"imported {ns} sessions, {nsub} subagents; "
@@ -335,18 +447,22 @@ def cfg_track():  # ask once; tty only, so never on hook runs; default yes
                                  input("sun: track sessions in git? [Y/n] ").strip().lower() != "n")
         save_state("config.json", cfg)
     return cfg["track_sessions"]
-def install_hooks():
-    path = os.path.join(root(), ".claude", "settings.json")
+def configured_harness(): return state("config.json", {}).get("harness", "claude")
+def install_hooks(harness="claude"):
+    rel = (".claude/settings.json" if harness == "claude" else ".codex/hooks.json")
+    path = os.path.join(root(), rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     cfg = jread(path, {})
     if not isinstance(cfg.setdefault("hooks", {}), dict):
-        sys.exit("sun: unexpected 'hooks' format in .claude/settings.json")
-    for event in ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"):
+        sys.exit(f"sun: unexpected 'hooks' format in {rel}")
+    command = "sun hook" if harness == "claude" else "sun hook --harness codex"
+    hook_events = HOOK_EVENTS if harness == "claude" else CODEX_HOOK_EVENTS
+    for event in hook_events:
         group = cfg["hooks"].setdefault(event, [])
-        if not any(h.get("command") == "sun hook" for g in group for h in g.get("hooks", [])):
-            group.append({"hooks": [{"type": "command", "command": "sun hook"}]})
+        if not any(h.get("command") == command for g in group for h in g.get("hooks", [])):
+            group.append({"hooks": [{"type": "command", "command": command}]})
     jwrite(path, cfg)
-    return "claude (.claude/settings.json)"
+    return f"{harness} ({rel})"
 def install_push():  # travel: fetch refspec + fail-soft pre-push mirror of refs/sun/*
     if "origin" in git("remote", check=False).split():
         spec = "+refs/sun/*:refs/sun/*"
@@ -357,36 +473,40 @@ def install_push():  # travel: fetch refspec + fail-soft pre-push mirror of refs
         open(hp, "w").write('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
                             'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
         os.chmod(hp, 0o755)
-def claude_md(choice):
-    p = os.path.join(root(), "CLAUDE.md")
+def agent_instructions(harness, choice):
+    name, line = ("CLAUDE.md", CLAUDE_LINE) if harness == "claude" else ("AGENTS.md", CODEX_LINE)
+    p = os.path.join(root(), name)
     cur = open(p).read() if os.path.exists(p) else ""
-    if CLAUDE_LINE in cur: return
+    if line in cur: return
     if choice is None and sys.stdin.isatty():
-        choice = input("sun: add one line to CLAUDE.md so agents find team sessions? "
+        choice = input(f"sun: add one line to {name} so agents find team sessions? "
                        "[Y/n] ").strip().lower() != "n"
     if choice:
-        open(p, "a").write(("\n" if cur and not cur.endswith("\n") else "") + CLAUDE_LINE + "\n")
+        open(p, "a").write(("\n" if cur and not cur.endswith("\n") else "") + line + "\n")
     else:
-        print("sun: run `sun init --claude-md` later to enable team session sharing")
+        print("sun: run `sun init --instructions" + (" --codex" if harness == "codex" else "") +
+              "` later to enable team session sharing")
 def cmd_init(a):
     if quiet("git", "rev-parse", "--git-dir").returncode: sh("git", "init", "-q")
     os.makedirs(os.path.join(root(), ".git", "sun"), exist_ok=True)
+    harness = "codex" if a.codex else "claude"
+    cfg = state("config.json", {}); cfg["harness"] = harness; save_state("config.json", cfg)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
         git("fetch", "-q", "origin", "+refs/sun/*:refs/sun/*", check=False)
     p, sha = os.path.join(sun_dir(), "events.jsonl"), git(  # rebuild cache from our own ref
         "rev-parse", "-q", "--verify", f"refs/sun/log/{user()}", check=False).strip()
     if sha and not os.path.exists(p): open(p, "w").write(git("cat-file", "blob", sha))
-    harness = install_hooks(); install_push()
+    installed = install_hooks(harness); install_push()
     if quiet("git", "rev-parse", "HEAD").returncode or changed_files():
         c = commit_files(["."], "sun: initial state", local())
         record(type="init", actor=local(), commit=c, edits=[])
-    print(f"sun: initialized {root()} (hooks: {harness}); {do_import()}")
-    claude_md(a.claude_md)
+    print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harness)}")
+    agent_instructions(harness, a.instructions)
     cmd_viz(argparse.Namespace(n=0, output=os.path.join(sun_dir(), "viz.html")))
     print(f"open file://{sun_dir()}/viz.html to see your history")
 def cmd_sync(a):
     ev = sync(); print(f"sun: committed local edits as op {ev['id']}" if ev else "sun: nothing to sync")
-def cmd_import(a): print("sun: " + do_import())
+def cmd_import(a): print("sun: " + do_import(configured_harness()))
 def cmd_log(a):
     maybe_sync()
     by_commit = {}
@@ -478,8 +598,13 @@ def main(argv=None):
         ("import", "re-import sessions + backfill attribution"), ("gc", "drop session refs older than N days"),
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
         ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log")]}
-    ps["init"].add_argument("--claude-md", dest="claude_md", action="store_true", default=None)
-    ps["init"].add_argument("--no-claude-md", dest="claude_md", action="store_false")
+    ps["init"].add_argument("--codex", action="store_true",
+                            help="install Codex hooks instead of Claude hooks")
+    ps["init"].add_argument("--instructions", "--claude-md", dest="instructions",
+                            action="store_true", default=None)
+    ps["init"].add_argument("--no-instructions", "--no-claude-md", dest="instructions",
+                            action="store_false")
+    ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
     ps["sessions"].add_argument("id", nargs="?"); ps["sessions"].add_argument("--grep")
     ps["sessions"].add_argument("--file"); ps["gc"].add_argument("--older-than", type=int, required=True)
     ps["log"].add_argument("-n", type=int, default=30); ps["show"].add_argument("commit")

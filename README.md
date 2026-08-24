@@ -11,13 +11,15 @@ sessions themselves in the repo so your whole team's agents can use them.
 
 ```sh
 uv tool install git+https://github.com/sundial-org/sun
-cd your-repo && sun init
+cd your-repo && sun init           # Claude Code, the default
+cd your-repo && sun init --codex   # Codex
 ```
 
-`sun init` imports every Claude Code session that ever touched this repo (worktrees and
-subagents included) and backfills attribution across your existing commits: 6,489 commits plus
-33 MB of transcripts import in 6.4s, and reruns take 0.7s. From then on, hooks keep the log
-current: one commit per agent tool call (squashed per turn), human edits detected in between.
+`sun init` imports every Claude Code session that ever touched this repo. `sun init --codex`
+does the same for Codex sessions. Worktrees and subagents are included, and attribution is
+backfilled across existing commits. From then on, hooks keep the log current: one commit per
+agent tool call (squashed per turn), with local edits detected in between. Codex asks you to
+review and trust new project hooks through `/hooks` before it runs them.
 
 ## 1 · Analyze your past sessions
 
@@ -37,8 +39,9 @@ Sessions live as git objects under `refs/sun/*`, never in your worktree and invi
 `git status` and PR diffs. They travel with plain `git push` and `git pull`. On a
 teammate's clone, `sun init` surfaces them, and their agents are pointed at
 `.git/sun/sessions/` (the exact `~/.claude/projects` layout, now including teammates'
-sessions) via a `SessionStart` context line and one line in `CLAUDE.md`. An agent debugging
-auth can read the session where auth was built, whoever's machine it ran on. No server needed.
+sessions) via a `SessionStart` context line and one line in `CLAUDE.md` or `AGENTS.md`. An agent
+debugging auth can read the session where auth was built, whoever's machine it ran on. No
+server needed.
 
 ## Demos & tests
 

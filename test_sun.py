@@ -19,9 +19,10 @@ def run(*argv, stdin=None):
     return out.getvalue()
 
 
-def hook(event, sid="session12345", **extra):
-    return run("hook", stdin={"hook_event_name": event, "session_id": sid,
-                              "cwd": os.getcwd(), **extra})
+def hook(event, sid="session12345", harness="claude", **extra):
+    args = ["hook"] + (["--harness", harness] if harness != "claude" else [])
+    return run(*args, stdin={"hook_event_name": event, "session_id": sid,
+                            "cwd": os.getcwd(), **extra})
 
 
 def write(path, text):
@@ -41,7 +42,9 @@ class SunTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
         self.proj = tempfile.mkdtemp()  # stands in for ~/.claude/projects
+        self.codex = tempfile.mkdtemp()  # stands in for ~/.codex/sessions
         os.environ["SUN_PROJECTS"] = self.proj
+        os.environ["SUN_CODEX_SESSIONS"] = self.codex
         self.old_cwd = os.getcwd()
         os.chdir(self.dir)
         for k in ("GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
@@ -59,6 +62,7 @@ class SunTest(unittest.TestCase):
         os.environ.pop("GIT_COMMITTER_DATE", None)
         shutil.rmtree(self.dir, ignore_errors=True)
         shutil.rmtree(self.proj, ignore_errors=True)
+        shutil.rmtree(self.codex, ignore_errors=True)
 
     def git(self, *args):
         return subprocess.run(["git", *args], capture_output=True, text=True,
@@ -114,6 +118,18 @@ class SunTest(unittest.TestCase):
         self.assertIn(sun.CLAUDE_LINE, open("CLAUDE.md").read())
         run("init", "--claude-md")  # idempotent: one copy
         self.assertEqual(open("CLAUDE.md").read().count(".git/sun/sessions/"), 1)
+
+    def test_codex_init_installs_hooks_and_agents_md(self):
+        out = run("init", "--codex", "--instructions")
+        self.assertIn("hooks: codex (.codex/hooks.json)", out)
+        cfg = json.load(open(".codex/hooks.json"))
+        for event in sun.CODEX_HOOK_EVENTS:
+            self.assertIn("sun hook --harness codex",
+                          [h["command"] for g in cfg["hooks"][event] for h in g["hooks"]])
+        self.assertEqual(sun.configured_harness(), "codex")
+        self.assertIn(sun.CODEX_LINE, open("AGENTS.md").read())
+        run("init", "--codex", "--instructions")
+        self.assertEqual(len(json.load(open(".codex/hooks.json"))["hooks"]["Stop"]), 1)
 
     # ------------------------------------------------------- local edit sync
 
@@ -184,6 +200,25 @@ class SunTest(unittest.TestCase):
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], AGENT)
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
+
+    def test_codex_apply_patch_tracks_agent_and_local_overlay(self):
+        run("init", "--codex", "--no-instructions")
+        sid = "codex-session-123"
+        patch = "*** Begin Patch\n*** Add File: agent.ts\n+x\n*** End Patch"
+        hook("UserPromptSubmit", sid, harness="codex")
+        hook("PreToolUse", sid, harness="codex", tool_name="apply_patch",
+             tool_input={"command": patch}, tool_use_id="call-1")
+        write("agent.ts", "x\n")
+        write("local.txt", "human\n")
+        hook("PostToolUse", sid, harness="codex", tool_name="apply_patch",
+             tool_input={"command": patch}, tool_use_id="call-1")
+        evs = sun.events()[-2:]
+        self.assertEqual({e["actor"] for e in evs},
+                         {"emma/agent:codex/codex-se", "emma/local"})
+        agent_ev = next(e for e in evs if "agent:codex" in e["actor"])
+        self.assertEqual(agent_ev["tool_calls"][0]["input"], {"file": "agent.ts"})
+        hook("Stop", sid, harness="codex")
+        self.assertIn("agent:codex/codex-se turn 1", self.head_subject())
 
     def test_local_overlay_two_events_one_commit_and_follows_squash(self):
         sid, inp = "session12345", {"file_path": os.path.abspath("agent.ts")}
@@ -284,6 +319,29 @@ class SunTest(unittest.TestCase):
         idx = json.load(open(os.path.join(base, "sessions-index.json")))
         self.assertEqual((idx[0]["user"], idx[0]["origin"]), ("emma", "local"))
 
+    def test_codex_subagent_transcript_is_stored_and_exported(self):
+        run("init", "--codex", "--no-instructions")
+        tp = os.path.join(self.codex, "subagent.jsonl")
+        write(tp, '{"subagent":true}\n')
+        hook("SubagentStop", "parent-session", harness="codex", agent_id="child-1",
+             agent_transcript_path=tp)
+        ref = "refs/sun/sessions/emma/parent-session"
+        self.assertIn("subagents/child-1/transcript.jsonl",
+                      self.git("ls-tree", "-r", "--name-only", ref))
+        run("sessions", "export")
+        base = os.path.join(".git/sun/sessions", sun.enc(sun.root()))
+        self.assertIn("subagent", open(os.path.join(
+            base, "parent-session/subagents/child-1.jsonl")).read())
+
+    def test_codex_stop_stores_turn_transcript(self):
+        run("init", "--codex", "--no-instructions")
+        sid, tp = "codex-live-session", os.path.join(self.codex, "live.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
+        write(tp, '{"turn":"codex"}\n')
+        self.assertEqual(hook("Stop", sid, harness="codex", transcript_path=tp), "")
+        self.assertIn('"codex"', run("sessions", sid))
+
     def test_events_merge_teammates_log_ref(self):
         ev = {"id": "zoe00001", "timestamp": "2099-01-01T00:00:00+0000", "type": "edit",
               "actor": "zoe/local", "commit": "f" * 40, "edits": []}
@@ -327,6 +385,30 @@ class SunTest(unittest.TestCase):
                   self.git("rev-parse", "HEAD").strip())
         self.assertEqual(ev["actor"], "emma/local")
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "import")
+
+    def test_codex_import_backfills_and_stores_sessions(self):
+        run("init", "--codex", "--no-instructions")
+        write("src/codex.ts", "x\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "manual codex commit"], check=True)
+        sid = "codex-import-session"
+        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        path = os.path.join(self.codex, "2026", "08", "23", "rollout.jsonl")
+        lines = [
+            {"type": "session_meta", "timestamp": ts,
+             "payload": {"id": sid, "cwd": sun.root(), "source": "cli"}},
+            {"type": "event_msg", "timestamp": ts, "payload": {"type": "task_started"}},
+            {"type": "response_item", "timestamp": ts, "payload": {
+                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-1",
+                "input": "*** Begin Patch\n*** Update File: src/codex.ts\n*** End Patch"}},
+        ]
+        write(path, "".join(json.dumps(line) + "\n" for line in lines))
+        out = run("import")
+        self.assertIn("imported 1 sessions", out)
+        ev = next(e for e in sun.events() if e["actor"].startswith(
+            "emma/agent:codex/codex-im"))
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
+        self.assertTrue(sun.refs(f"refs/sun/sessions/emma/{sid}"))
 
     # ------------------------------------------------------------------ show
 
@@ -414,6 +496,11 @@ class SunTest(unittest.TestCase):
 
     def test_sessionstart_prints_context_line(self):
         self.assertIn(".git/sun/sessions/", hook("SessionStart"))
+
+    def test_codex_sessionstart_prints_codex_context_line(self):
+        run("init", "--codex", "--no-instructions")
+        out = hook("SessionStart", harness="codex")
+        self.assertIn("~/.codex/sessions", out)
 
 
 if __name__ == "__main__":

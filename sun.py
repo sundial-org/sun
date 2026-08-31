@@ -636,7 +636,8 @@ def blame_context(chunk, tid):  # first user prompt + last agent text before too
     return prompt, ctx, tool
 def cmd_blame(a):
     maybe_sync(); f = rel_to_root(a.file)
-    out = git("blame", "--porcelain", "-L", f"{a.line},{a.line}", "--", f)
+    out = git("-c", "core.quotepath=false", "blame", "--porcelain",
+              "-L", f"{a.line},{a.line}", "--", f)
     H, orig = out.split()[:2]  # originating commit + the line's number in it
     if H == "0" * 40: sys.exit(f"sun: {f}:{a.line} is uncommitted")
     of = next((l[9:] for l in out.splitlines() if l.startswith("filename ")), f)  # pre-rename path
@@ -651,7 +652,13 @@ def cmd_blame(a):
     if sq:  # re-blame the preserved per-call commits: exact call + actor by line position
         by_id = {e["id"]: e for e in all_ev}
         tip = next((by_id[i].get("commit") for i in reversed(sq["squashes"]) if i in by_id), None)
-        o = tip and quiet("git", "blame", "--porcelain", "-L", f"{orig},{orig}", tip, "--", of)
+        if sq.get("commit") != H:  # patch-id match: translate the line into the original squash
+            i, sm = int(orig) - 1, difflib.SequenceMatcher(None,
+                quiet("git", "show", f"{H}:{of}").stdout.splitlines(),
+                quiet("git", "show", f"{sq['commit']}:{of}").stdout.splitlines())
+            orig = next((j1 + i - i1 + 1 for t, i1, i2, j1, j2 in sm.get_opcodes()
+                         if t == "equal" and i1 <= i < i2), None)
+        o = tip and orig and quiet("git", "blame", "--porcelain", "-L", f"{orig},{orig}", tip, "--", of)
         c = o and not o.returncode and o.stdout and o.stdout.split(None, 1)[0]
         ev = next((e for e in all_ev if e.get("commit") == c and touches(e)), ev)
     print(f"{f}:{a.line}  {H[:8]}  " + (f"{ev['actor']}"
@@ -773,6 +780,7 @@ def main(argv=None):
     ps["blame"].add_argument("file"); ps["blame"].add_argument("line", type=int)
     a = ap.parse_args(argv)
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
+        if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
         os.chdir(root()); sun_dir(); a.lock = lock()
     {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
      "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,

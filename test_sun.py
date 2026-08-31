@@ -645,6 +645,44 @@ class SunTest(unittest.TestCase):
         self.assertIn("agent: Then b.ts.", out)
         self.assertIn("[Write tool1]", out)
 
+    def test_blame_from_subdirectory(self):
+        self.agent_turn("session12345", [("sub/foo.ts", "x\n")])
+        write("foo.ts", "y\n")  # same basename at the root
+        run("sync")
+        os.chdir("sub")
+        try: out = run("blame", "foo.ts", "1")
+        finally: os.chdir(sun.root())
+        self.assertIn(AGENT, out)
+
+    def test_blame_non_ascii_filename(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."),
+                             ("café.ts", "2\n", "Then café.ts.")], "make two files")
+        out = run("blame", "café.ts", "1")
+        self.assertIn("agent: Then café.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_moved_sha_translates_line_numbers(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        base = "".join(f"l{i}\n" for i in range(1, 7))
+        write("f.py", base)
+        run("sync")
+        pre = self.git("rev-parse", "HEAD").strip()
+        self.blame_turn(tp, [("f.py", base + "one\n", "Adding one."),
+                             ("f.py", base + "one\ntwo\n", "Adding two.")], "two lines")
+        S = self.git("rev-parse", "HEAD").strip()
+        subprocess.run(["git", "checkout", "-qb", "side", pre], check=True)
+        write("f.py", "zero\n" + base)  # shift the squash's lines down by one
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "insert zero"], check=True)
+        subprocess.run(["git", "cherry-pick", S], check=True, capture_output=True)
+        out = run("blame", "f.py", "8")
+        self.assertIn("agent: Adding one.", out)
+        self.assertIn("[Write tool0]", out)
+        out = run("blame", "f.py", "9")
+        self.assertIn("agent: Adding two.", out)
+        self.assertIn("[Write tool1]", out)
+
     def test_blame_codex_transcript(self):
         run("init", "--codex", "--no-instructions")
         sid, tp = "codex-blame-session", os.path.join(self.codex, "live.jsonl")

@@ -39,8 +39,10 @@ def changed_files():
             git("-c", "core.quotepath=false", "status", "--porcelain", "-uall").splitlines()]
 def commit_files(files, message, author):
     git("add", "-A", "--", *files, check=False)  # pathspec may legitimately match nothing
-    git("-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "--allow-empty",
-        "--author", f"{author} <sun@sun>", "-m", message)
+    c = ("-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "--allow-empty",
+         "--author", f"{author} <sun@sun>", "-m", message)
+    # --only keeps unrelated pre-staged paths out; empty repo matches no pathspec -> plain commit
+    quiet("git", *c, "--only", "--", *files).returncode and git(*c)
     return head()
 patch_id = lambda c: (git("patch-id", "--stable", check=False,
                           input=git("show", "--format=", c, check=False)).split() or [None])[0]
@@ -457,7 +459,7 @@ def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt pai
     rows, evs, merged = session_rows(), events(), {}
     squashed = {i for e in evs for i in e.get("squashes", [])}
     for e in evs:  # squashed calls and overlay re-records are subsumed by their turn events
-        if e.get("type") != "edit" or e["id"] in squashed or "overlay_of" in e \
+        if e.get("type") not in ("edit", "undo") or e["id"] in squashed or "overlay_of" in e \
                 or not e.get("edits"): continue
         key = (e["actor"], e["turn"]) if e.get("turn") else e["id"]  # unsquashed turns regroup
         m = merged.setdefault(key, {**e, "tool_calls": e.get("tool_calls", [])[:],

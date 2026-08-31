@@ -666,6 +666,22 @@ class SunTest(unittest.TestCase):
         self.assertTrue(all(d["file"] != "dump.jsonl" for e in sun.events()
                             for d in e.get("edits", [])))
 
+    def test_staged_export_output_stays_out_of_sync_commit(self):
+        run("export", "-o", "dump.jsonl")
+        subprocess.run(["git", "add", "dump.jsonl"], check=True)
+        write("other.txt", "x\n")
+        run("export", "-o", "dump.jsonl")  # syncs other.txt; staged dump must not ride along
+        self.assertEqual(self.git("show", "--name-only", "--format=", "HEAD").split(),
+                         ["other.txt"])
+        self.assertIn("dump.jsonl", self.git("status", "--porcelain"))
+
+    def test_export_includes_undo_ops(self):
+        self.agent_turn("session12345", [("a.ts", "1\n")])
+        run("undo", "--op")
+        rec = next(r for r in map(json.loads, run("export").splitlines())
+                   if r["actor"] == "emma/local" and r["edits"][0]["file"] == "a.ts")
+        self.assertIn("-1", rec["edits"][0]["patch"])
+
     def test_chunk_prompt_codex_formats(self):
         self.assertEqual(sun.chunk_prompt(json.dumps(
             {"type": "event_msg", "payload": {"type": "user_message",

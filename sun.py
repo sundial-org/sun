@@ -35,8 +35,10 @@ head = lambda: git("rev-parse", "HEAD").strip()
 quiet = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
 patches = lambda pre, post, files: {f: git("diff", pre, post, "--", f) for f in files}
 def changed_files():
-    return [l[3:].split(" -> ")[-1].strip('"') for l in
-            git("-c", "core.quotepath=false", "status", "--porcelain", "-uall").splitlines()]
+    # status.renames=false lists a rename as D+A so commit --only keeps the deletion
+    return [l[3:].strip('"') for l in
+            git("-c", "core.quotepath=false", "-c", "status.renames=false",
+                "status", "--porcelain", "-uall").splitlines()]
 def commit_files(files, message, author):
     git("add", "-A", "--", *files, check=False)  # pathspec may legitimately match nothing
     c = ("-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "--allow-empty",

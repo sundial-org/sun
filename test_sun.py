@@ -197,6 +197,16 @@ class SunTest(unittest.TestCase):
         self.assertEqual(self.head_subject(),
                          "sun: emma/local edits a.txt, b.txt, c.txt +1 more")
 
+    def test_sync_commits_both_sides_of_staged_rename(self):
+        write("b.ts", "x\n")
+        run("sync")
+        subprocess.run(["git", "mv", "b.ts", "c.ts"], check=True)
+        run("sync")
+        ns = self.git("show", "--name-status", "--format=", "HEAD").split()
+        self.assertIn("b.ts", ns)  # rename shows as R b.ts c.ts (or D+A), never A alone
+        self.assertIn("c.ts", ns)
+        self.assertEqual(self.git("status", "--porcelain"), "")
+
     def test_char_edits_match_proposal_example(self):
         patch = ('@@ -10,2 +10,2 @@\n-const name = "Alice";\n'
                  '+const name = "Emma";\n console.log(name);')

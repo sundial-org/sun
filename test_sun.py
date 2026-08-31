@@ -476,6 +476,29 @@ class SunTest(unittest.TestCase):
         self.assertEqual(ev["actor"], "emma/agent:codex/codex-du")
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
 
+    def test_backfill_picks_nearest_call_across_harnesses(self):
+        write("src/both.ts", "x\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "codex-authored commit"], check=True)
+        at = int(self.git("log", "-1", "--pretty=%at").strip())
+        fmt = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
+        pdir = os.path.join(self.proj, sun.enc(sun.root()))
+        write(os.path.join(pdir, "sess-claude-far.jsonl"),  # 20 min off, indexed first
+              transcript_line(os.path.abspath("src/both.ts"), ts=fmt(at - 1200)))
+        lines = [
+            {"type": "session_meta", "timestamp": fmt(at),
+             "payload": {"id": "codex-near-session", "cwd": sun.root(), "source": "cli"}},
+            {"type": "response_item", "timestamp": fmt(at), "payload": {
+                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-1",
+                "input": "*** Begin Patch\n*** Update File: src/both.ts\n*** End Patch"}},
+        ]
+        write(os.path.join(self.codex, "near.jsonl"),
+              "".join(json.dumps(line) + "\n" for line in lines))
+        run("import")
+        ev = next(e for e in sun.events() if e.get("commit") ==
+                  self.git("rev-parse", "HEAD").strip())
+        self.assertEqual(ev["actor"], "emma/agent:codex/codex-ne")
+
     # ------------------------------------------------------------------ show
 
     def test_show_prints_operations_for_commit(self):

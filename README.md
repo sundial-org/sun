@@ -47,5 +47,5 @@ server needed.
 ```sh
 python3 example/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 example/demo_fresh.py  # synthetic end-to-end story -> example/demo.html
-python3 -m unittest test_sun   # 47 tests
+python3 -m unittest test_sun   # 48 tests
 ```

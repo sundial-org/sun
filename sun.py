@@ -371,8 +371,9 @@ def backfill(index):  # attribute pre-existing commits: transcript_backfill on a
     for H, an, at, files in cs:
         if H in have: continue
         tot += 1
-        m = {f: c for f in files for c in
-             [next((c for c in index.get(f, []) if abs(c[0] - int(at)) < 1800), None)] if c}
+        m = {f: c for f in files for c in  # nearest call in the window, across harnesses
+             [min((c for c in index.get(f, []) if abs(c[0] - int(at)) < 1800),
+                  key=lambda c: abs(c[0] - int(at)), default=None)] if c}
         u = an.replace(" ", "-").lower()
         match = next(iter(m.values()), None)
         actor = agent(match[1], match[3], u) if match else local(u)

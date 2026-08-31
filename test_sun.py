@@ -733,6 +733,236 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "commit", "-q", "-m", "squashed"], check=True)
         self.assertIn(op, run("show", "HEAD"))
 
+    # ----------------------------------------------------------------- blame
+
+    def blame_turn(self, tp, edits, prompt):
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as fh:
+            fh.write(json.dumps({"type": "user",
+                                 "message": {"role": "user", "content": prompt}}) + "\n")
+        for i, (f, text, say) in enumerate(edits):
+            with open(tp, "a") as fh:
+                fh.write(json.dumps({"type": "assistant", "message": {
+                    "role": "assistant", "content": [
+                        {"type": "text", "text": say},
+                        {"type": "tool_use", "id": f"tool{i}", "name": "Write",
+                         "input": {"file_path": os.path.abspath(f)}}]}}) + "\n")
+            self.tool_call("session12345", f, text, i)
+        hook("Stop", transcript_path=tp)
+
+    def test_blame_finds_originating_prompt(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("foo.ts", "export const x = 1\n", "Creating foo.ts now.")],
+                        "add an x constant")
+        out = run("blame", "foo.ts", "1")
+        self.assertIn(AGENT, out)
+        self.assertIn("user: add an x constant", out)
+        self.assertIn("agent: Creating foo.ts now.", out)
+        self.assertIn("[Write tool0]", out)
+
+    def test_blame_squashed_turn_picks_matching_tool_call(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."), ("b.ts", "2\n", "Then b.ts.")],
+                        "make two files")
+        self.assertIn("(2 tool calls)", self.head_subject())  # squashed turn
+        out = run("blame", "b.ts", "1")
+        self.assertIn("user: make two files", out)
+        self.assertIn("agent: Then b.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_prefers_local_overlay_in_squashed_turn(self):
+        hook("UserPromptSubmit")
+        inp = {"file_path": os.path.abspath("a.ts")}
+        hook("PreToolUse", tool_name="Write", tool_input=inp, tool_use_id="tool0")
+        write("a.ts", "agent line\n")
+        write("human.txt", "human line\n")  # concurrent local edit during the call
+        hook("PostToolUse", tool_name="Write", tool_input=inp, tool_use_id="tool0")
+        hook("Stop")
+        self.assertIn("(1 tool calls)", self.head_subject())  # squashed turn
+        self.assertIn(AGENT, run("blame", "a.ts", "1"))
+        out = run("blame", "human.txt", "1")
+        self.assertIn("emma/local", out)
+        self.assertIn("human edit", out)
+
+    def test_blame_squashed_bash_calls_resolve_per_call(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as fh:
+            fh.write(json.dumps({"type": "user",
+                                 "message": {"role": "user", "content": "two scripts"}}) + "\n")
+        for i, (f, text, say) in enumerate([("a.sh", "echo a\n", "First script."),
+                                            ("b.sh", "echo b\n", "Second script.")]):
+            inp = {"command": f"make {f}"}  # no file/files key: unscoped like Bash
+            with open(tp, "a") as fh:
+                fh.write(json.dumps({"type": "assistant", "message": {
+                    "role": "assistant", "content": [
+                        {"type": "text", "text": say},
+                        {"type": "tool_use", "id": f"tool{i}", "name": "Bash",
+                         "input": inp}]}}) + "\n")
+            hook("PreToolUse", tool_name="Bash", tool_input=inp, tool_use_id=f"tool{i}")
+            write(f, text)
+            hook("PostToolUse", tool_name="Bash", tool_input=inp, tool_use_id=f"tool{i}")
+        hook("Stop", transcript_path=tp)
+        self.assertIn("(2 tool calls)", self.head_subject())
+        out = run("blame", "b.sh", "1")
+        self.assertIn("agent: Second script.", out)
+        self.assertIn("[Bash tool1]", out)
+
+    def test_blame_identical_lines_resolve_by_position(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("f.py", "pass\n", "First write."),
+                             ("f.py", "pass\npass\n", "Second write.")], "two passes")
+        out = run("blame", "f.py", "1")
+        self.assertIn("agent: First write.", out)
+        self.assertIn("[Write tool0]", out)
+        out = run("blame", "f.py", "2")
+        self.assertIn("agent: Second write.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_follows_renames(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."), ("b.ts", "2\n", "Then b.ts.")],
+                        "make two files")
+        subprocess.run(["git", "mv", "b.ts", "c.ts"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "rename"], check=True)
+        out = run("blame", "c.ts", "1")
+        self.assertIn("agent: Then b.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_from_subdirectory(self):
+        self.agent_turn("session12345", [("sub/foo.ts", "x\n")])
+        write("foo.ts", "y\n")  # same basename at the root
+        run("sync")
+        os.chdir("sub")
+        try: out = run("blame", "foo.ts", "1")
+        finally: os.chdir(sun.root())
+        self.assertIn(AGENT, out)
+
+    def test_blame_non_ascii_filename(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."),
+                             ("café.ts", "2\n", "Then café.ts.")], "make two files")
+        out = run("blame", "café.ts", "1")
+        self.assertIn("agent: Then café.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_moved_sha_translates_line_numbers(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        base = "".join(f"l{i}\n" for i in range(1, 7))
+        write("f.py", base)
+        run("sync")
+        pre = self.git("rev-parse", "HEAD").strip()
+        self.blame_turn(tp, [("f.py", base + "one\n", "Adding one."),
+                             ("f.py", base + "one\ntwo\n", "Adding two.")], "two lines")
+        S = self.git("rev-parse", "HEAD").strip()
+        subprocess.run(["git", "checkout", "-qb", "side", pre], check=True)
+        write("f.py", "zero\n" + base)  # shift the squash's lines down by one
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "insert zero"], check=True)
+        subprocess.run(["git", "cherry-pick", S], check=True, capture_output=True)
+        out = run("blame", "f.py", "8")
+        self.assertIn("agent: Adding one.", out)
+        self.assertIn("[Write tool0]", out)
+        out = run("blame", "f.py", "9")
+        self.assertIn("agent: Adding two.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_moved_sha_whitespace_rewrite(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        base = "".join(f"l{i}\n" for i in range(1, 7))
+        write("f.py", base)
+        run("sync")
+        pre = self.git("rev-parse", "HEAD").strip()
+        self.blame_turn(tp, [("f.py", base + "one\n", "Adding one."),
+                             ("f.py", base + "one\n  x = 2\n", "Adding two.")], "two lines")
+        subprocess.run(["git", "checkout", "-qb", "side", pre], check=True)
+        write("f.py", base + "one\nx  =  2\n")  # same change reformatted: same patch-id
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "reformatted squash"], check=True)
+        out = run("blame", "f.py", "8")
+        self.assertIn("agent: Adding two.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_rename_within_turn(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as fh:
+            fh.write(json.dumps({"type": "user",
+                                 "message": {"role": "user", "content": "files"}}) + "\n")
+        calls = [("Write", {"file_path": os.path.abspath("a.ts")}, "First a.ts.",
+                  lambda: write("a.ts", "1\n")),
+                 ("Write", {"file_path": os.path.abspath("b.ts")}, "Then b.ts.",
+                  lambda: write("b.ts", "2\n")),
+                 ("Bash", {"command": "mv b.ts c.ts"}, "Renaming.",
+                  lambda: os.rename("b.ts", "c.ts"))]
+        for i, (tool, inp, say, do) in enumerate(calls):
+            with open(tp, "a") as fh:
+                fh.write(json.dumps({"type": "assistant", "message": {
+                    "role": "assistant", "content": [
+                        {"type": "text", "text": say},
+                        {"type": "tool_use", "id": f"tool{i}", "name": tool,
+                         "input": inp}]}}) + "\n")
+            hook("PreToolUse", tool_name=tool, tool_input=inp, tool_use_id=f"tool{i}")
+            do()
+            hook("PostToolUse", tool_name=tool, tool_input=inp, tool_use_id=f"tool{i}")
+        hook("Stop", transcript_path=tp)
+        self.assertIn("(3 tool calls)", self.head_subject())
+        out = run("blame", "c.ts", "1")
+        self.assertIn("agent: Then b.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_symlink_itself(self):
+        self.agent_turn("session12345", [("target.txt", "x\n")])
+        os.symlink("target.txt", "link.txt")
+        run("sync")
+        out = run("blame", "link.txt", "1")
+        self.assertIn("emma/local", out)
+        self.assertIn("human edit", out)
+
+    def test_blame_codex_transcript(self):
+        run("init", "--codex", "--no-instructions")
+        sid, tp = "codex-blame-session", os.path.join(self.codex, "live.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
+        patch = "*** Begin Patch\n*** Add File: c.ts\n+x\n*** End Patch"
+        hook("PreToolUse", sid, harness="codex", tool_name="apply_patch",
+             tool_input={"command": patch}, tool_use_id="call-9")
+        write("c.ts", "x\n")
+        lines = [
+            {"type": "response_item", "payload": {"type": "message", "role": "user",
+             "content": [{"type": "input_text", "text": "please add c.ts"}]}},
+            {"type": "response_item", "payload": {"type": "message", "role": "assistant",
+             "content": [{"type": "output_text", "text": "Adding c.ts."}]}},
+            {"type": "response_item", "payload": {"type": "custom_tool_call",
+             "name": "apply_patch", "call_id": "call-9", "input": patch}}]
+        write(tp, "".join(json.dumps(line) + "\n" for line in lines))
+        hook("PostToolUse", sid, harness="codex", tool_name="apply_patch",
+             tool_input={"command": patch}, tool_use_id="call-9")
+        hook("Stop", sid, harness="codex", transcript_path=tp)
+        out = run("blame", "c.ts", "1")
+        self.assertIn("agent:codex/codex-bl", out)
+        self.assertIn("user: please add c.ts", out)
+        self.assertIn("agent: Adding c.ts.", out)
+        self.assertIn("[apply_patch call-9]", out)
+
+    def test_blame_local_edit(self):
+        write("a.txt", "v1\n")
+        run("sync")
+        out = run("blame", "a.txt", "1")
+        self.assertIn("emma/local", out)
+        self.assertIn("human edit", out)
+
+    def test_blame_untracked_commit(self):
+        write("x.txt", "1\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
+        out = run("blame", "x.txt", "1")
+        self.assertIn("untracked", out)
+        self.assertIn("no sun operations recorded", out)
+
     # ------------------------------------------------------------------ undo
 
     def test_undo_latest_op(self):

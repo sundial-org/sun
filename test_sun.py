@@ -282,12 +282,17 @@ class SunTest(unittest.TestCase):
         tp = os.path.join(self.proj, "early.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
-        with open(tp, "a") as f:  # both prompts land before the session's first tool call
+        with open(tp, "a") as f:  # three prompts land before the session's first tool call
             f.write('{"type": "user", "message": {"content": "one"}}\n'
-                    '{"type": "user", "message": {"content": "two"}}\n')
+                    '{"type": "user", "message": {"content": "two"}}\n'
+                    '{"type": "user", "message": {"content": "three"}}\n')
         self.tool_call("session12345", "b.ts", "2\n", 0)
         hook("Stop", transcript_path=tp)
-        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 2 (1 tool calls)")
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 3 (1 tool calls)")
+        ref = "refs/sun/sessions/emma/session12345"  # one chunk per queued prompt
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl", "turn-0003.jsonl"])
+        self.assertIn("two", self.git("cat-file", "blob", f"{ref}:turn-0002.jsonl"))
 
     def test_prompt_mentioning_tool_result_is_a_boundary(self):
         tp = os.path.join(self.proj, "tr.jsonl")

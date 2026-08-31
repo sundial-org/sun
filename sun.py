@@ -243,10 +243,9 @@ def prompt_boundary(sid, payload, harness="claude"):
     while True:
         pos, l = f.tell(), f.readline()
         if not l: break
-        if len(prompts) < 2 and prompt_line(l, harness): prompts.append(pos)
+        if prompt_line(l, harness): prompts.append(pos)
     end = f.tell()  # the first scan expects the current turn's own prompt in the window
-    boundary = next(iter(prompts if "soffset" in t else prompts[1:]), None)
-    if boundary is not None:
+    for boundary in (prompts if "soffset" in t else prompts[1:]):
         squash_turn(sid, harness)  # close the previous turn before this turn's first commit
         f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
         if data and not t.get("stopped") and cfg_track():  # store its transcript slice too

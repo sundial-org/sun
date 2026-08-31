@@ -162,6 +162,15 @@ class SunTest(unittest.TestCase):
         self.assertEqual(sun.configured_harnesses(), ["claude"])
         self.assertFalse(os.path.exists(".codex/hooks.json"))
 
+    def test_restrictive_reinit_removes_other_harness_hook(self):
+        run("init", "--claude", "--no-claude-md")  # setUp installed both
+        self.assertNotIn("sun hook", open(".codex/hooks.json").read())
+        self.assertIn("sun hook", open(".claude/settings.json").read())
+
+    def test_declined_instructions_hint_keeps_harness_flags(self):
+        out = run("init", "--codex", "--no-instructions")
+        self.assertIn("`sun init --codex --instructions`", out)
+
     def test_old_single_harness_config_still_read(self):
         sun.save_state("config.json", {"harness": "codex", "track_sessions": True})
         self.assertEqual(sun.configured_harnesses(), ["codex"])
@@ -444,6 +453,28 @@ class SunTest(unittest.TestCase):
             "emma/agent:codex/codex-im"))
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
         self.assertTrue(sun.refs(f"refs/sun/sessions/emma/{sid}"))
+
+    def test_dual_harness_import_attributes_codex_commits(self):
+        # both harnesses configured (setUp default): the claude pass must not
+        # backfill codex-authored commits as local before the codex index exists
+        write("src/codex.ts", "x\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "manual codex commit"], check=True)
+        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        lines = [
+            {"type": "session_meta", "timestamp": ts,
+             "payload": {"id": "codex-dual-session", "cwd": sun.root(), "source": "cli"}},
+            {"type": "response_item", "timestamp": ts, "payload": {
+                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-1",
+                "input": "*** Begin Patch\n*** Update File: src/codex.ts\n*** End Patch"}},
+        ]
+        write(os.path.join(self.codex, "rollout.jsonl"),
+              "".join(json.dumps(line) + "\n" for line in lines))
+        run("import")
+        ev = next(e for e in sun.events() if e.get("commit") ==
+                  self.git("rev-parse", "HEAD").strip())
+        self.assertEqual(ev["actor"], "emma/agent:codex/codex-du")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
 
     # ------------------------------------------------------------------ show
 

@@ -180,7 +180,7 @@ class SunTest(unittest.TestCase):
     def test_log_commits_pending_local_edits(self):
         write("a.txt", "v1\n")
         out = run("log")
-        self.assertEqual(self.head_subject(), "sun: emma/local edits")
+        self.assertEqual(self.head_subject(), "sun: emma/local edits a.txt")
         self.assertIn("[emma/local]", out.splitlines()[0])
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], "emma/local")
@@ -189,6 +189,13 @@ class SunTest(unittest.TestCase):
         self.assertTrue(ev["patch_id"])
         sha = self.git("rev-parse", "refs/sun/log/emma").strip()  # mirrored
         self.assertIn(ev["id"], self.git("cat-file", "blob", sha))
+
+    def test_local_edit_commit_names_files_truncated(self):
+        for f in ("a.txt", "b.txt", "c.txt", "d.txt"):
+            write(f, "x\n")
+        run("sync")
+        self.assertEqual(self.head_subject(),
+                         "sun: emma/local edits a.txt, b.txt, c.txt +1 more")
 
     def test_char_edits_match_proposal_example(self):
         patch = ('@@ -10,2 +10,2 @@\n-const name = "Alice";\n'
@@ -234,6 +241,35 @@ class SunTest(unittest.TestCase):
     def test_turn_numbers_increment_per_session(self):
         self.agent_turn("session12345", [("a.ts", "1\n")])
         self.agent_turn("session12345", [("a.ts", "2\n")])
+        self.assertEqual(sun.events()[-1]["turn"], "turn2")
+
+    def test_missed_stop_squashes_turn_on_next_prompt(self):
+        hook("UserPromptSubmit")
+        self.tool_call("session12345", "a.ts", "1\n", 0)  # interrupted: Stop never fires
+        hook("UserPromptSubmit")
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (1 tool calls)")
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop")
+        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+                         [f"sun: {AGENT} turn 2 (1 tool calls)",
+                          f"sun: {AGENT} turn 1 (1 tool calls)"])
+
+    def test_queued_prompt_gets_its_own_turn(self):
+        # neither Stop nor UserPromptSubmit fires between the two turns; the second
+        # prompt only shows up in the transcript
+        tp = os.path.join(self.proj, "queued.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "one"}}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "two"}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+                         [f"sun: {AGENT} turn 2 (1 tool calls)",
+                          f"sun: {AGENT} turn 1 (1 tool calls)"])
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
 
     def test_bash_tool_edits_are_agents(self):
@@ -289,7 +325,7 @@ class SunTest(unittest.TestCase):
         self.tool_call(sid, "b.ts", "2\n", 1)  # PreToolUse commits local.txt
         hook("Stop", sid)
         self.assertEqual(self.git("log", "-3", "--pretty=%s").splitlines(),
-                         [f"sun: {AGENT} Write", "sun: emma/local edits",
+                         [f"sun: {AGENT} Write", "sun: emma/local edits local.txt",
                           f"sun: {AGENT} Write"])
         self.assertNotIn("squashes", sun.events()[-1])
 
@@ -599,6 +635,19 @@ class SunTest(unittest.TestCase):
         self.assertIn(AGENT, html)
         self.assertIn("replay", html)
         self.assertNotIn("__DATA__", html)
+
+    def test_viz_shows_branch_history_without_sun_refs(self):
+        self.agent_turn("session12345", [("a.ts", "1\n")])
+        sun.store_chunks("sess-viz", {"turn-0001.jsonl": "{}\n"})
+        run("viz", "-o", "viz.html")
+        html = open("viz.html").read()
+        data = json.loads(html.split("const D=", 1)[1].split(",cs=D.commits", 1)[0]
+                          .replace("<\\/", "</"))
+        subjects = [c["subject"] for c in data["commits"]]
+        self.assertEqual(subjects.count("sun: initial state"), 1)
+        self.assertIn(f"sun: {AGENT} turn 1 (1 tool calls)", subjects)
+        self.assertNotIn(f"sun: {AGENT} Write", subjects)  # pre-squash refs/sun/ops
+        self.assertNotIn("sess-viz", subjects)  # refs/sun/sessions storage commits
 
     # ---------------------------------------------------------------- update
 

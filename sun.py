@@ -655,9 +655,9 @@ def cmd_blame(a):
         by_id = {e["id"]: e for e in all_ev}
         tip = next((by_id[i].get("commit") for i in reversed(sq["squashes"]) if i in by_id), None)
         if sq.get("commit") != H:  # patch-id match: translate the line into the original squash
-            i, sm = int(orig) - 1, difflib.SequenceMatcher(None,
-                quiet("git", "show", f"{H}:{of}").stdout.splitlines(),
-                quiet("git", "show", f"{sq['commit']}:{of}").stdout.splitlines())
+            i, sm = int(orig) - 1, difflib.SequenceMatcher(None,  # patch-id ignores whitespace
+                [l.strip() for l in quiet("git", "show", f"{H}:{of}").stdout.splitlines()],
+                [l.strip() for l in quiet("git", "show", f"{sq['commit']}:{of}").stdout.splitlines()])
             orig = next((j1 + i - i1 + 1 for t, i1, i2, j1, j2 in sm.get_opcodes()
                          if t == "equal" and i1 <= i < i2), None)
         o = tip and orig and quiet("git", "-c", "core.quotepath=false", "blame", "--porcelain",

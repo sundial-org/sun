@@ -126,10 +126,45 @@ class SunTest(unittest.TestCase):
         for event in sun.CODEX_HOOK_EVENTS:
             self.assertIn("sun hook --harness codex",
                           [h["command"] for g in cfg["hooks"][event] for h in g["hooks"]])
-        self.assertEqual(sun.configured_harness(), "codex")
+        self.assertEqual(sun.configured_harnesses(), ["codex"])
         self.assertIn(sun.CODEX_LINE, open("AGENTS.md").read())
         run("init", "--codex", "--instructions")
         self.assertEqual(len(json.load(open(".codex/hooks.json"))["hooks"]["Stop"]), 1)
+
+    def test_init_installs_all_detected_harnesses(self):
+        # setUp's SUN_PROJECTS + SUN_CODEX_SESSIONS dirs exist -> both detected
+        self.assertEqual(sun.configured_harnesses(), ["claude", "codex"])
+        for path, cmd in ((".claude/settings.json", "sun hook"),
+                          (".codex/hooks.json", "sun hook --harness codex")):
+            cfg = json.load(open(path))
+            self.assertIn(cmd, [h["command"] for g in cfg["hooks"]["Stop"]
+                                for h in g["hooks"]])
+
+    def test_detect_harnesses(self):
+        home = tempfile.mkdtemp()
+        old = {k: os.environ.pop(k, None)
+               for k in ("HOME", "SUN_PROJECTS", "SUN_CODEX_SESSIONS")}
+        os.environ["HOME"] = home
+        try:
+            self.assertEqual(sun.detect_harnesses(), ["claude"])  # none -> default
+            os.makedirs(os.path.join(home, ".codex"))
+            self.assertEqual(sun.detect_harnesses(), ["codex"])
+            os.makedirs(os.path.join(home, ".claude"))
+            self.assertEqual(sun.detect_harnesses(), ["claude", "codex"])
+        finally:
+            for k, v in old.items():
+                os.environ.pop(k, None) if v is None else os.environ.update({k: v})
+            shutil.rmtree(home, ignore_errors=True)
+
+    def test_claude_flag_restricts_to_claude(self):
+        shutil.rmtree(".codex")  # installed by setUp's all-harness init
+        run("init", "--claude", "--no-claude-md")
+        self.assertEqual(sun.configured_harnesses(), ["claude"])
+        self.assertFalse(os.path.exists(".codex/hooks.json"))
+
+    def test_old_single_harness_config_still_read(self):
+        sun.save_state("config.json", {"harness": "codex", "track_sessions": True})
+        self.assertEqual(sun.configured_harnesses(), ["codex"])
 
     # ------------------------------------------------------- local edit sync
 

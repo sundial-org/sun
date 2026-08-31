@@ -220,7 +220,6 @@ def squash_turn(sid, harness="claude"):
     for e in ops:  # local overlays inside the agent's commits follow the squash
         if e not in mine:
             record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"], overlay_of=e["id"])
-    return c
 def prompt_line(l, harness="claude"):
     try: obj = json.loads(l)  # both harnesses write one JSON record per line
     except ValueError: return False
@@ -239,19 +238,20 @@ def prompt_boundary(sid, payload, harness="claude"):
     turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
     tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
     if not (t and tp and os.path.exists(tp)): return
-    f = open(tp, "rb"); scanned, boundary = "soffset" in t, None
+    f = open(tp, "rb"); prompts = []
     f.seek(t.get("soffset", t.get("toffset", 0)))
     while True:
         pos, l = f.tell(), f.readline()
         if not l: break
-        if boundary is None and prompt_line(l, harness): boundary = pos
-    end = f.tell()
-    if scanned and boundary is not None:
+        if len(prompts) < 2 and prompt_line(l, harness): prompts.append(pos)
+    end = f.tell()  # the first scan expects the current turn's own prompt in the window
+    boundary = next(iter(prompts if "soffset" in t else prompts[1:]), None)
+    if boundary is not None:
         squash_turn(sid, harness)  # close the previous turn before this turn's first commit
         f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
-        if data and cfg_track():  # ...and store its transcript slice as its own chunk
+        if data and not t.get("stopped") and cfg_track():  # store its transcript slice too
             store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
-        t.update(n=t["n"] + 1, start=head(), toffset=boundary)
+        t.update(n=t["n"] + 1, start=head(), toffset=boundary); t.pop("stopped", None)
     t["soffset"] = end; turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)
 def stop_chunk(sid, payload, harness="claude"):
@@ -261,7 +261,7 @@ def stop_chunk(sid, payload, harness="claude"):
     if not (t and tp and os.path.exists(tp) and cfg_track()): return
     f = open(tp, errors="replace"); f.seek(t.get("toffset", 0)); data = f.read()
     if data: store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
-    t["toffset"] = os.path.getsize(tp); save_state("turns.json", turns)
+    t.update(toffset=os.path.getsize(tp), stopped=True); save_state("turns.json", turns)
 def subagent_chunk(sid, payload):
     tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
     if not (tp and sub and os.path.exists(tp) and cfg_track()): return
@@ -279,8 +279,10 @@ def cmd_hook(a):
     event, sid, harness = (payload.get("hook_event_name", ""),
                            payload.get("session_id", "?"), a.harness)
     active = state("active.json", {})
-    if event == "UserPromptSubmit" and squash_turn(sid, harness):  # Stop never fired:
-        stop_chunk(sid, payload, harness)  # squash the turn + store its transcript slice
+    if event == "UserPromptSubmit" and not state("turns.json", {}).get(
+            session_key(sid, harness), {}).get("stopped"):  # Stop never fired:
+        squash_turn(sid, harness)  # squash the turn + store its transcript slice
+        stop_chunk(sid, payload, harness)
     elif event == "PreToolUse": prompt_boundary(sid, payload, harness)
     if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
         sync()  # everything dirty before an agent tool runs is <user>/local

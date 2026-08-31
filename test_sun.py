@@ -263,6 +263,32 @@ class SunTest(unittest.TestCase):
                          ["turn-0001.jsonl", "turn-0002.jsonl"])
         self.assertIn('{"turn":1}', self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
 
+    def test_missed_stop_without_commits_keeps_transcript(self):
+        tp = os.path.join(self.proj, "chat.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"type":"assistant","chat":1}\n')  # turn 1: no tool calls, no Stop
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:
+            f.write('{"chat":2}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        hook("Stop", transcript_path=tp)
+        ref = "refs/sun/sessions/emma/session12345"
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn('"chat":1', self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
+
+    def test_queued_prompt_before_first_tool_call(self):
+        tp = os.path.join(self.proj, "early.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:  # both prompts land before the session's first tool call
+            f.write('{"type": "user", "message": {"content": "one"}}\n'
+                    '{"type": "user", "message": {"content": "two"}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 0)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 2 (1 tool calls)")
+
     def test_prompt_mentioning_tool_result_is_a_boundary(self):
         tp = os.path.join(self.proj, "tr.jsonl")
         write(tp, "")

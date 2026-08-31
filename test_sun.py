@@ -640,7 +640,7 @@ class SunTest(unittest.TestCase):
         self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."), ("b.ts", "2\n", "Then b.ts.")],
                         "make two files")
         subprocess.run(["git", "mv", "b.ts", "c.ts"], check=True)
-        run("sync")
+        subprocess.run(["git", "commit", "-q", "-m", "rename"], check=True)
         out = run("blame", "c.ts", "1")
         self.assertIn("agent: Then b.ts.", out)
         self.assertIn("[Write tool1]", out)

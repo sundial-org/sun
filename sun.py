@@ -151,12 +151,14 @@ def char_edits(patch):  # character-level ranges for paired -/+ lines of a unifi
         elif not l.startswith("\\") and not l.startswith("diff "):
             o, n, minus = o + 1, n + 1, []
     return out
+edits_msg = lambda actor, files: (f"sun: {actor} edits " + ", ".join(files[:3])
+                                  + (f" +{len(files) - 3} more" if len(files) > 3 else ""))
 def sync(exclude=()):  # commit unclaimed changes as <user>/local
     exclude = set(exclude) | {f for s in state("active.json", {}).values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
     if not files: return None
     pre, actor = head(), local()
-    c = commit_files(files, f"sun: {actor} edits", actor)
+    c = commit_files(files, edits_msg(actor, files), actor)
     p = patches(pre, c, files)
     return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
                   edits=[{"file": f, "patch": p[f], "char_edits": char_edits(p[f]),
@@ -183,7 +185,7 @@ def finish_call(sid, active, payload, harness="claude"):
     h_files = [f for f in files if f not in a_files]
     actor, pre = agent(sid, harness), head()
     turn = state("turns.json", {}).get(session_key(sid, harness), {}).get("n", 0)
-    c = commit_files(files, f"sun: {actor} {tool}" if a_files else f"sun: {local()} edits",
+    c = commit_files(files, f"sun: {actor} {tool}" if a_files else edits_msg(local(), files),
                      actor if a_files else local())
     p = patches(pre, c, files)
     if a_files:
@@ -218,6 +220,48 @@ def squash_turn(sid, harness="claude"):
     for e in ops:  # local overlays inside the agent's commits follow the squash
         if e not in mine:
             record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"], overlay_of=e["id"])
+def prompt_line(l, harness="claude"):
+    try: obj = json.loads(l)  # both harnesses write one JSON record per line
+    except ValueError: return False
+    if harness == "claude":  # a user record of only tool_results is not a prompt, but a
+        content = (obj.get("message") or {}).get("content")  # queued message may ride
+        return obj.get("type") == "user" and not (isinstance(content, list) and all(
+            isinstance(b, dict) and b.get("type") == "tool_result" for b in content))
+    p = obj.get("payload") or {}
+    if obj.get("type") == "event_msg":
+        return {"user_message": 1, "task_started": 3}.get(p.get("type"), 0)
+    return 2 * (obj.get("type") == "response_item" and p.get("type") == "message"
+                and p.get("role") == "user")
+def prompt_boundary(sid, payload, harness="claude"):
+    # PreToolUse: a prompt can reach the transcript with no hook between turns (queued
+    # message, missed Stop); a user line past the first scan means a new turn started
+    turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
+    tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
+    if not (t and tp and os.path.exists(tp)): return
+    f = open(tp, "rb"); prompts = []
+    f.seek(t.get("soffset", t.get("toffset", 0)))
+    while True:
+        pos, l = f.tell(), f.readline()
+        if not l: break
+        k = prompt_line(l, harness)
+        if k: prompts.append((pos, k))
+    end = f.tell(); kinds = {k for _, k in prompts}
+    # codex mirrors one prompt across records: prefer task_started (the earliest, as
+    # scan_codex_transcript does), else count just one of the user-record kinds
+    if 3 in kinds: prompts = [x for x in prompts if x[1] == 3]
+    elif {1, 2} <= kinds: prompts = [x for x in prompts if x[1] == 1]
+    seen = t.get("seen", 0)  # the turn's own prompt is the first record seen for it,
+    bs = prompts[0 if seen else 1:]  # however late the harness flushes it; the rest
+    for boundary, _ in bs:  # are queued prompts, each starting a new turn
+        squash_turn(sid, harness)  # close the previous turn before this turn's first commit
+        f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
+        if data and not t.get("stopped") and cfg_track():  # store its transcript slice too
+            store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
+        sync()  # dirty local edits predate the queued turn: commit them outside it
+        t.update(n=t["n"] + 1, start=head(), toffset=boundary); t.pop("stopped", None)
+    t.update(soffset=end, seen=1 if bs else seen + len(prompts))
+    turns[session_key(sid, harness)] = t
+    save_state("turns.json", turns)
 def stop_chunk(sid, payload, harness="claude"):
     # Stop: append this turn's transcript slice to the session ref
     turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
@@ -225,7 +269,7 @@ def stop_chunk(sid, payload, harness="claude"):
     if not (t and tp and os.path.exists(tp) and cfg_track()): return
     f = open(tp, errors="replace"); f.seek(t.get("toffset", 0)); data = f.read()
     if data: store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
-    t["toffset"] = os.path.getsize(tp); save_state("turns.json", turns)
+    t.update(toffset=os.path.getsize(tp), stopped=True); save_state("turns.json", turns)
 def subagent_chunk(sid, payload):
     tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
     if not (tp and sub and os.path.exists(tp) and cfg_track()): return
@@ -243,6 +287,11 @@ def cmd_hook(a):
     event, sid, harness = (payload.get("hook_event_name", ""),
                            payload.get("session_id", "?"), a.harness)
     active = state("active.json", {})
+    if event == "UserPromptSubmit" and not state("turns.json", {}).get(
+            session_key(sid, harness), {}).get("stopped"):  # Stop never fired:
+        squash_turn(sid, harness)  # squash the turn + store its transcript slice
+        stop_chunk(sid, payload, harness)
+    elif event == "PreToolUse": prompt_boundary(sid, payload, harness)
     if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
         sync()  # everything dirty before an agent tool runs is <user>/local
     if event == "SessionStart":  # stdout lands in the agent's context
@@ -265,7 +314,8 @@ def cmd_hook(a):
         save_state("active.json", active)
     elif event == "PostToolUse":
         finish_call(sid, active, payload, harness)
-    elif event == "Stop":
+    elif event == "Stop":  # a queued prompt may end in a text-only turn: no PreToolUse
+        prompt_boundary(sid, payload, harness)
         squash_turn(sid, harness)
         stop_chunk(sid, payload, harness)
     elif event == "SubagentStop":
@@ -641,7 +691,7 @@ def cmd_undo(a):
     print(f"sun: undid op {target['id']} in {c[:8]}")
 def cmd_viz(a):
     maybe_sync()
-    log = git("log", "--all", *([f"-{a.n}"] if a.n else []), "--date=iso",
+    log = git("log", "--exclude=refs/sun/*", "--all", *([f"-{a.n}"] if a.n else []), "--date=iso",
               "--pretty=%H\x1f%h\x1f%P\x1f%D\x1f%ad\x1f%s")
     cols = ["hash", "short", "parents", "refs", "date", "subject"]
     commits = [dict(zip(cols, l.split("\x1f"))) for l in log.splitlines()]

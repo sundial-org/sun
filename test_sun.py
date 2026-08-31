@@ -180,7 +180,7 @@ class SunTest(unittest.TestCase):
     def test_log_commits_pending_local_edits(self):
         write("a.txt", "v1\n")
         out = run("log")
-        self.assertEqual(self.head_subject(), "sun: emma/local edits")
+        self.assertEqual(self.head_subject(), "sun: emma/local edits a.txt")
         self.assertIn("[emma/local]", out.splitlines()[0])
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], "emma/local")
@@ -189,6 +189,13 @@ class SunTest(unittest.TestCase):
         self.assertTrue(ev["patch_id"])
         sha = self.git("rev-parse", "refs/sun/log/emma").strip()  # mirrored
         self.assertIn(ev["id"], self.git("cat-file", "blob", sha))
+
+    def test_local_edit_commit_names_files_truncated(self):
+        for f in ("a.txt", "b.txt", "c.txt", "d.txt"):
+            write(f, "x\n")
+        run("sync")
+        self.assertEqual(self.head_subject(),
+                         "sun: emma/local edits a.txt, b.txt, c.txt +1 more")
 
     def test_char_edits_match_proposal_example(self):
         patch = ('@@ -10,2 +10,2 @@\n-const name = "Alice";\n'
@@ -235,6 +242,185 @@ class SunTest(unittest.TestCase):
         self.agent_turn("session12345", [("a.ts", "1\n")])
         self.agent_turn("session12345", [("a.ts", "2\n")])
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
+
+    def test_missed_stop_squashes_turn_on_next_prompt(self):
+        tp = os.path.join(self.proj, "missed.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"turn":1}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)  # interrupted: Stop never fires
+        hook("UserPromptSubmit", transcript_path=tp)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (1 tool calls)")
+        with open(tp, "a") as f:
+            f.write('{"turn":2}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+                         [f"sun: {AGENT} turn 2 (1 tool calls)",
+                          f"sun: {AGENT} turn 1 (1 tool calls)"])
+        ref = "refs/sun/sessions/emma/session12345"  # neither turn's transcript is lost
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn('{"turn":1}', self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
+
+    def test_missed_stop_without_commits_keeps_transcript(self):
+        tp = os.path.join(self.proj, "chat.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"type":"assistant","chat":1}\n')  # turn 1: no tool calls, no Stop
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:
+            f.write('{"chat":2}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        hook("Stop", transcript_path=tp)
+        ref = "refs/sun/sessions/emma/session12345"
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn('"chat":1', self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
+
+    def test_queued_prompt_before_first_tool_call(self):
+        tp = os.path.join(self.proj, "early.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:  # three prompts land before the session's first tool call
+            f.write('{"type": "user", "message": {"content": "one"}}\n'
+                    '{"type": "user", "message": {"content": "two"}}\n'
+                    '{"type": "user", "message": {"content": "three"}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 0)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 3 (1 tool calls)")
+        ref = "refs/sun/sessions/emma/session12345"  # one chunk per queued prompt
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl", "turn-0003.jsonl"])
+        self.assertIn("two", self.git("cat-file", "blob", f"{ref}:turn-0002.jsonl"))
+
+    def test_prompt_mentioning_tool_result_is_a_boundary(self):
+        tp = os.path.join(self.proj, "tr.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"type": "user", "message": {"content": "one"}}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        with open(tp, "a") as f:  # queued message riding on a tool_result record
+            f.write('{"type": "user", "message": {"content": [{"type": "tool_result", '
+                    '"content": "ok"}, {"type": "text", "text": "now b"}]}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 2 (1 tool calls)")
+        real = ('{"type": "user", "message": {"content": '
+                '[{"type": "tool_result", "content": "ok"}]}}\n')
+        self.assertFalse(sun.prompt_line(real))  # tool-result-only records are not prompts
+        self.assertTrue(sun.prompt_line(  # merely mentioning tool_result still is one
+            '{"type": "user", "message": {"content": "check the tool_result"}}\n'))
+
+    def test_queued_prompt_gets_its_own_turn(self):
+        # neither Stop nor UserPromptSubmit fires between the two turns; the second
+        # prompt only shows up in the transcript
+        tp = os.path.join(self.proj, "queued.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "one"}}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "two"}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+                         [f"sun: {AGENT} turn 2 (1 tool calls)",
+                          f"sun: {AGENT} turn 1 (1 tool calls)"])
+        self.assertEqual(sun.events()[-1]["turn"], "turn2")
+        ref = "refs/sun/sessions/emma/session12345"  # one transcript chunk per turn
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn("one", self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
+        self.assertIn("two", self.git("cat-file", "blob", f"{ref}:turn-0002.jsonl"))
+
+    def test_codex_queued_prompt_gets_its_own_turn(self):
+        run("init", "--codex", "--no-instructions")
+        sid, tp = "codex-queued-sess", os.path.join(self.codex, "q.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
+        user = ('{"type": "event_msg", "payload": {"type": "user_message", '
+                '"message": "%s"}}\n{"type": "response_item", "payload": '
+                '{"type": "message", "role": "user", "content": "%s"}}\n')
+        with open(tp, "a") as f:
+            f.write(user % ("one", "one"))
+        for i, fn in enumerate(("a.ts", "b.ts")):
+            inp = {"file_path": os.path.abspath(fn)}
+            hook("PreToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            write(fn, f"{i}\n")
+            hook("PostToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            if not i:  # queued mid-turn: no Stop/UserPromptSubmit before b.ts
+                with open(tp, "a") as f:
+                    f.write(user % ("two", "two"))
+        hook("Stop", sid, harness="codex", transcript_path=tp)
+        codex_agent = "emma/agent:codex/codex-qu"
+        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+                         [f"sun: {codex_agent} turn 2 (1 tool calls)",
+                          f"sun: {codex_agent} turn 1 (1 tool calls)"])
+
+    def test_queued_prompt_with_text_only_turn_splits_at_stop(self):
+        tp = os.path.join(self.proj, "textonly.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "one"}}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        with open(tp, "a") as f:  # queued prompt answered without tool calls
+            f.write('{"type": "user", "message": {"content": "two"}}\n')
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (1 tool calls)")
+        ref = "refs/sun/sessions/emma/session12345"  # each turn keeps its own chunk
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn("two", self.git("cat-file", "blob", f"{ref}:turn-0002.jsonl"))
+
+    def test_queued_prompt_with_dirty_local_edits_still_squashes(self):
+        tp = os.path.join(self.proj, "dirty.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"type": "user", "message": {"content": "one"}}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        write("local.txt", "h\n")  # human edit while the second prompt is queued
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "two"}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.git("log", "-3", "--pretty=%s").splitlines(),
+                         [f"sun: {AGENT} turn 2 (1 tool calls)",
+                          "sun: emma/local edits local.txt",
+                          f"sun: {AGENT} turn 1 (1 tool calls)"])
+
+    def test_codex_task_started_marks_chunk_boundary(self):
+        run("init", "--codex", "--no-instructions")
+        sid, tp = "codex-task-sess", os.path.join(self.codex, "t.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
+        user = ('{"type": "event_msg", "payload": {"type": "task_started"}}\n'
+                '{"type": "response_item", "payload": {"type": "message", '
+                '"role": "user", "content": "%s"}}\n'  # canonical record before its mirror
+                '{"type": "event_msg", "payload": {"type": "user_message", '
+                '"message": "%s"}}\n')
+        with open(tp, "a") as f:
+            f.write(user % ("one", "one"))
+        for i, fn in enumerate(("a.ts", "b.ts")):
+            inp = {"file_path": os.path.abspath(fn)}
+            hook("PreToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            write(fn, f"{i}\n")
+            hook("PostToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            if not i:
+                with open(tp, "a") as f:
+                    f.write(user % ("two", "two"))
+        hook("Stop", sid, harness="codex", transcript_path=tp)
+        self.assertIn("turn 2 (1 tool calls)", self.head_subject())
+        one = self.git("cat-file", "blob",
+                       f"refs/sun/sessions/emma/{sid}:turn-0001.jsonl")
+        self.assertIn("one", one)
+        self.assertNotIn("two", one)  # turn 2's canonical record starts its own chunk
 
     def test_bash_tool_edits_are_agents(self):
         hook("UserPromptSubmit")
@@ -289,7 +475,7 @@ class SunTest(unittest.TestCase):
         self.tool_call(sid, "b.ts", "2\n", 1)  # PreToolUse commits local.txt
         hook("Stop", sid)
         self.assertEqual(self.git("log", "-3", "--pretty=%s").splitlines(),
-                         [f"sun: {AGENT} Write", "sun: emma/local edits",
+                         [f"sun: {AGENT} Write", "sun: emma/local edits local.txt",
                           f"sun: {AGENT} Write"])
         self.assertNotIn("squashes", sun.events()[-1])
 
@@ -599,6 +785,19 @@ class SunTest(unittest.TestCase):
         self.assertIn(AGENT, html)
         self.assertIn("replay", html)
         self.assertNotIn("__DATA__", html)
+
+    def test_viz_shows_branch_history_without_sun_refs(self):
+        self.agent_turn("session12345", [("a.ts", "1\n")])
+        sun.store_chunks("sess-viz", {"turn-0001.jsonl": "{}\n"})
+        run("viz", "-o", "viz.html")
+        html = open("viz.html").read()
+        data = json.loads(html.split("const D=", 1)[1].split(",cs=D.commits", 1)[0]
+                          .replace("<\\/", "</"))
+        subjects = [c["subject"] for c in data["commits"]]
+        self.assertEqual(subjects.count("sun: initial state"), 1)
+        self.assertIn(f"sun: {AGENT} turn 1 (1 tool calls)", subjects)
+        self.assertNotIn(f"sun: {AGENT} Write", subjects)  # pre-squash refs/sun/ops
+        self.assertNotIn("sess-viz", subjects)  # refs/sun/sessions storage commits
 
     # ---------------------------------------------------------------- update
 

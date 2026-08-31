@@ -585,6 +585,45 @@ class SunTest(unittest.TestCase):
         self.assertIn("agent: Then b.ts.", out)
         self.assertIn("[Write tool1]", out)
 
+    def test_blame_prefers_local_overlay_in_squashed_turn(self):
+        hook("UserPromptSubmit")
+        inp = {"file_path": os.path.abspath("a.ts")}
+        hook("PreToolUse", tool_name="Write", tool_input=inp, tool_use_id="tool0")
+        write("a.ts", "agent line\n")
+        write("human.txt", "human line\n")  # concurrent local edit during the call
+        hook("PostToolUse", tool_name="Write", tool_input=inp, tool_use_id="tool0")
+        hook("Stop")
+        self.assertIn("(1 tool calls)", self.head_subject())  # squashed turn
+        self.assertIn(AGENT, run("blame", "a.ts", "1"))
+        out = run("blame", "human.txt", "1")
+        self.assertIn("emma/local", out)
+        self.assertIn("human edit", out)
+
+    def test_blame_squashed_bash_calls_resolve_per_call(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as fh:
+            fh.write(json.dumps({"type": "user",
+                                 "message": {"role": "user", "content": "two scripts"}}) + "\n")
+        for i, (f, text, say) in enumerate([("a.sh", "echo a\n", "First script."),
+                                            ("b.sh", "echo b\n", "Second script.")]):
+            inp = {"command": f"make {f}"}  # no file/files key: unscoped like Bash
+            with open(tp, "a") as fh:
+                fh.write(json.dumps({"type": "assistant", "message": {
+                    "role": "assistant", "content": [
+                        {"type": "text", "text": say},
+                        {"type": "tool_use", "id": f"tool{i}", "name": "Bash",
+                         "input": inp}]}}) + "\n")
+            hook("PreToolUse", tool_name="Bash", tool_input=inp, tool_use_id=f"tool{i}")
+            write(f, text)
+            hook("PostToolUse", tool_name="Bash", tool_input=inp, tool_use_id=f"tool{i}")
+        hook("Stop", transcript_path=tp)
+        self.assertIn("(2 tool calls)", self.head_subject())
+        out = run("blame", "b.sh", "1")
+        self.assertIn("agent: Second script.", out)
+        self.assertIn("[Bash tool1]", out)
+
     def test_blame_codex_transcript(self):
         run("init", "--codex", "--no-instructions")
         sid, tp = "codex-blame-session", os.path.join(self.codex, "live.jsonl")

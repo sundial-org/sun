@@ -638,6 +638,34 @@ class SunTest(unittest.TestCase):
         loc = next(r for r in recs if r["edits"][0]["file"] == "local.txt")
         self.assertEqual((loc["actor"], loc["prompt"]), ("emma/local", None))
 
+    def test_export_backfilled_commit_reconstructs_patch(self):
+        write("legacy.txt", "old\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "pre-sun commit"], check=True)
+        run("import")  # backfill stores patch: ""
+        rec = next(r for r in map(json.loads, run("export").splitlines())
+                   if r["edits"][0]["file"] == "legacy.txt")
+        self.assertIn("+old", rec["edits"][0]["patch"])
+
+    def test_export_groups_unsquashed_turn_events(self):
+        sid = "session12345"
+        hook("UserPromptSubmit", sid)
+        self.tool_call(sid, "a.ts", "1\n", 0)
+        write("local.txt", "h\n")
+        self.tool_call(sid, "b.ts", "2\n", 1)  # mid-turn local edit blocks the squash
+        hook("Stop", sid)
+        turns = [r for r in map(json.loads, run("export").splitlines()) if r["actor"] == AGENT]
+        self.assertEqual(len(turns), 1)  # one record per turn even without a squash
+        self.assertEqual([c["id"] for c in turns[0]["tool_calls"]], ["tool0", "tool1"])
+        self.assertEqual({d["file"] for d in turns[0]["edits"]}, {"a.ts", "b.ts"})
+
+    def test_export_output_file_is_not_synced_back(self):
+        run("export", "-o", "dump.jsonl")
+        run("export", "-o", "dump.jsonl")  # first dump must not be committed or re-exported
+        self.assertIn("dump.jsonl", self.git("status", "--porcelain"))
+        self.assertTrue(all(d["file"] != "dump.jsonl" for e in sun.events()
+                            for d in e.get("edits", [])))
+
     def test_chunk_prompt_codex_formats(self):
         self.assertEqual(sun.chunk_prompt(json.dumps(
             {"type": "event_msg", "payload": {"type": "user_message",

@@ -149,8 +149,8 @@ def char_edits(patch):  # character-level ranges for paired -/+ lines of a unifi
         elif not l.startswith("\\") and not l.startswith("diff "):
             o, n, minus = o + 1, n + 1, []
     return out
-def sync():  # commit unclaimed changes as <user>/local
-    exclude = {f for s in state("active.json", {}).values() for f in s["files"]}
+def sync(exclude=()):  # commit unclaimed changes as <user>/local
+    exclude = set(exclude) | {f for s in state("active.json", {}).values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
     if not files: return None
     pre, actor = head(), local()
@@ -159,8 +159,8 @@ def sync():  # commit unclaimed changes as <user>/local
     return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
                   edits=[{"file": f, "patch": p[f], "char_edits": char_edits(p[f]),
                           "attribution": {"method": "hook"}} for f in files])
-def maybe_sync():  # skipped while an agent tool call is in flight
-    state("active.json", {}) or sync()
+def maybe_sync(exclude=()):  # skipped while an agent tool call is in flight
+    state("active.json", {}) or sync(exclude)
 def finish_call(sid, active, payload, harness="claude"):
     # PostToolUse: the pre->post diff is the agent's tool call
     st = (active.pop(call_key(sid, payload, harness), None)  # or an id-less claim
@@ -453,13 +453,18 @@ def chunk_prompt(text):  # first user message of a stored transcript chunk (clau
             return "".join(b.get("text", "") for b in p.get("content") or []
                            if isinstance(b, dict))
 def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt paired with edits
-    maybe_sync()
-    rows, evs = session_rows(), events()
+    maybe_sync([rel_to_root(a.output)] if a.output else ())  # never re-ingest our own dump
+    rows, evs, merged = session_rows(), events(), {}
     squashed = {i for e in evs for i in e.get("squashes", [])}
-    out = open(a.output, "w") if a.output else sys.stdout
     for e in evs:  # squashed calls and overlay re-records are subsumed by their turn events
         if e.get("type") != "edit" or e["id"] in squashed or "overlay_of" in e \
                 or not e.get("edits"): continue
+        key = (e["actor"], e["turn"]) if e.get("turn") else e["id"]  # unsquashed turns regroup
+        m = merged.setdefault(key, {**e, "tool_calls": e.get("tool_calls", [])[:],
+                                    "edits": e["edits"][:]})
+        if m["id"] != e["id"]: m["tool_calls"] += e.get("tool_calls", []); m["edits"] += e["edits"]
+    out = open(a.output, "w") if a.output else sys.stdout
+    for e in merged.values():
         sid = prompt = None
         m = re.match(r"([^/]+)/agent:[^/]+/(.+)", e["actor"])
         hit = m and next(((s, r) for s, u, r in rows
@@ -470,9 +475,10 @@ def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt pai
                                             f"{hit[1]}:turn-{n:04d}.jsonl", check=False)) or None
         out.write(json.dumps({"timestamp": e["timestamp"], "actor": e["actor"], "session": sid,
                               "turn": e.get("turn"), "prompt": prompt,
-                              "tool_calls": e.get("tool_calls", []),
-                              "edits": [{"file": d["file"], "patch": d["patch"]}
-                                        for d in e["edits"]]}) + "\n")
+                              "tool_calls": e["tool_calls"],
+                              "edits": [{"file": d["file"], "patch": d["patch"] or git(
+                                  "show", "--format=", e.get("commit") or "", "--", d["file"],
+                                  check=False)} for d in e["edits"]]}) + "\n")
     if a.output: out.close(); print(f"sun: exported to {a.output}")
 def cmd_gc(a):
     old = [r for r, sha in refs("refs/sun/sessions/")

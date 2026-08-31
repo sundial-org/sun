@@ -298,6 +298,7 @@ class SunTest(unittest.TestCase):
         tp = os.path.join(self.proj, "tr.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"type": "user", "message": {"content": "one"}}\n')
         self.tool_call("session12345", "a.ts", "1\n", 0)
         with open(tp, "a") as f:  # queued prompt that mentions tool_result in its text
             f.write('{"type": "user", "message": {"content": "check the tool_result"}}\n')
@@ -377,6 +378,7 @@ class SunTest(unittest.TestCase):
         tp = os.path.join(self.proj, "dirty.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"type": "user", "message": {"content": "one"}}\n')
         self.tool_call("session12345", "a.ts", "1\n", 0)
         write("local.txt", "h\n")  # human edit while the second prompt is queued
         with open(tp, "a") as f:

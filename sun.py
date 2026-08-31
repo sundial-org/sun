@@ -251,15 +251,17 @@ def prompt_boundary(sid, payload, harness="claude"):
     # scan_codex_transcript does), else count just one of the user-record kinds
     if 3 in kinds: prompts = [x for x in prompts if x[1] == 3]
     elif {1, 2} <= kinds: prompts = [x for x in prompts if x[1] == 1]
-    # the first scan expects the current turn's own prompt in the window
-    for boundary, _ in (prompts if "soffset" in t else prompts[1:]):
+    seen = t.get("seen", 0)  # the turn's own prompt is the first record seen for it,
+    bs = prompts[0 if seen else 1:]  # however late the harness flushes it; the rest
+    for boundary, _ in bs:  # are queued prompts, each starting a new turn
         squash_turn(sid, harness)  # close the previous turn before this turn's first commit
         f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
         if data and not t.get("stopped") and cfg_track():  # store its transcript slice too
             store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
         sync()  # dirty local edits predate the queued turn: commit them outside it
         t.update(n=t["n"] + 1, start=head(), toffset=boundary); t.pop("stopped", None)
-    t["soffset"] = end; turns[session_key(sid, harness)] = t
+    t.update(soffset=end, seen=1 if bs else seen + len(prompts))
+    turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)
 def stop_chunk(sid, payload, harness="claude"):
     # Stop: append this turn's transcript slice to the session ref

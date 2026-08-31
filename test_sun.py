@@ -357,6 +357,22 @@ class SunTest(unittest.TestCase):
                          [f"sun: {codex_agent} turn 2 (1 tool calls)",
                           f"sun: {codex_agent} turn 1 (1 tool calls)"])
 
+    def test_queued_prompt_with_text_only_turn_splits_at_stop(self):
+        tp = os.path.join(self.proj, "textonly.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "one"}}\n')
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        with open(tp, "a") as f:  # queued prompt answered without tool calls
+            f.write('{"type": "user", "message": {"content": "two"}}\n')
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (1 tool calls)")
+        ref = "refs/sun/sessions/emma/session12345"  # each turn keeps its own chunk
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn("two", self.git("cat-file", "blob", f"{ref}:turn-0002.jsonl"))
+
     def test_queued_prompt_with_dirty_local_edits_still_squashes(self):
         tp = os.path.join(self.proj, "dirty.jsonl")
         write(tp, "")

@@ -313,7 +313,8 @@ def cmd_hook(a):
         save_state("active.json", active)
     elif event == "PostToolUse":
         finish_call(sid, active, payload, harness)
-    elif event == "Stop":
+    elif event == "Stop":  # a queued prompt may end in a text-only turn: no PreToolUse
+        prompt_boundary(sid, payload, harness)
         squash_turn(sid, harness)
         stop_chunk(sid, payload, harness)
     elif event == "SubagentStop":

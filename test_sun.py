@@ -499,6 +499,30 @@ class SunTest(unittest.TestCase):
                   self.git("rev-parse", "HEAD").strip())
         self.assertEqual(ev["actor"], "emma/agent:codex/codex-ne")
 
+    def test_backfill_multi_file_commit_actor_is_globally_nearest(self):
+        write("a.ts", "x\n")
+        write("b.ts", "y\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "two-file commit"], check=True)
+        at = int(self.git("log", "-1", "--pretty=%at").strip())
+        fmt = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
+        pdir = os.path.join(self.proj, sun.enc(sun.root()))
+        write(os.path.join(pdir, "sess-claude-a.jsonl"),  # matches a.ts, 20 min off
+              transcript_line(os.path.abspath("a.ts"), ts=fmt(at - 1200)))
+        lines = [
+            {"type": "session_meta", "timestamp": fmt(at),
+             "payload": {"id": "codex-b-session", "cwd": sun.root(), "source": "cli"}},
+            {"type": "response_item", "timestamp": fmt(at), "payload": {
+                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-b",
+                "input": "*** Begin Patch\n*** Update File: b.ts\n*** End Patch"}},
+        ]
+        write(os.path.join(self.codex, "b.jsonl"),
+              "".join(json.dumps(line) + "\n" for line in lines))
+        run("import")
+        ev = next(e for e in sun.events() if e.get("commit") ==
+                  self.git("rev-parse", "HEAD").strip())
+        self.assertEqual(ev["actor"], "emma/agent:codex/codex-b-")
+
     # ------------------------------------------------------------------ show
 
     def test_show_prints_operations_for_commit(self):

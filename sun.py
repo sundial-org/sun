@@ -375,7 +375,7 @@ def backfill(index):  # attribute pre-existing commits: transcript_backfill on a
              [min((c for c in index.get(f, []) if abs(c[0] - int(at)) < 1800),
                   key=lambda c: abs(c[0] - int(at)), default=None)] if c}
         u = an.replace(" ", "-").lower()
-        match = next(iter(m.values()), None)
+        match = min(m.values(), key=lambda c: abs(c[0] - int(at)), default=None)
         actor = agent(match[1], match[3], u) if match else local(u)
         record(mirror=False, type="edit", actor=actor, commit=H, edits=[
             {"file": f, "patch": "", "tool_call_id": m[f][2] if f in m else None,

@@ -229,7 +229,8 @@ def prompt_line(l, harness="claude"):
             isinstance(b, dict) and b.get("type") == "tool_result"
             for b in (content if isinstance(content, list) else []))
     p = obj.get("payload") or {}
-    if obj.get("type") == "event_msg" and p.get("type") == "user_message": return 1
+    if obj.get("type") == "event_msg":
+        return {"user_message": 1, "task_started": 3}.get(p.get("type"), 0)
     return 2 * (obj.get("type") == "response_item" and p.get("type") == "message"
                 and p.get("role") == "user")
 def prompt_boundary(sid, payload, harness="claude"):
@@ -245,8 +246,11 @@ def prompt_boundary(sid, payload, harness="claude"):
         if not l: break
         k = prompt_line(l, harness)
         if k: prompts.append((pos, k))
-    end = f.tell()  # codex mirrors one prompt in two record kinds: count only one of them
-    if {1, 2} <= {k for _, k in prompts}: prompts = [x for x in prompts if x[1] == 1]
+    end = f.tell(); kinds = {k for _, k in prompts}
+    # codex mirrors one prompt across records: prefer task_started (the earliest, as
+    # scan_codex_transcript does), else count just one of the user-record kinds
+    if 3 in kinds: prompts = [x for x in prompts if x[1] == 3]
+    elif {1, 2} <= kinds: prompts = [x for x in prompts if x[1] == 1]
     # the first scan expects the current turn's own prompt in the window
     for boundary, _ in (prompts if "soffset" in t else prompts[1:]):
         squash_turn(sid, harness)  # close the previous turn before this turn's first commit

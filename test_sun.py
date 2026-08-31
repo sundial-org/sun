@@ -357,6 +357,35 @@ class SunTest(unittest.TestCase):
                          [f"sun: {codex_agent} turn 2 (1 tool calls)",
                           f"sun: {codex_agent} turn 1 (1 tool calls)"])
 
+    def test_codex_task_started_marks_chunk_boundary(self):
+        run("init", "--codex", "--no-instructions")
+        sid, tp = "codex-task-sess", os.path.join(self.codex, "t.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
+        user = ('{"type": "event_msg", "payload": {"type": "task_started"}}\n'
+                '{"type": "response_item", "payload": {"type": "message", '
+                '"role": "user", "content": "%s"}}\n'  # canonical record before its mirror
+                '{"type": "event_msg", "payload": {"type": "user_message", '
+                '"message": "%s"}}\n')
+        with open(tp, "a") as f:
+            f.write(user % ("one", "one"))
+        for i, fn in enumerate(("a.ts", "b.ts")):
+            inp = {"file_path": os.path.abspath(fn)}
+            hook("PreToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            write(fn, f"{i}\n")
+            hook("PostToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            if not i:
+                with open(tp, "a") as f:
+                    f.write(user % ("two", "two"))
+        hook("Stop", sid, harness="codex", transcript_path=tp)
+        self.assertIn("turn 2 (1 tool calls)", self.head_subject())
+        one = self.git("cat-file", "blob",
+                       f"refs/sun/sessions/emma/{sid}:turn-0001.jsonl")
+        self.assertIn("one", one)
+        self.assertNotIn("two", one)  # turn 2's canonical record starts its own chunk
+
     def test_bash_tool_edits_are_agents(self):
         hook("UserPromptSubmit")
         hook("PreToolUse", tool_name="Bash", tool_input={"command": "sed"})

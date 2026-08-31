@@ -126,10 +126,54 @@ class SunTest(unittest.TestCase):
         for event in sun.CODEX_HOOK_EVENTS:
             self.assertIn("sun hook --harness codex",
                           [h["command"] for g in cfg["hooks"][event] for h in g["hooks"]])
-        self.assertEqual(sun.configured_harness(), "codex")
+        self.assertEqual(sun.configured_harnesses(), ["codex"])
         self.assertIn(sun.CODEX_LINE, open("AGENTS.md").read())
         run("init", "--codex", "--instructions")
         self.assertEqual(len(json.load(open(".codex/hooks.json"))["hooks"]["Stop"]), 1)
+
+    def test_init_installs_all_detected_harnesses(self):
+        # setUp's SUN_PROJECTS + SUN_CODEX_SESSIONS dirs exist -> both detected
+        self.assertEqual(sun.configured_harnesses(), ["claude", "codex"])
+        for path, cmd in ((".claude/settings.json", "sun hook"),
+                          (".codex/hooks.json", "sun hook --harness codex")):
+            cfg = json.load(open(path))
+            self.assertIn(cmd, [h["command"] for g in cfg["hooks"]["Stop"]
+                                for h in g["hooks"]])
+
+    def test_detect_harnesses(self):
+        home = tempfile.mkdtemp()
+        old = {k: os.environ.pop(k, None)
+               for k in ("HOME", "SUN_PROJECTS", "SUN_CODEX_SESSIONS")}
+        os.environ["HOME"] = home
+        try:
+            self.assertEqual(sun.detect_harnesses(), ["claude"])  # none -> default
+            os.makedirs(os.path.join(home, ".codex"))
+            self.assertEqual(sun.detect_harnesses(), ["codex"])
+            os.makedirs(os.path.join(home, ".claude"))
+            self.assertEqual(sun.detect_harnesses(), ["claude", "codex"])
+        finally:
+            for k, v in old.items():
+                os.environ.pop(k, None) if v is None else os.environ.update({k: v})
+            shutil.rmtree(home, ignore_errors=True)
+
+    def test_claude_flag_restricts_to_claude(self):
+        shutil.rmtree(".codex")  # installed by setUp's all-harness init
+        run("init", "--claude", "--no-claude-md")
+        self.assertEqual(sun.configured_harnesses(), ["claude"])
+        self.assertFalse(os.path.exists(".codex/hooks.json"))
+
+    def test_restrictive_reinit_removes_other_harness_hook(self):
+        run("init", "--claude", "--no-claude-md")  # setUp installed both
+        self.assertNotIn("sun hook", open(".codex/hooks.json").read())
+        self.assertIn("sun hook", open(".claude/settings.json").read())
+
+    def test_declined_instructions_hint_keeps_harness_flags(self):
+        out = run("init", "--codex", "--no-instructions")
+        self.assertIn("`sun init --codex --instructions`", out)
+
+    def test_old_single_harness_config_still_read(self):
+        sun.save_state("config.json", {"harness": "codex", "track_sessions": True})
+        self.assertEqual(sun.configured_harnesses(), ["codex"])
 
     # ------------------------------------------------------- local edit sync
 
@@ -409,6 +453,75 @@ class SunTest(unittest.TestCase):
             "emma/agent:codex/codex-im"))
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
         self.assertTrue(sun.refs(f"refs/sun/sessions/emma/{sid}"))
+
+    def test_dual_harness_import_attributes_codex_commits(self):
+        # both harnesses configured (setUp default): the claude pass must not
+        # backfill codex-authored commits as local before the codex index exists
+        write("src/codex.ts", "x\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "manual codex commit"], check=True)
+        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        lines = [
+            {"type": "session_meta", "timestamp": ts,
+             "payload": {"id": "codex-dual-session", "cwd": sun.root(), "source": "cli"}},
+            {"type": "response_item", "timestamp": ts, "payload": {
+                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-1",
+                "input": "*** Begin Patch\n*** Update File: src/codex.ts\n*** End Patch"}},
+        ]
+        write(os.path.join(self.codex, "rollout.jsonl"),
+              "".join(json.dumps(line) + "\n" for line in lines))
+        run("import")
+        ev = next(e for e in sun.events() if e.get("commit") ==
+                  self.git("rev-parse", "HEAD").strip())
+        self.assertEqual(ev["actor"], "emma/agent:codex/codex-du")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
+
+    def test_backfill_picks_nearest_call_across_harnesses(self):
+        write("src/both.ts", "x\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "codex-authored commit"], check=True)
+        at = int(self.git("log", "-1", "--pretty=%at").strip())
+        fmt = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
+        pdir = os.path.join(self.proj, sun.enc(sun.root()))
+        write(os.path.join(pdir, "sess-claude-far.jsonl"),  # 20 min off, indexed first
+              transcript_line(os.path.abspath("src/both.ts"), ts=fmt(at - 1200)))
+        lines = [
+            {"type": "session_meta", "timestamp": fmt(at),
+             "payload": {"id": "codex-near-session", "cwd": sun.root(), "source": "cli"}},
+            {"type": "response_item", "timestamp": fmt(at), "payload": {
+                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-1",
+                "input": "*** Begin Patch\n*** Update File: src/both.ts\n*** End Patch"}},
+        ]
+        write(os.path.join(self.codex, "near.jsonl"),
+              "".join(json.dumps(line) + "\n" for line in lines))
+        run("import")
+        ev = next(e for e in sun.events() if e.get("commit") ==
+                  self.git("rev-parse", "HEAD").strip())
+        self.assertEqual(ev["actor"], "emma/agent:codex/codex-ne")
+
+    def test_backfill_multi_file_commit_actor_is_globally_nearest(self):
+        write("a.ts", "x\n")
+        write("b.ts", "y\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "two-file commit"], check=True)
+        at = int(self.git("log", "-1", "--pretty=%at").strip())
+        fmt = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
+        pdir = os.path.join(self.proj, sun.enc(sun.root()))
+        write(os.path.join(pdir, "sess-claude-a.jsonl"),  # matches a.ts, 20 min off
+              transcript_line(os.path.abspath("a.ts"), ts=fmt(at - 1200)))
+        lines = [
+            {"type": "session_meta", "timestamp": fmt(at),
+             "payload": {"id": "codex-b-session", "cwd": sun.root(), "source": "cli"}},
+            {"type": "response_item", "timestamp": fmt(at), "payload": {
+                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-b",
+                "input": "*** Begin Patch\n*** Update File: b.ts\n*** End Patch"}},
+        ]
+        write(os.path.join(self.codex, "b.jsonl"),
+              "".join(json.dumps(line) + "\n" for line in lines))
+        run("import")
+        ev = next(e for e in sun.events() if e.get("commit") ==
+                  self.git("rev-parse", "HEAD").strip())
+        self.assertEqual(ev["actor"], "emma/agent:codex/codex-b-")
 
     # ------------------------------------------------------------------ show
 

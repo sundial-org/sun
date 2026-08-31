@@ -11,15 +11,14 @@ sessions themselves in the repo so your whole team's agents can use them.
 
 ```sh
 uv tool install git+https://github.com/sundial-org/sun
-cd your-repo && sun init           # Claude Code, the default
-cd your-repo && sun init --codex   # Codex
+cd your-repo && sun init   # sets up every harness it detects (Claude Code, Codex)
 ```
 
-`sun init` imports every Claude Code session that ever touched this repo. `sun init --codex`
-does the same for Codex sessions. Worktrees and subagents are included, and attribution is
-backfilled across existing commits. From then on, hooks keep the log current: one commit per
-agent tool call (squashed per turn), with local edits detected in between. Codex asks you to
-review and trust new project hooks through `/hooks` before it runs them.
+`sun init` imports every session that ever touched this repo, for each harness it detects
+(`--claude` or `--codex` restricts to one). Worktrees and subagents are included, and
+attribution is backfilled across existing commits. From then on, hooks keep the log current:
+one commit per agent tool call (squashed per turn), with local edits detected in between.
+Codex asks you to review and trust new project hooks through `/hooks` before it runs them.
 
 ## 1 · Analyze your past sessions
 
@@ -48,5 +47,5 @@ server needed.
 ```sh
 python3 example/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 example/demo_fresh.py  # synthetic end-to-end story -> example/demo.html
-python3 -m unittest test_sun   # 33 tests
+python3 -m unittest test_sun   # 49 tests
 ```

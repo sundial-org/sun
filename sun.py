@@ -371,10 +371,11 @@ def backfill(index):  # attribute pre-existing commits: transcript_backfill on a
     for H, an, at, files in cs:
         if H in have: continue
         tot += 1
-        m = {f: c for f in files for c in
-             [next((c for c in index.get(f, []) if abs(c[0] - int(at)) < 1800), None)] if c}
+        m = {f: c for f in files for c in  # nearest call in the window, across harnesses
+             [min((c for c in index.get(f, []) if abs(c[0] - int(at)) < 1800),
+                  key=lambda c: abs(c[0] - int(at)), default=None)] if c}
         u = an.replace(" ", "-").lower()
-        match = next(iter(m.values()), None)
+        match = min(m.values(), key=lambda c: abs(c[0] - int(at)), default=None)
         actor = agent(match[1], match[3], u) if match else local(u)
         record(mirror=False, type="edit", actor=actor, commit=H, edits=[
             {"file": f, "patch": "", "tool_call_id": m[f][2] if f in m else None,
@@ -382,23 +383,24 @@ def backfill(index):  # attribute pre-existing commits: transcript_backfill on a
             for f in files])
         att += bool(m)
     return att, tot
-def do_import(harness="claude"):
+def do_import(harnesses=("claude",)):  # index every harness first: backfill runs once
     t0, seen, index, ns, nsub = time.time(), state("imported.json", {}), {}, 0, 0
-    for path, sid, sub in transcript_sources(harness):
-        st = os.stat(path)
-        if seen.get(path) == [st.st_size, int(st.st_mtime)]:
-            continue  # idempotent: only new/changed transcripts are re-read
-        chunks, calls = scan_transcript(path, sid, harness)
-        for t, s, tid, f, cw in calls:  # strip repo root or the transcript's own cwd,
-            pre = next((p + "/" for p in (root(), os.path.realpath(root()), cw)  # clones too
-                        if p and f.startswith(p + "/")), "")
-            fr = re.sub(r"^\.claude/worktrees/[^/]+/", "", f[len(pre):].lstrip("/"))
-            index.setdefault(fr, []).append((t, s, tid, harness))
-        if cfg_track():
-            pre = f"subagents/{sub}/" if sub else ""
-            store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
-        seen[path] = [st.st_size, int(st.st_mtime)]
-        ns, nsub = ns + (not sub), nsub + bool(sub)
+    for harness in harnesses:
+        for path, sid, sub in transcript_sources(harness):
+            st = os.stat(path)
+            if seen.get(path) == [st.st_size, int(st.st_mtime)]:
+                continue  # idempotent: only new/changed transcripts are re-read
+            chunks, calls = scan_transcript(path, sid, harness)
+            for t, s, tid, f, cw in calls:  # strip repo root or the transcript's own cwd,
+                pre = next((p + "/" for p in (root(), os.path.realpath(root()), cw)  # clones too
+                            if p and f.startswith(p + "/")), "")
+                fr = re.sub(r"^\.claude/worktrees/[^/]+/", "", f[len(pre):].lstrip("/"))
+                index.setdefault(fr, []).append((t, s, tid, harness))
+            if cfg_track():
+                pre = f"subagents/{sub}/" if sub else ""
+                store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
+            seen[path] = [st.st_size, int(st.st_mtime)]
+            ns, nsub = ns + (not sub), nsub + bool(sub)
     save_state("imported.json", seen)
     att, tot = backfill(index); mirror_log()
     return (f"imported {ns} sessions, {nsub} subagents; "
@@ -447,15 +449,24 @@ def cfg_track():  # ask once; tty only, so never on hook runs; default yes
                                  input("sun: track sessions in git? [Y/n] ").strip().lower() != "n")
         save_state("config.json", cfg)
     return cfg["track_sessions"]
-def configured_harness(): return state("config.json", {}).get("harness", "claude")
+def detect_harnesses():  # every harness with state on this machine (SUN_* overrides apply)
+    hs = [h for h, home, d in (("claude", "~/.claude", projects()),
+                               ("codex", "~/.codex", codex_sessions()))
+          if os.path.isdir(os.path.expanduser(home)) or os.path.isdir(d)]
+    return hs or ["claude"]
+def configured_harnesses():
+    cfg = state("config.json", {})
+    return cfg.get("harnesses") or [cfg.get("harness", "claude")]
+hook_file = lambda h: ".claude/settings.json" if h == "claude" else ".codex/hooks.json"
+hook_cmd = lambda h: "sun hook" if h == "claude" else "sun hook --harness codex"
 def install_hooks(harness="claude"):
-    rel = (".claude/settings.json" if harness == "claude" else ".codex/hooks.json")
+    rel = hook_file(harness)
     path = os.path.join(root(), rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     cfg = jread(path, {})
     if not isinstance(cfg.setdefault("hooks", {}), dict):
         sys.exit(f"sun: unexpected 'hooks' format in {rel}")
-    command = "sun hook" if harness == "claude" else "sun hook --harness codex"
+    command = hook_cmd(harness)
     hook_events = HOOK_EVENTS if harness == "claude" else CODEX_HOOK_EVENTS
     for event in hook_events:
         group = cfg["hooks"].setdefault(event, [])
@@ -463,6 +474,16 @@ def install_hooks(harness="claude"):
             group.append({"hooks": [{"type": "command", "command": command}]})
     jwrite(path, cfg)
     return f"{harness} ({rel})"
+def remove_hooks(harness):  # a restrictive re-init un-installs the excluded harness's hook
+    path, command = os.path.join(root(), hook_file(harness)), hook_cmd(harness)
+    cfg = jread(path, {})
+    if not isinstance(cfg.get("hooks"), dict): return
+    for event in list(cfg["hooks"]):
+        for g in cfg["hooks"][event]:
+            g["hooks"] = [h for h in g.get("hooks", []) if h.get("command") != command]
+        cfg["hooks"][event] = [g for g in cfg["hooks"][event] if g.get("hooks")]
+        if not cfg["hooks"][event]: del cfg["hooks"][event]
+    jwrite(path, cfg)
 def install_push():  # travel: fetch refspec + fail-soft pre-push mirror of refs/sun/*
     if "origin" in git("remote", check=False).split():
         spec = "+refs/sun/*:refs/sun/*"
@@ -473,40 +494,48 @@ def install_push():  # travel: fetch refspec + fail-soft pre-push mirror of refs
         open(hp, "w").write('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
                             'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
         os.chmod(hp, 0o755)
-def agent_instructions(harness, choice):
-    name, line = ("CLAUDE.md", CLAUDE_LINE) if harness == "claude" else ("AGENTS.md", CODEX_LINE)
-    p = os.path.join(root(), name)
-    cur = open(p).read() if os.path.exists(p) else ""
-    if line in cur: return
+def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
+    todo = []
+    for h in harnesses:
+        name, line = ("CLAUDE.md", CLAUDE_LINE) if h == "claude" else ("AGENTS.md", CODEX_LINE)
+        p = os.path.join(root(), name)
+        cur = open(p).read() if os.path.exists(p) else ""
+        if line not in cur: todo.append((p, cur, line, name))
+    if not todo: return
     if choice is None and sys.stdin.isatty():
-        choice = input(f"sun: add one line to {name} so agents find team sessions? "
-                       "[Y/n] ").strip().lower() != "n"
+        choice = input(f"sun: add one line to {'/'.join(t[3] for t in todo)} so agents find "
+                       "team sessions? [Y/n] ").strip().lower() != "n"
     if choice:
-        open(p, "a").write(("\n" if cur and not cur.endswith("\n") else "") + line + "\n")
+        for p, cur, line, _ in todo:
+            open(p, "a").write(("\n" if cur and not cur.endswith("\n") else "") + line + "\n")
     else:
-        print("sun: run `sun init --instructions" + (" --codex" if harness == "codex" else "") +
-              "` later to enable team session sharing")
+        print(f"sun: run `sun init{flags} --instructions` later to enable team session sharing")
 def cmd_init(a):
     if quiet("git", "rev-parse", "--git-dir").returncode: sh("git", "init", "-q")
     os.makedirs(os.path.join(root(), ".git", "sun"), exist_ok=True)
-    harness = "codex" if a.codex else "claude"
-    cfg = state("config.json", {}); cfg["harness"] = harness; save_state("config.json", cfg)
+    explicit = [h for h, f in (("claude", a.claude), ("codex", a.codex)) if f]
+    harnesses = explicit or detect_harnesses()
+    cfg = state("config.json", {}); cfg.pop("harness", None)
+    cfg["harnesses"] = harnesses; save_state("config.json", cfg)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
         git("fetch", "-q", "origin", "+refs/sun/*:refs/sun/*", check=False)
     p, sha = os.path.join(sun_dir(), "events.jsonl"), git(  # rebuild cache from our own ref
         "rev-parse", "-q", "--verify", f"refs/sun/log/{user()}", check=False).strip()
     if sha and not os.path.exists(p): open(p, "w").write(git("cat-file", "blob", sha))
-    installed = install_hooks(harness); install_push()
+    installed = ", ".join(install_hooks(h) for h in harnesses); install_push()
+    for h in ("claude", "codex"):
+        if explicit and h not in explicit: remove_hooks(h)
     if quiet("git", "rev-parse", "HEAD").returncode or changed_files():
         c = commit_files(["."], "sun: initial state", local())
         record(type="init", actor=local(), commit=c, edits=[])
-    print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harness)}")
-    agent_instructions(harness, a.instructions)
+    print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
+    agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
     cmd_viz(argparse.Namespace(n=0, output=os.path.join(sun_dir(), "viz.html")))
     print(f"open file://{sun_dir()}/viz.html to see your history")
 def cmd_sync(a):
     ev = sync(); print(f"sun: committed local edits as op {ev['id']}" if ev else "sun: nothing to sync")
-def cmd_import(a): print("sun: " + do_import(configured_harness()))
+def cmd_import(a):
+    print("sun: " + do_import(configured_harnesses()))
 def cmd_update(a):  # uv re-resolves the git source to the latest commit
     try: p = quiet("uv", "tool", "upgrade", "sun")
     except OSError: p = None
@@ -606,8 +635,10 @@ def main(argv=None):
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
         ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log"),
         ("update", "update sun to the latest version")]}
+    ps["init"].add_argument("--claude", action="store_true",
+                            help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
-                            help="install Codex hooks instead of Claude hooks")
+                            help="set up Codex only (default: every detected harness)")
     ps["init"].add_argument("--instructions", "--claude-md", dest="instructions",
                             action="store_true", default=None)
     ps["init"].add_argument("--no-instructions", "--no-claude-md", dest="instructions",

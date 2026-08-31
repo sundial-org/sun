@@ -300,14 +300,17 @@ class SunTest(unittest.TestCase):
         hook("UserPromptSubmit", transcript_path=tp)
         write(tp, '{"type": "user", "message": {"content": "one"}}\n')
         self.tool_call("session12345", "a.ts", "1\n", 0)
-        with open(tp, "a") as f:  # queued prompt that mentions tool_result in its text
-            f.write('{"type": "user", "message": {"content": "check the tool_result"}}\n')
+        with open(tp, "a") as f:  # queued message riding on a tool_result record
+            f.write('{"type": "user", "message": {"content": [{"type": "tool_result", '
+                    '"content": "ok"}, {"type": "text", "text": "now b"}]}}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
         hook("Stop", transcript_path=tp)
         self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 2 (1 tool calls)")
         real = ('{"type": "user", "message": {"content": '
                 '[{"type": "tool_result", "content": "ok"}]}}\n')
-        self.assertFalse(sun.prompt_line(real))  # actual tool results are not prompts
+        self.assertFalse(sun.prompt_line(real))  # tool-result-only records are not prompts
+        self.assertTrue(sun.prompt_line(  # merely mentioning tool_result still is one
+            '{"type": "user", "message": {"content": "check the tool_result"}}\n'))
 
     def test_queued_prompt_gets_its_own_turn(self):
         # neither Stop nor UserPromptSubmit fires between the two turns; the second

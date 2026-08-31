@@ -223,11 +223,10 @@ def squash_turn(sid, harness="claude"):
 def prompt_line(l, harness="claude"):
     try: obj = json.loads(l)  # both harnesses write one JSON record per line
     except ValueError: return False
-    if harness == "claude":  # a user record whose content is a tool_result is not a prompt
-        content = (obj.get("message") or {}).get("content")
-        return obj.get("type") == "user" and not any(
-            isinstance(b, dict) and b.get("type") == "tool_result"
-            for b in (content if isinstance(content, list) else []))
+    if harness == "claude":  # a user record of only tool_results is not a prompt, but a
+        content = (obj.get("message") or {}).get("content")  # queued message may ride
+        return obj.get("type") == "user" and not (isinstance(content, list) and all(
+            isinstance(b, dict) and b.get("type") == "tool_result" for b in content))
     p = obj.get("payload") or {}
     if obj.get("type") == "event_msg":
         return {"user_message": 1, "task_started": 3}.get(p.get("type"), 0)

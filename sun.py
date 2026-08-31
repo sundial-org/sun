@@ -614,6 +614,61 @@ def cmd_show(a):
         pid = patch_id(H); evs = [e for e in events() if pid and e.get("patch_id") == pid]
     if not evs: print("no sun operations recorded for this commit")
     for e in evs: print(json.dumps(e, indent=2))
+def blame_context(chunk, tid):  # first user prompt + last agent text before tool call `tid`
+    prompt = ctx = tool = None
+    for obj in parse_events(chunk):
+        p = obj.get("payload") or {}
+        m = obj.get("message") or (p if p.get("type") == "message" else {})
+        if p.get("type") in ("function_call", "custom_tool_call") and \
+                tid in (p.get("call_id"), p.get("id")):
+            tool = p.get("name")
+        if p.get("type") == "user_message" and not prompt: prompt = p.get("message")
+        c, role = m.get("content"), m.get("role")
+        for b in [{"type": "text", "text": c}] if isinstance(c, str) else \
+                (c if isinstance(c, list) else []):
+            if not isinstance(b, dict): continue
+            if b.get("type") == "tool_use" and b.get("id") == tid: tool = b.get("name")
+            elif b.get("type") in ("text", "input_text") and role == "user" and not prompt:
+                prompt = b.get("text")
+            elif b.get("type") in ("text", "output_text") and role == "assistant":
+                ctx = b.get("text")
+        if tool: break
+    return prompt, ctx, tool
+def cmd_blame(a):
+    maybe_sync(); f = rel_to_root(a.file)
+    out = git("blame", "--porcelain", "-L", f"{a.line},{a.line}", "--", f)
+    H = out.split(None, 1)[0]
+    if H == "0" * 40: sys.exit(f"sun: {f}:{a.line} is uncommitted")
+    evs = [e for e in events() if e.get("commit") == H]
+    if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
+        pid = patch_id(H); evs = [e for e in events() if pid and e.get("patch_id") == pid]
+    ev = next((e for e in evs if any(ed.get("file") == f for ed in e.get("edits") or [])),
+              evs[0] if evs else None)
+    print(f"{f}:{a.line}  {H[:8]}  " + (f"{ev['actor']}"
+          + (f" {ev['turn']}" if ev.get("turn") else "") + f"  op {ev['id']}" if ev else "untracked"))
+    print("> " + next((l[1:] for l in out.splitlines() if l.startswith("\t")), ""))
+    if not ev: return print("no sun operations recorded for this commit")
+    if "/agent:" not in ev["actor"]:
+        return print(f"human edit ({ev['actor']}): no conversation\n" + json.dumps(ev, indent=2))
+    u, sid8, tcs = ev["actor"].split("/", 1)[0], ev["actor"].rsplit("/", 1)[1], ev.get("tool_calls") or []
+    mine = [tc for tc in tcs if f in ((tc.get("input") or {}).get("files")
+                                      or [(tc.get("input") or {}).get("file")])]
+    tid = next((ed["tool_call_id"] for ed in ev["edits"]
+                if ed.get("file") == f and ed.get("tool_call_id")), None) \
+        or next((tc["id"] for tc in mine + tcs if tc.get("id")), None)
+    hit = next(((sid, ref) for sid, ru, ref in session_rows()
+                if ru == u and sid.startswith(sid8)), None)
+    if not (tid and hit): return print("no transcript stored for this edit")
+    sid, ref = hit
+    for n in sorted(git("ls-tree", "-r", "--name-only", ref).splitlines()):
+        chunk = git("cat-file", "blob", f"{ref}:{n}")
+        if tid in chunk: break
+    else: return print(f"tool call {tid} not found in session {sid}")
+    prompt, ctx, tool = blame_context(chunk, tid)
+    print(f"session {sid} ({n}):")
+    if prompt: print(f"user: {prompt.strip()}")
+    if ctx: print(f"agent: {ctx.strip()}")
+    print(f"[{tool or '?'} {tid}]")
 def cmd_undo(a):
     maybe_sync(); actor = local()
     if a.commit is not None:
@@ -687,7 +742,8 @@ def main(argv=None):
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
         ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log"),
         ("update", "update sun to the latest version"),
-        ("export", "dump history as fine-tuning JSONL (prompt + tool_calls + edits per turn)")]}
+        ("export", "dump history as fine-tuning JSONL (prompt + tool_calls + edits per turn)"),
+        ("blame", "the conversation behind a file:line")]}
     ps["init"].add_argument("--claude", action="store_true",
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
@@ -704,11 +760,12 @@ def main(argv=None):
     ps["undo"].add_argument("--commit", nargs="?", const="HEAD", default=None, metavar="HASH")
     ps["viz"].add_argument("-o", "--output", default=None); ps["viz"].add_argument("-n", type=int, default=0)
     ps["export"].add_argument("-o", "--output", default=None)
+    ps["blame"].add_argument("file"); ps["blame"].add_argument("line", type=int)
     a = ap.parse_args(argv)
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         os.chdir(root()); sun_dir(); a.lock = lock()
     {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
      "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
-     "gc": cmd_gc, "update": cmd_update, "export": cmd_export}[a.cmd](a)
+     "gc": cmd_gc, "update": cmd_update, "export": cmd_export, "blame": cmd_blame}[a.cmd](a)
 if __name__ == "__main__":
     main()

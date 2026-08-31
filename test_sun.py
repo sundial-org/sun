@@ -547,6 +547,85 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "commit", "-q", "-m", "squashed"], check=True)
         self.assertIn(op, run("show", "HEAD"))
 
+    # ----------------------------------------------------------------- blame
+
+    def blame_turn(self, tp, edits, prompt):
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as fh:
+            fh.write(json.dumps({"type": "user",
+                                 "message": {"role": "user", "content": prompt}}) + "\n")
+        for i, (f, text, say) in enumerate(edits):
+            with open(tp, "a") as fh:
+                fh.write(json.dumps({"type": "assistant", "message": {
+                    "role": "assistant", "content": [
+                        {"type": "text", "text": say},
+                        {"type": "tool_use", "id": f"tool{i}", "name": "Write",
+                         "input": {"file_path": os.path.abspath(f)}}]}}) + "\n")
+            self.tool_call("session12345", f, text, i)
+        hook("Stop", transcript_path=tp)
+
+    def test_blame_finds_originating_prompt(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("foo.ts", "export const x = 1\n", "Creating foo.ts now.")],
+                        "add an x constant")
+        out = run("blame", "foo.ts", "1")
+        self.assertIn(AGENT, out)
+        self.assertIn("user: add an x constant", out)
+        self.assertIn("agent: Creating foo.ts now.", out)
+        self.assertIn("[Write tool0]", out)
+
+    def test_blame_squashed_turn_picks_matching_tool_call(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."), ("b.ts", "2\n", "Then b.ts.")],
+                        "make two files")
+        self.assertIn("(2 tool calls)", self.head_subject())  # squashed turn
+        out = run("blame", "b.ts", "1")
+        self.assertIn("user: make two files", out)
+        self.assertIn("agent: Then b.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_codex_transcript(self):
+        run("init", "--codex", "--no-instructions")
+        sid, tp = "codex-blame-session", os.path.join(self.codex, "live.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
+        patch = "*** Begin Patch\n*** Add File: c.ts\n+x\n*** End Patch"
+        hook("PreToolUse", sid, harness="codex", tool_name="apply_patch",
+             tool_input={"command": patch}, tool_use_id="call-9")
+        write("c.ts", "x\n")
+        lines = [
+            {"type": "response_item", "payload": {"type": "message", "role": "user",
+             "content": [{"type": "input_text", "text": "please add c.ts"}]}},
+            {"type": "response_item", "payload": {"type": "message", "role": "assistant",
+             "content": [{"type": "output_text", "text": "Adding c.ts."}]}},
+            {"type": "response_item", "payload": {"type": "custom_tool_call",
+             "name": "apply_patch", "call_id": "call-9", "input": patch}}]
+        write(tp, "".join(json.dumps(line) + "\n" for line in lines))
+        hook("PostToolUse", sid, harness="codex", tool_name="apply_patch",
+             tool_input={"command": patch}, tool_use_id="call-9")
+        hook("Stop", sid, harness="codex", transcript_path=tp)
+        out = run("blame", "c.ts", "1")
+        self.assertIn("agent:codex/codex-bl", out)
+        self.assertIn("user: please add c.ts", out)
+        self.assertIn("agent: Adding c.ts.", out)
+        self.assertIn("[apply_patch call-9]", out)
+
+    def test_blame_local_edit(self):
+        write("a.txt", "v1\n")
+        run("sync")
+        out = run("blame", "a.txt", "1")
+        self.assertIn("emma/local", out)
+        self.assertIn("human edit", out)
+
+    def test_blame_untracked_commit(self):
+        write("x.txt", "1\n")
+        subprocess.run(["git", "add", "-A"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
+        out = run("blame", "x.txt", "1")
+        self.assertIn("untracked", out)
+        self.assertIn("no sun operations recorded", out)
+
     # ------------------------------------------------------------------ undo
 
     def test_undo_latest_op(self):

@@ -39,8 +39,10 @@ def changed_files():
             git("-c", "core.quotepath=false", "status", "--porcelain", "-uall").splitlines()]
 def commit_files(files, message, author):
     git("add", "-A", "--", *files, check=False)  # pathspec may legitimately match nothing
-    git("-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "--allow-empty",
-        "--author", f"{author} <sun@sun>", "-m", message)
+    c = ("-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "--allow-empty",
+         "--author", f"{author} <sun@sun>", "-m", message)
+    # --only keeps unrelated pre-staged paths out; empty repo matches no pathspec -> plain commit
+    quiet("git", *c, "--only", "--", *files).returncode and git(*c)
     return head()
 patch_id = lambda c: (git("patch-id", "--stable", check=False,
                           input=git("show", "--format=", c, check=False)).split() or [None])[0]
@@ -149,8 +151,8 @@ def char_edits(patch):  # character-level ranges for paired -/+ lines of a unifi
         elif not l.startswith("\\") and not l.startswith("diff "):
             o, n, minus = o + 1, n + 1, []
     return out
-def sync():  # commit unclaimed changes as <user>/local
-    exclude = {f for s in state("active.json", {}).values() for f in s["files"]}
+def sync(exclude=()):  # commit unclaimed changes as <user>/local
+    exclude = set(exclude) | {f for s in state("active.json", {}).values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
     if not files: return None
     pre, actor = head(), local()
@@ -159,8 +161,8 @@ def sync():  # commit unclaimed changes as <user>/local
     return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
                   edits=[{"file": f, "patch": p[f], "char_edits": char_edits(p[f]),
                           "attribution": {"method": "hook"}} for f in files])
-def maybe_sync():  # skipped while an agent tool call is in flight
-    state("active.json", {}) or sync()
+def maybe_sync(exclude=()):  # skipped while an agent tool call is in flight
+    state("active.json", {}) or sync(exclude)
 def finish_call(sid, active, payload, harness="claude"):
     # PostToolUse: the pre->post diff is the agent's tool call
     st = (active.pop(call_key(sid, payload, harness), None)  # or an id-less claim
@@ -365,7 +367,8 @@ def scan_transcript(path, sid, harness="claude"):
 def backfill(index):  # attribute pre-existing commits: transcript_backfill on a files+time
     # window match, else <author>/local with method import; commits with events are skipped
     have, att, tot, cs, cur = {e.get("commit") for e in events()}, 0, 0, [], None
-    for l in git("log", "--name-only", "--pretty=#%H\t%an\t%at", check=False).splitlines():
+    # -c: merges list their conflict-resolution files (result differs from every parent)
+    for l in git("log", "--name-only", "-c", "--pretty=#%H\t%an\t%at", check=False).splitlines():
         if l.startswith("#"): cur = l[1:].split("\t") + [[]]; cs.append(cur)
         elif l.strip() and cur: cur[3].append(l)
     for H, an, at, files in cs:
@@ -437,6 +440,55 @@ def cmd_sessions(a):
     for sid, u, ref in rows:
         if pat and not re.search(pat, session_text(ref)): continue
         print(f"{sid}  {u}  {len(git('ls-tree', '--name-only', ref).splitlines())} turns")
+def chunk_prompt(text):  # first user message of a stored transcript chunk (claude or codex)
+    for o in parse_events(text):
+        m, p = o.get("message") or {}, o.get("payload") or {}
+        if o.get("type") == "user" and isinstance(m, dict):
+            c = m.get("content")
+            t = c if isinstance(c, str) else "\n".join(
+                b.get("text", "") for b in c or []
+                if isinstance(b, dict) and b.get("type") == "text")
+            if t: return t
+        if o.get("type") == "event_msg" and p.get("type") == "user_message":
+            return p.get("message")
+        if o.get("type") == "response_item" and p.get("type") == "message" \
+                and p.get("role") == "user":
+            return "".join(b.get("text", "") for b in p.get("content") or []
+                           if isinstance(b, dict))
+def stdout_file():  # file backing a redirected stdout (`sun export > dump.jsonl`)
+    try:
+        p = (fcntl.fcntl(1, fcntl.F_GETPATH, bytes(1024)).rstrip(b"\0").decode()
+             if hasattr(fcntl, "F_GETPATH") else os.readlink("/proc/self/fd/1"))
+        return [rel_to_root(p)] if os.path.isfile(p) else []
+    except OSError: return []
+def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt paired with edits
+    maybe_sync([rel_to_root(a.output)] if a.output else stdout_file())  # never re-ingest our dump
+    rows, evs, merged = session_rows(), events(), {}
+    squashed = {i for e in evs for i in e.get("squashes", [])}
+    for e in evs:  # squashed calls and overlay re-records are subsumed by their turn events
+        if e.get("type") not in ("edit", "undo") or e["id"] in squashed or "overlay_of" in e \
+                or not e.get("edits"): continue
+        key = (e["actor"], e["turn"]) if e.get("turn") else e["id"]  # unsquashed turns regroup
+        m = merged.setdefault(key, {**e, "tool_calls": e.get("tool_calls", [])[:],
+                                    "edits": e["edits"][:]})
+        if m["id"] != e["id"]: m["tool_calls"] += e.get("tool_calls", []); m["edits"] += e["edits"]
+    out = open(a.output, "w") if a.output else sys.stdout
+    for e in merged.values():
+        sid = prompt = None
+        m = re.match(r"([^/]+)/agent:[^/]+/(.+)", e["actor"])
+        hit = m and next(((s, r) for s, u, r in rows
+                          if u == m.group(1) and s.startswith(m.group(2))), None)
+        if hit:
+            sid, n = hit[0], int(e.get("turn", "turn0")[4:])
+            prompt = n and chunk_prompt(git("cat-file", "blob",
+                                            f"{hit[1]}:turn-{n:04d}.jsonl", check=False)) or None
+        out.write(json.dumps({"timestamp": e["timestamp"], "actor": e["actor"], "session": sid,
+                              "turn": e.get("turn"), "prompt": prompt,
+                              "tool_calls": e["tool_calls"],
+                              "edits": [{"file": d["file"], "patch": d["patch"] or git(
+                                  "show", "--format=", e.get("commit") or "", "--", d["file"],
+                                  check=False)} for d in e["edits"]]}) + "\n")
+    if a.output: out.close(); print(f"sun: exported to {a.output}")
 def cmd_gc(a):
     old = [r for r, sha in refs("refs/sun/sessions/")
            if int(git("show", "-s", "--format=%ct", sha).strip()) < time.time() - a.older_than * 86400]
@@ -634,7 +686,8 @@ def main(argv=None):
         ("import", "re-import sessions + backfill attribution"), ("gc", "drop session refs older than N days"),
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
         ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log"),
-        ("update", "update sun to the latest version")]}
+        ("update", "update sun to the latest version"),
+        ("export", "dump history as fine-tuning JSONL (prompt + tool_calls + edits per turn)")]}
     ps["init"].add_argument("--claude", action="store_true",
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
@@ -650,11 +703,12 @@ def main(argv=None):
     ps["undo"].add_argument("--op", nargs="?", const="", default=None, metavar="ID")
     ps["undo"].add_argument("--commit", nargs="?", const="HEAD", default=None, metavar="HASH")
     ps["viz"].add_argument("-o", "--output", default=None); ps["viz"].add_argument("-n", type=int, default=0)
+    ps["export"].add_argument("-o", "--output", default=None)
     a = ap.parse_args(argv)
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         os.chdir(root()); sun_dir(); a.lock = lock()
     {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
      "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
-     "gc": cmd_gc, "update": cmd_update}[a.cmd](a)
+     "gc": cmd_gc, "update": cmd_update, "export": cmd_export}[a.cmd](a)
 if __name__ == "__main__":
     main()

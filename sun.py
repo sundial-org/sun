@@ -220,20 +220,35 @@ def squash_turn(sid, harness="claude"):
     for e in ops:  # local overlays inside the agent's commits follow the squash
         if e not in mine:
             record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"], overlay_of=e["id"])
+def prompt_line(l, harness="claude"):
+    if harness == "claude":
+        return b"tool_result" not in l and (b'"type":"user"' in l or b'"type": "user"' in l)
+    try: obj = json.loads(l)  # codex rollouts encode user messages as structured records
+    except ValueError: return False
+    p = obj.get("payload") or {}
+    return ((obj.get("type") == "event_msg" and p.get("type") == "user_message") or
+            (obj.get("type") == "response_item" and p.get("type") == "message"
+             and p.get("role") == "user"))
 def prompt_boundary(sid, payload, harness="claude"):
     # PreToolUse: a prompt can reach the transcript with no hook between turns (queued
     # message, missed Stop); a user line past the first scan means a new turn started
     turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
     tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
     if not (t and tp and os.path.exists(tp)): return
-    f = open(tp, errors="replace"); scanned = "soffset" in t
+    f = open(tp, "rb"); scanned, boundary = "soffset" in t, None
     f.seek(t.get("soffset", t.get("toffset", 0)))
-    new = sum("tool_result" not in l and ('"type":"user"' in l or '"type": "user"' in l)
-              for l in f)
-    if scanned and new:
+    while True:
+        pos, l = f.tell(), f.readline()
+        if not l: break
+        if boundary is None and prompt_line(l, harness): boundary = pos
+    end = f.tell()
+    if scanned and boundary is not None:
         squash_turn(sid, harness)  # close the previous turn before this turn's first commit
-        t.update(n=t["n"] + 1, start=head())
-    t["soffset"] = f.tell(); turns[session_key(sid, harness)] = t
+        f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
+        if data and cfg_track():  # ...and store its transcript slice as its own chunk
+            store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
+        t.update(n=t["n"] + 1, start=head(), toffset=boundary)
+    t["soffset"] = end; turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)
 def stop_chunk(sid, payload, harness="claude"):
     # Stop: append this turn's transcript slice to the session ref

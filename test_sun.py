@@ -271,6 +271,36 @@ class SunTest(unittest.TestCase):
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
+        ref = "refs/sun/sessions/emma/session12345"  # one transcript chunk per turn
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn("one", self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
+        self.assertIn("two", self.git("cat-file", "blob", f"{ref}:turn-0002.jsonl"))
+
+    def test_codex_queued_prompt_gets_its_own_turn(self):
+        run("init", "--codex", "--no-instructions")
+        sid, tp = "codex-queued-sess", os.path.join(self.codex, "q.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
+        user = ('{"type": "event_msg", "payload": {"type": "user_message", '
+                '"message": "%s"}}\n')
+        with open(tp, "a") as f:
+            f.write(user % "one")
+        for i, fn in enumerate(("a.ts", "b.ts")):
+            inp = {"file_path": os.path.abspath(fn)}
+            hook("PreToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            write(fn, f"{i}\n")
+            hook("PostToolUse", sid, harness="codex", tool_name="Write",
+                 tool_input=inp, tool_use_id=f"t{i}")
+            if not i:  # queued mid-turn: no Stop/UserPromptSubmit before b.ts
+                with open(tp, "a") as f:
+                    f.write(user % "two")
+        hook("Stop", sid, harness="codex", transcript_path=tp)
+        codex_agent = "emma/agent:codex/codex-qu"
+        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+                         [f"sun: {codex_agent} turn 2 (1 tool calls)",
+                          f"sun: {codex_agent} turn 1 (1 tool calls)"])
 
     def test_bash_tool_edits_are_agents(self):
         hook("UserPromptSubmit")

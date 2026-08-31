@@ -624,6 +624,27 @@ class SunTest(unittest.TestCase):
         self.assertIn("agent: Second script.", out)
         self.assertIn("[Bash tool1]", out)
 
+    def test_blame_identical_lines_resolve_by_position(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("f.py", "pass\n", "First write."),
+                             ("f.py", "pass\npass\n", "Second write.")], "two passes")
+        out = run("blame", "f.py", "1")
+        self.assertIn("agent: First write.", out)
+        self.assertIn("[Write tool0]", out)
+        out = run("blame", "f.py", "2")
+        self.assertIn("agent: Second write.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_follows_renames(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."), ("b.ts", "2\n", "Then b.ts.")],
+                        "make two files")
+        subprocess.run(["git", "mv", "b.ts", "c.ts"], check=True)
+        run("sync")
+        out = run("blame", "c.ts", "1")
+        self.assertIn("agent: Then b.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
     def test_blame_codex_transcript(self):
         run("init", "--codex", "--no-instructions")
         sid, tp = "codex-blame-session", os.path.join(self.codex, "live.jsonl")

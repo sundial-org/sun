@@ -637,32 +637,35 @@ def blame_context(chunk, tid):  # first user prompt + last agent text before too
 def cmd_blame(a):
     maybe_sync(); f = rel_to_root(a.file)
     out = git("blame", "--porcelain", "-L", f"{a.line},{a.line}", "--", f)
-    H = out.split(None, 1)[0]
+    H, orig = out.split()[:2]  # originating commit + the line's number in it
     if H == "0" * 40: sys.exit(f"sun: {f}:{a.line} is uncommitted")
-    text = next((l[1:] for l in out.splitlines() if l.startswith("\t")), "")
-    adds = lambda e: any(ed.get("file") == f and "+" + text in  # event's patch adds the line
-                         (ed.get("patch") or "").splitlines() for ed in e.get("edits") or [])
+    of = next((l[9:] for l in out.splitlines() if l.startswith("filename ")), f)  # pre-rename path
+    touches = lambda e: any(ed.get("file") == of for ed in e.get("edits") or [])
     all_ev = events()
     evs = [e for e in all_ev if e.get("commit") == H]
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
         pid = patch_id(H); evs = [e for e in all_ev if pid and e.get("patch_id") == pid]
-    ev = next((e for e in evs if e.get("overlay_of") and adds(e)),  # local overlay owns its lines
-              next((e for e in evs if any(ed.get("file") == f for ed in e.get("edits") or [])),
-                   evs[0] if evs else None))
+    ev = next((e for e in evs if e.get("overlay_of") and touches(e)),  # overlay owns its lines
+              next((e for e in evs if touches(e)), evs[0] if evs else None))
+    sq = next((e for e in evs if e.get("squashes")), None)
+    if sq:  # re-blame the preserved per-call commits: exact call + actor by line position
+        by_id = {e["id"]: e for e in all_ev}
+        tip = next((by_id[i].get("commit") for i in reversed(sq["squashes"]) if i in by_id), None)
+        o = tip and quiet("git", "blame", "--porcelain", "-L", f"{orig},{orig}", tip, "--", of)
+        c = o and not o.returncode and o.stdout and o.stdout.split(None, 1)[0]
+        ev = next((e for e in all_ev if e.get("commit") == c and touches(e)), ev)
     print(f"{f}:{a.line}  {H[:8]}  " + (f"{ev['actor']}"
           + (f" {ev['turn']}" if ev.get("turn") else "") + f"  op {ev['id']}" if ev else "untracked"))
-    print("> " + text)
+    print("> " + next((l[1:] for l in out.splitlines() if l.startswith("\t")), ""))
     if not ev: return print("no sun operations recorded for this commit")
     if "/agent:" not in ev["actor"]:
         return print(f"human edit ({ev['actor']}): no conversation\n" + json.dumps(ev, indent=2))
     u, sid8, tcs = ev["actor"].split("/", 1)[0], ev["actor"].rsplit("/", 1)[1], ev.get("tool_calls") or []
-    by_id = {e["id"]: e for e in all_ev}  # squashed per-call events map file -> tool call
-    calls = [by_id[i] for i in ev.get("squashes") or [] if i in by_id][::-1]  # last call wins
-    mine = [tc for tc in tcs if f in ((tc.get("input") or {}).get("files")
-                                      or [(tc.get("input") or {}).get("file")])]
-    tid = next((ed["tool_call_id"] for e in [ev] + [c for c in calls if adds(c)] + calls
-                for ed in e.get("edits") or [] if ed.get("file") == f and ed.get("tool_call_id")),
-               None) or next((tc["id"] for tc in mine + tcs if tc.get("id")), None)
+    mine = [tc for tc in tcs if of in ((tc.get("input") or {}).get("files")
+                                       or [(tc.get("input") or {}).get("file")])]
+    tid = next((ed["tool_call_id"] for ed in ev.get("edits") or []
+                if ed.get("file") == of and ed.get("tool_call_id")), None) \
+        or next((tc["id"] for tc in mine + tcs if tc.get("id")), None)
     hit = next(((sid, ref) for sid, ru, ref in session_rows()
                 if ru == u and sid.startswith(sid8)), None)
     if not (tid and hit): return print("no transcript stored for this edit")

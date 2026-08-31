@@ -244,15 +244,38 @@ class SunTest(unittest.TestCase):
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
 
     def test_missed_stop_squashes_turn_on_next_prompt(self):
-        hook("UserPromptSubmit")
+        tp = os.path.join(self.proj, "missed.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"turn":1}\n')
         self.tool_call("session12345", "a.ts", "1\n", 0)  # interrupted: Stop never fires
-        hook("UserPromptSubmit")
+        hook("UserPromptSubmit", transcript_path=tp)
         self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (1 tool calls)")
+        with open(tp, "a") as f:
+            f.write('{"turn":2}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
-        hook("Stop")
+        hook("Stop", transcript_path=tp)
         self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
+        ref = "refs/sun/sessions/emma/session12345"  # neither turn's transcript is lost
+        self.assertEqual(self.git("ls-tree", "-r", "--name-only", ref).split(),
+                         ["turn-0001.jsonl", "turn-0002.jsonl"])
+        self.assertIn('{"turn":1}', self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
+
+    def test_prompt_mentioning_tool_result_is_a_boundary(self):
+        tp = os.path.join(self.proj, "tr.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        with open(tp, "a") as f:  # queued prompt that mentions tool_result in its text
+            f.write('{"type": "user", "message": {"content": "check the tool_result"}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 2 (1 tool calls)")
+        real = ('{"type": "user", "message": {"content": '
+                '[{"type": "tool_result", "content": "ok"}]}}\n')
+        self.assertFalse(sun.prompt_line(real))  # actual tool results are not prompts
 
     def test_queued_prompt_gets_its_own_turn(self):
         # neither Stop nor UserPromptSubmit fires between the two turns; the second

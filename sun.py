@@ -220,11 +220,15 @@ def squash_turn(sid, harness="claude"):
     for e in ops:  # local overlays inside the agent's commits follow the squash
         if e not in mine:
             record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"], overlay_of=e["id"])
+    return c
 def prompt_line(l, harness="claude"):
-    if harness == "claude":
-        return b"tool_result" not in l and (b'"type":"user"' in l or b'"type": "user"' in l)
-    try: obj = json.loads(l)  # codex rollouts encode user messages as structured records
+    try: obj = json.loads(l)  # both harnesses write one JSON record per line
     except ValueError: return False
+    if harness == "claude":  # a user record whose content is a tool_result is not a prompt
+        content = (obj.get("message") or {}).get("content")
+        return obj.get("type") == "user" and not any(
+            isinstance(b, dict) and b.get("type") == "tool_result"
+            for b in (content if isinstance(content, list) else []))
     p = obj.get("payload") or {}
     return ((obj.get("type") == "event_msg" and p.get("type") == "user_message") or
             (obj.get("type") == "response_item" and p.get("type") == "message"
@@ -275,7 +279,8 @@ def cmd_hook(a):
     event, sid, harness = (payload.get("hook_event_name", ""),
                            payload.get("session_id", "?"), a.harness)
     active = state("active.json", {})
-    if event == "UserPromptSubmit": squash_turn(sid, harness)  # turn whose Stop never fired
+    if event == "UserPromptSubmit" and squash_turn(sid, harness):  # Stop never fired:
+        stop_chunk(sid, payload, harness)  # squash the turn + store its transcript slice
     elif event == "PreToolUse": prompt_boundary(sid, payload, harness)
     if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
         sync()  # everything dirty before an agent tool runs is <user>/local

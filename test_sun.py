@@ -487,6 +487,22 @@ class SunTest(unittest.TestCase):
         self.assertIn("replay", html)
         self.assertNotIn("__DATA__", html)
 
+    # ---------------------------------------------------------------- update
+
+    def test_update_runs_uv_upgrade_outside_repo(self):
+        calls, old = [], sun.quiet
+        sun.quiet = lambda *a, **k: calls.append(a) or subprocess.CompletedProcess(
+            a, 0, stdout="", stderr="Updated sun v0.1.0\n")
+        outside = tempfile.mkdtemp()  # no git repo, no .git/sun
+        os.chdir(outside)
+        try:
+            self.assertIn("sun: Updated sun v0.1.0", run("update"))
+        finally:
+            sun.quiet = old
+            os.chdir(self.dir)
+            shutil.rmtree(outside, ignore_errors=True)
+        self.assertEqual(calls, [("uv", "tool", "upgrade", "sun")])
+
     # ------------------------------------------------------------ edge cases
 
     def test_hook_ignores_uninitialized_repo(self):

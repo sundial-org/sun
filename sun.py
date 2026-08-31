@@ -507,6 +507,13 @@ def cmd_init(a):
 def cmd_sync(a):
     ev = sync(); print(f"sun: committed local edits as op {ev['id']}" if ev else "sun: nothing to sync")
 def cmd_import(a): print("sun: " + do_import(configured_harness()))
+def cmd_update(a):  # uv re-resolves the git source to the latest commit
+    try: p = quiet("uv", "tool", "upgrade", "sun")
+    except OSError: p = None
+    if not p or p.returncode:
+        sys.exit("sun: could not update via uv; run "
+                 "`uv tool install --force git+https://github.com/sundial-org/sun`")
+    print(f"sun: {(p.stderr.strip().splitlines() or ['updated'])[-1]}")
 def cmd_log(a):
     maybe_sync()
     by_commit = {}
@@ -597,7 +604,8 @@ def main(argv=None):
         ("hook", "agent-harness hook entrypoint (JSON on stdin)"), ("show", "show operations for a commit"),
         ("import", "re-import sessions + backfill attribution"), ("gc", "drop session refs older than N days"),
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
-        ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log")]}
+        ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log"),
+        ("update", "update sun to the latest version")]}
     ps["init"].add_argument("--codex", action="store_true",
                             help="install Codex hooks instead of Claude hooks")
     ps["init"].add_argument("--instructions", "--claude-md", dest="instructions",
@@ -612,10 +620,10 @@ def main(argv=None):
     ps["undo"].add_argument("--commit", nargs="?", const="HEAD", default=None, metavar="HASH")
     ps["viz"].add_argument("-o", "--output", default=None); ps["viz"].add_argument("-n", type=int, default=0)
     a = ap.parse_args(argv)
-    if a.cmd not in ("init", "hook"):  # hook locates its repo from the payload
+    if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         os.chdir(root()); sun_dir(); a.lock = lock()
     {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
      "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
-     "gc": cmd_gc}[a.cmd](a)
+     "gc": cmd_gc, "update": cmd_update}[a.cmd](a)
 if __name__ == "__main__":
     main()

@@ -337,9 +337,10 @@ class SunTest(unittest.TestCase):
         write(tp, "")
         hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
         user = ('{"type": "event_msg", "payload": {"type": "user_message", '
-                '"message": "%s"}}\n')
+                '"message": "%s"}}\n{"type": "response_item", "payload": '
+                '{"type": "message", "role": "user", "content": "%s"}}\n')
         with open(tp, "a") as f:
-            f.write(user % "one")
+            f.write(user % ("one", "one"))
         for i, fn in enumerate(("a.ts", "b.ts")):
             inp = {"file_path": os.path.abspath(fn)}
             hook("PreToolUse", sid, harness="codex", tool_name="Write",
@@ -349,7 +350,7 @@ class SunTest(unittest.TestCase):
                  tool_input=inp, tool_use_id=f"t{i}")
             if not i:  # queued mid-turn: no Stop/UserPromptSubmit before b.ts
                 with open(tp, "a") as f:
-                    f.write(user % "two")
+                    f.write(user % ("two", "two"))
         hook("Stop", sid, harness="codex", transcript_path=tp)
         codex_agent = "emma/agent:codex/codex-qu"
         self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),

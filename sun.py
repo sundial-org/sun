@@ -229,9 +229,9 @@ def prompt_line(l, harness="claude"):
             isinstance(b, dict) and b.get("type") == "tool_result"
             for b in (content if isinstance(content, list) else []))
     p = obj.get("payload") or {}
-    return ((obj.get("type") == "event_msg" and p.get("type") == "user_message") or
-            (obj.get("type") == "response_item" and p.get("type") == "message"
-             and p.get("role") == "user"))
+    if obj.get("type") == "event_msg" and p.get("type") == "user_message": return 1
+    return 2 * (obj.get("type") == "response_item" and p.get("type") == "message"
+                and p.get("role") == "user")
 def prompt_boundary(sid, payload, harness="claude"):
     # PreToolUse: a prompt can reach the transcript with no hook between turns (queued
     # message, missed Stop); a user line past the first scan means a new turn started
@@ -243,9 +243,12 @@ def prompt_boundary(sid, payload, harness="claude"):
     while True:
         pos, l = f.tell(), f.readline()
         if not l: break
-        if prompt_line(l, harness): prompts.append(pos)
-    end = f.tell()  # the first scan expects the current turn's own prompt in the window
-    for boundary in (prompts if "soffset" in t else prompts[1:]):
+        k = prompt_line(l, harness)
+        if k: prompts.append((pos, k))
+    end = f.tell()  # codex mirrors one prompt in two record kinds: count only one of them
+    if {1, 2} <= {k for _, k in prompts}: prompts = [x for x in prompts if x[1] == 1]
+    # the first scan expects the current turn's own prompt in the window
+    for boundary, _ in (prompts if "soffset" in t else prompts[1:]):
         squash_turn(sid, harness)  # close the previous turn before this turn's first commit
         f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
         if data and not t.get("stopped") and cfg_track():  # store its transcript slice too

@@ -437,6 +437,43 @@ def cmd_sessions(a):
     for sid, u, ref in rows:
         if pat and not re.search(pat, session_text(ref)): continue
         print(f"{sid}  {u}  {len(git('ls-tree', '--name-only', ref).splitlines())} turns")
+def chunk_prompt(text):  # first user message of a stored transcript chunk (claude or codex)
+    for o in parse_events(text):
+        m, p = o.get("message") or {}, o.get("payload") or {}
+        if o.get("type") == "user" and isinstance(m, dict):
+            c = m.get("content")
+            t = c if isinstance(c, str) else "\n".join(
+                b.get("text", "") for b in c or []
+                if isinstance(b, dict) and b.get("type") == "text")
+            if t: return t
+        if o.get("type") == "event_msg" and p.get("type") == "user_message":
+            return p.get("message")
+        if o.get("type") == "response_item" and p.get("type") == "message" \
+                and p.get("role") == "user":
+            return "".join(b.get("text", "") for b in p.get("content") or []
+                           if isinstance(b, dict))
+def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt paired with edits
+    maybe_sync()
+    rows, evs = session_rows(), events()
+    squashed = {i for e in evs for i in e.get("squashes", [])}
+    out = open(a.output, "w") if a.output else sys.stdout
+    for e in evs:  # squashed calls and overlay re-records are subsumed by their turn events
+        if e.get("type") != "edit" or e["id"] in squashed or "overlay_of" in e \
+                or not e.get("edits"): continue
+        sid = prompt = None
+        m = re.match(r"([^/]+)/agent:[^/]+/(.+)", e["actor"])
+        hit = m and next(((s, r) for s, u, r in rows
+                          if u == m.group(1) and s.startswith(m.group(2))), None)
+        if hit:
+            sid, n = hit[0], int(e.get("turn", "turn0")[4:])
+            prompt = n and chunk_prompt(git("cat-file", "blob",
+                                            f"{hit[1]}:turn-{n:04d}.jsonl", check=False)) or None
+        out.write(json.dumps({"timestamp": e["timestamp"], "actor": e["actor"], "session": sid,
+                              "turn": e.get("turn"), "prompt": prompt,
+                              "tool_calls": e.get("tool_calls", []),
+                              "edits": [{"file": d["file"], "patch": d["patch"]}
+                                        for d in e["edits"]]}) + "\n")
+    if a.output: out.close(); print(f"sun: exported to {a.output}")
 def cmd_gc(a):
     old = [r for r, sha in refs("refs/sun/sessions/")
            if int(git("show", "-s", "--format=%ct", sha).strip()) < time.time() - a.older_than * 86400]
@@ -634,7 +671,8 @@ def main(argv=None):
         ("import", "re-import sessions + backfill attribution"), ("gc", "drop session refs older than N days"),
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
         ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log"),
-        ("update", "update sun to the latest version")]}
+        ("update", "update sun to the latest version"),
+        ("export", "dump history as fine-tuning JSONL (prompt + tool_calls + edits per turn)")]}
     ps["init"].add_argument("--claude", action="store_true",
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
@@ -650,11 +688,12 @@ def main(argv=None):
     ps["undo"].add_argument("--op", nargs="?", const="", default=None, metavar="ID")
     ps["undo"].add_argument("--commit", nargs="?", const="HEAD", default=None, metavar="HASH")
     ps["viz"].add_argument("-o", "--output", default=None); ps["viz"].add_argument("-n", type=int, default=0)
+    ps["export"].add_argument("-o", "--output", default=None)
     a = ap.parse_args(argv)
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         os.chdir(root()); sun_dir(); a.lock = lock()
     {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
      "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
-     "gc": cmd_gc, "update": cmd_update}[a.cmd](a)
+     "gc": cmd_gc, "update": cmd_update, "export": cmd_export}[a.cmd](a)
 if __name__ == "__main__":
     main()

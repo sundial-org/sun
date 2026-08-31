@@ -616,6 +616,36 @@ class SunTest(unittest.TestCase):
             shutil.rmtree(outside, ignore_errors=True)
         self.assertEqual(calls, [("uv", "tool", "upgrade", "sun")])
 
+    # ---------------------------------------------------------------- export
+
+    def test_export_pairs_prompt_with_edits(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        self.tool_call("session12345", "a.ts", "1\n")
+        write(tp, json.dumps({"type": "user",
+                              "message": {"role": "user", "content": "add feature"}}) + "\n")
+        hook("Stop", transcript_path=tp)
+        write("local.txt", "h\n")
+        run("export", "-o", "dump.jsonl")
+        recs = [json.loads(l) for l in open("dump.jsonl")]
+        turn = next(r for r in recs if r["actor"] == AGENT)
+        self.assertEqual((turn["session"], turn["turn"], turn["prompt"]),
+                         ("session12345", "turn1", "add feature"))
+        self.assertEqual(turn["tool_calls"][0]["tool"], "Write")
+        self.assertIn("+1", turn["edits"][0]["patch"])
+        self.assertEqual(len([r for r in recs if r["actor"] == AGENT]), 1)  # squash subsumes
+        loc = next(r for r in recs if r["edits"][0]["file"] == "local.txt")
+        self.assertEqual((loc["actor"], loc["prompt"]), ("emma/local", None))
+
+    def test_chunk_prompt_codex_formats(self):
+        self.assertEqual(sun.chunk_prompt(json.dumps(
+            {"type": "event_msg", "payload": {"type": "user_message",
+                                              "message": "fix bug"}}) + "\n"), "fix bug")
+        self.assertEqual(sun.chunk_prompt(json.dumps(
+            {"type": "response_item", "payload": {"type": "message", "role": "user",
+             "content": [{"type": "input_text", "text": "hi"}]}}) + "\n"), "hi")
+
     # ------------------------------------------------------------ edge cases
 
     def test_hook_ignores_uninitialized_repo(self):

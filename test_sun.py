@@ -675,6 +675,25 @@ class SunTest(unittest.TestCase):
                          ["other.txt"])
         self.assertIn("dump.jsonl", self.git("status", "--porcelain"))
 
+    def test_export_backfilled_merge_resolution(self):
+        base = self.git("rev-parse", "--abbrev-ref", "HEAD").strip()
+        q = dict(capture_output=True)
+        write("m.txt", "base\n")
+        subprocess.run(["git", "add", "-A"], check=True); subprocess.run(
+            ["git", "commit", "-q", "-m", "base"], check=True)
+        subprocess.run(["git", "checkout", "-q", "-b", "side"], check=True)
+        write("m.txt", "side\n"); subprocess.run(["git", "commit", "-qam", "side"], check=True)
+        subprocess.run(["git", "checkout", "-q", base], check=True)
+        write("m.txt", "trunk\n"); subprocess.run(["git", "commit", "-qam", "trunk"], check=True)
+        subprocess.run(["git", "merge", "side"], **q)  # conflicts
+        write("m.txt", "resolved\n")
+        subprocess.run(["git", "add", "m.txt"], check=True)
+        subprocess.run(["git", "commit", "-q", "--no-edit"], check=True)
+        run("import")
+        rec = next(r for r in map(json.loads, run("export").splitlines())
+                   if any("resolved" in d["patch"] for d in r["edits"]))
+        self.assertEqual(rec["edits"][0]["file"], "m.txt")
+
     def test_export_includes_undo_ops(self):
         self.agent_turn("session12345", [("a.ts", "1\n")])
         run("undo", "--op")

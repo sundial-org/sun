@@ -367,7 +367,8 @@ def scan_transcript(path, sid, harness="claude"):
 def backfill(index):  # attribute pre-existing commits: transcript_backfill on a files+time
     # window match, else <author>/local with method import; commits with events are skipped
     have, att, tot, cs, cur = {e.get("commit") for e in events()}, 0, 0, [], None
-    for l in git("log", "--name-only", "--pretty=#%H\t%an\t%at", check=False).splitlines():
+    # -c: merges list their conflict-resolution files (result differs from every parent)
+    for l in git("log", "--name-only", "-c", "--pretty=#%H\t%an\t%at", check=False).splitlines():
         if l.startswith("#"): cur = l[1:].split("\t") + [[]]; cs.append(cur)
         elif l.strip() and cur: cur[3].append(l)
     for H, an, at, files in cs:

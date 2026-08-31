@@ -455,8 +455,14 @@ def chunk_prompt(text):  # first user message of a stored transcript chunk (clau
                 and p.get("role") == "user":
             return "".join(b.get("text", "") for b in p.get("content") or []
                            if isinstance(b, dict))
+def stdout_file():  # file backing a redirected stdout (`sun export > dump.jsonl`)
+    try:
+        p = (fcntl.fcntl(1, fcntl.F_GETPATH, bytes(1024)).rstrip(b"\0").decode()
+             if hasattr(fcntl, "F_GETPATH") else os.readlink("/proc/self/fd/1"))
+        return [rel_to_root(p)] if os.path.isfile(p) else []
+    except OSError: return []
 def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt paired with edits
-    maybe_sync([rel_to_root(a.output)] if a.output else ())  # never re-ingest our own dump
+    maybe_sync([rel_to_root(a.output)] if a.output else stdout_file())  # never re-ingest our dump
     rows, evs, merged = session_rows(), events(), {}
     squashed = {i for e in evs for i in e.get("squashes", [])}
     for e in evs:  # squashed calls and overlay re-records are subsumed by their turn events

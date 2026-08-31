@@ -675,6 +675,15 @@ class SunTest(unittest.TestCase):
                          ["other.txt"])
         self.assertIn("dump.jsonl", self.git("status", "--porcelain"))
 
+    def test_export_redirected_stdout_is_not_synced(self):
+        old = os.dup(1)  # sun export > dump.jsonl: shell pre-creates the file on fd 1
+        fd = os.open("dump.jsonl", os.O_CREAT | os.O_WRONLY)
+        os.dup2(fd, 1); os.close(fd)
+        try: run("export")
+        finally: os.dup2(old, 1); os.close(old)
+        self.assertTrue(all(d["file"] != "dump.jsonl" for e in sun.events()
+                            for d in e.get("edits", [])))
+
     def test_export_backfilled_merge_resolution(self):
         base = self.git("rev-parse", "--abbrev-ref", "HEAD").strip()
         q = dict(capture_output=True)

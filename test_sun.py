@@ -683,6 +683,43 @@ class SunTest(unittest.TestCase):
         self.assertIn("agent: Adding two.", out)
         self.assertIn("[Write tool1]", out)
 
+    def test_blame_rename_within_turn(self):
+        tp = os.path.join(self.proj, "t.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        with open(tp, "a") as fh:
+            fh.write(json.dumps({"type": "user",
+                                 "message": {"role": "user", "content": "files"}}) + "\n")
+        calls = [("Write", {"file_path": os.path.abspath("a.ts")}, "First a.ts.",
+                  lambda: write("a.ts", "1\n")),
+                 ("Write", {"file_path": os.path.abspath("b.ts")}, "Then b.ts.",
+                  lambda: write("b.ts", "2\n")),
+                 ("Bash", {"command": "mv b.ts c.ts"}, "Renaming.",
+                  lambda: os.rename("b.ts", "c.ts"))]
+        for i, (tool, inp, say, do) in enumerate(calls):
+            with open(tp, "a") as fh:
+                fh.write(json.dumps({"type": "assistant", "message": {
+                    "role": "assistant", "content": [
+                        {"type": "text", "text": say},
+                        {"type": "tool_use", "id": f"tool{i}", "name": tool,
+                         "input": inp}]}}) + "\n")
+            hook("PreToolUse", tool_name=tool, tool_input=inp, tool_use_id=f"tool{i}")
+            do()
+            hook("PostToolUse", tool_name=tool, tool_input=inp, tool_use_id=f"tool{i}")
+        hook("Stop", transcript_path=tp)
+        self.assertIn("(3 tool calls)", self.head_subject())
+        out = run("blame", "c.ts", "1")
+        self.assertIn("agent: Then b.ts.", out)
+        self.assertIn("[Write tool1]", out)
+
+    def test_blame_symlink_itself(self):
+        self.agent_turn("session12345", [("target.txt", "x\n")])
+        os.symlink("target.txt", "link.txt")
+        run("sync")
+        out = run("blame", "link.txt", "1")
+        self.assertIn("emma/local", out)
+        self.assertIn("human edit", out)
+
     def test_blame_codex_transcript(self):
         run("init", "--codex", "--no-instructions")
         sid, tp = "codex-blame-session", os.path.join(self.codex, "live.jsonl")

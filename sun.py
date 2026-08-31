@@ -635,7 +635,9 @@ def blame_context(chunk, tid):  # first user prompt + last agent text before too
         if tool: break
     return prompt, ctx, tool
 def cmd_blame(a):
-    maybe_sync(); f = rel_to_root(a.file)
+    maybe_sync()
+    d, b = os.path.split(a.file)  # blame a symlink itself: resolve only its directory
+    f = os.path.relpath(os.path.join(os.path.realpath(d or "."), b), root())
     out = git("-c", "core.quotepath=false", "blame", "--porcelain",
               "-L", f"{a.line},{a.line}", "--", f)
     H, orig = out.split()[:2]  # originating commit + the line's number in it
@@ -658,9 +660,12 @@ def cmd_blame(a):
                 quiet("git", "show", f"{sq['commit']}:{of}").stdout.splitlines())
             orig = next((j1 + i - i1 + 1 for t, i1, i2, j1, j2 in sm.get_opcodes()
                          if t == "equal" and i1 <= i < i2), None)
-        o = tip and orig and quiet("git", "blame", "--porcelain", "-L", f"{orig},{orig}", tip, "--", of)
-        c = o and not o.returncode and o.stdout and o.stdout.split(None, 1)[0]
-        ev = next((e for e in all_ev if e.get("commit") == c and touches(e)), ev)
+        o = tip and orig and quiet("git", "-c", "core.quotepath=false", "blame", "--porcelain",
+                                   "-L", f"{orig},{orig}", tip, "--", of)
+        if o and not o.returncode and o.stdout:
+            c = o.stdout.split(None, 1)[0]  # renamed within the turn: events use the old path
+            of = next((l[9:] for l in o.stdout.splitlines() if l.startswith("filename ")), of)
+            ev = next((e for e in all_ev if e.get("commit") == c and touches(e)), ev)
     print(f"{f}:{a.line}  {H[:8]}  " + (f"{ev['actor']}"
           + (f" {ev['turn']}" if ev.get("turn") else "") + f"  op {ev['id']}" if ev else "untracked"))
     print("> " + next((l[1:] for l in out.splitlines() if l.startswith("\t")), ""))

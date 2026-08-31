@@ -257,6 +257,7 @@ def prompt_boundary(sid, payload, harness="claude"):
         f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
         if data and not t.get("stopped") and cfg_track():  # store its transcript slice too
             store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
+        sync()  # dirty local edits predate the queued turn: commit them outside it
         t.update(n=t["n"] + 1, start=head(), toffset=boundary); t.pop("stopped", None)
     t["soffset"] = end; turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)

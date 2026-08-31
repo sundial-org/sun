@@ -357,6 +357,21 @@ class SunTest(unittest.TestCase):
                          [f"sun: {codex_agent} turn 2 (1 tool calls)",
                           f"sun: {codex_agent} turn 1 (1 tool calls)"])
 
+    def test_queued_prompt_with_dirty_local_edits_still_squashes(self):
+        tp = os.path.join(self.proj, "dirty.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        write("local.txt", "h\n")  # human edit while the second prompt is queued
+        with open(tp, "a") as f:
+            f.write('{"type": "user", "message": {"content": "two"}}\n')
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        hook("Stop", transcript_path=tp)
+        self.assertEqual(self.git("log", "-3", "--pretty=%s").splitlines(),
+                         [f"sun: {AGENT} turn 2 (1 tool calls)",
+                          "sun: emma/local edits local.txt",
+                          f"sun: {AGENT} turn 1 (1 tool calls)"])
+
     def test_codex_task_started_marks_chunk_boundary(self):
         run("init", "--codex", "--no-instructions")
         sid, tp = "codex-task-sess", os.path.join(self.codex, "t.jsonl")

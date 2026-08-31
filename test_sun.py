@@ -690,9 +690,9 @@ class SunTest(unittest.TestCase):
         run("sync")
         pre = self.git("rev-parse", "HEAD").strip()
         self.blame_turn(tp, [("f.py", base + "one\n", "Adding one."),
-                             ("f.py", base + "one\n  two\n", "Adding two.")], "two lines")
+                             ("f.py", base + "one\n  x = 2\n", "Adding two.")], "two lines")
         subprocess.run(["git", "checkout", "-qb", "side", pre], check=True)
-        write("f.py", base + "one\n    two\n")  # same change reindented: same patch-id
+        write("f.py", base + "one\nx  =  2\n")  # same change reformatted: same patch-id
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "reformatted squash"], check=True)
         out = run("blame", "f.py", "8")

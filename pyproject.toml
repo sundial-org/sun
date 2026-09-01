@@ -1,7 +1,7 @@
 [project]
 name = "sun"
 version = "0.1.0"
-description = "An operation log for humans + agents on top of git"
+description = "Share your team's memory - you, your agents, and your teammate's agents."
 requires-python = ">=3.9"
 
 [project.scripts]

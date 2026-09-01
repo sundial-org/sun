@@ -1,11 +1,13 @@
 # sun
 
+Share your team's memory - you, your agents, and your teammate's agents.
+
 Your repo has two histories: the code, and the conversations that produced it. git keeps the
 first and loses the second. sun keeps both. It is an operation log on top of git that records
 who made every change, whether that was you or a specific agent session, and it stores the
 sessions themselves in the repo so your whole team's agents can use them.
 
-![the sun operation log: attributed commits on the left, one commit's events on the right](example/viz.png)
+![the sun operation log: attributed commits on the left, one commit's events on the right](examples/viz.png)
 
 ## One command
 
@@ -30,8 +32,6 @@ Codex asks you to review and trust new project hooks through `/hooks` before it 
 | `sun sessions [id] [--grep re] [--file p]` | search every session that ran here |
 | `sun undo [--op ID] [--commit H]` | reverse any single operation or commit |
 
-Real output for all of these, plus the refs layout, is in [EXAMPLE.md](EXAMPLE.md).
-
 ## 2 · Share sessions with your team's agents
 
 Sessions live as git objects under `refs/sun/*`, never in your worktree and invisible to
@@ -45,7 +45,7 @@ server needed.
 ## Demos & tests
 
 ```sh
-python3 example/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
-python3 example/demo_fresh.py  # synthetic end-to-end story -> example/demo.html
-python3 -m unittest test_sun   # 49 tests
+python3 examples/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
+python3 examples/demo_fresh.py  # synthetic end-to-end story -> examples/demo.html
+python3 -m unittest test_sun    # 49 tests
 ```

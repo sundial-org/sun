@@ -134,25 +134,6 @@ def tool_files(tool, inp):
     return []
 def relative_tool_files(tool, inp):
     return [rel_to_root(f) for f in tool_files(tool, inp)]
-def char_edits(patch):  # character-level ranges for paired -/+ lines of a unified patch
-    out, o, n, minus = [], 0, 0, []
-    for l in patch.splitlines():
-        if l.startswith("@@"):
-            nums = l.split("@@")[1].split()[:2]
-            if len(nums) < 2: break
-            (o, n), minus = tuple(int(x.lstrip("-+").split(",")[0]) for x in nums), []
-        elif l.startswith("-") and not l.startswith("---"):
-            minus.append((o, l[1:])); o += 1
-        elif l.startswith("+") and not l.startswith("+++"):
-            if minus:
-                ol, old = minus.pop(0)
-                out += [{"old_line": ol, "new_line": n, "old_range": [a, b], "new_range": [c, d],
-                         "old_text": old[a:b], "new_text": l[1:][c:d]} for t, a, b, c, d in
-                        difflib.SequenceMatcher(None, old, l[1:]).get_opcodes() if t != "equal"]
-            n += 1
-        elif not l.startswith("\\") and not l.startswith("diff "):
-            o, n, minus = o + 1, n + 1, []
-    return out
 edits_msg = lambda actor, files: (f"sun: {actor} edits " + ", ".join(files[:3])
                                   + (f" +{len(files) - 3} more" if len(files) > 3 else ""))
 def sync(exclude=()):  # commit unclaimed changes as <user>/local
@@ -163,7 +144,7 @@ def sync(exclude=()):  # commit unclaimed changes as <user>/local
     c = commit_files(files, edits_msg(actor, files), actor)
     p = patches(pre, c, files)
     return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
-                  edits=[{"file": f, "patch": p[f], "char_edits": char_edits(p[f]),
+                  edits=[{"file": f, "patch": p[f],
                           "attribution": {"method": "hook"}} for f in files])
 def maybe_sync(exclude=()):  # skipped while an agent tool call is in flight
     state("active.json", {}) or sync(exclude)
@@ -197,7 +178,7 @@ def finish_call(sid, active, payload, harness="claude"):
                                           "attribution": {"method": "hook"}} for f in a_files])
     if h_files:
         record(type="edit", actor=local(), commit=c,
-               edits=[{"file": f, "patch": p[f], "char_edits": char_edits(p[f]),
+               edits=[{"file": f, "patch": p[f],
                        "attribution": {"method": "hook"}} for f in h_files])
 def squash_turn(sid, harness="claude"):
     # Stop: squash the turn's tool-call commits into one commit per turn;

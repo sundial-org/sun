@@ -3,7 +3,7 @@
 
 Scans ~/.claude/projects for project dirs, resolves each to its real repo path (from the
 `cwd` field inside its transcripts), lists the git repos it finds, and runs a timed
-`sun init` on the one you choose (imports sessions + backfills attribution over history).
+`sun init` on the one you choose (imports its existing sessions).
 """
 import glob, json, os, subprocess, sys, time
 
@@ -43,8 +43,8 @@ def main():
     choice = input(f"\nwhich repo do you want to `sun init`? [1-{len(items)}] ").strip()
     repo = items[int(choice) - 1][0]
     print(f"\nsun init will: install Claude Code hooks ({repo}/.claude/settings.json),\n"
-          "commit any dirty state as <you>/local, scan this repo's local sessions,\n"
-          "and backfill attribution over existing commits. Raw sessions stay local.")
+          "commit any dirty state as <you>/local and scan this repo's local sessions.\n"
+          "Raw sessions stay local, and existing commits remain untracked by sun.")
     if input(f"run `sun init` in {repo}? [y/N] ").strip().lower() != "y":
         sys.exit("aborted")
     t0 = time.time()

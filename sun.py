@@ -10,7 +10,6 @@ by timestamp at read; refs/sun/* are the source of truth and travel via the refs
 hook init installs. .git/sun/lock (flock) serializes everything, like git's index.lock."""
 import argparse, difflib, fcntl, glob, hashlib, json, os, re, subprocess, sys
 import time, uuid, zlib
-from datetime import datetime
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"}
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
 CODEX_HOOK_EVENTS = HOOK_EVENTS + ("SubagentStart", "SubagentStop")
@@ -339,27 +338,16 @@ def transcript_sources(harness="claude"):
         sid = meta.get("id") or os.path.basename(path)[:-6].rsplit("-", 5)[-1]
         source = str(meta.get("source") or "").lower()
         yield path, sid, sid if "subagent" in source else None
-def scan_claude_transcript(path, sid):
-    chunks, cur, calls = [], [], []
+def scan_claude_transcript(path):
+    chunks, cur = [], []
     for line in open(path, errors="replace"):
         if cur and "tool_result" not in line \
                 and ('"type":"user"' in line or '"type": "user"' in line):
             chunks.append("".join(cur)); cur = []
         cur.append(line)
-        if '"tool_use"' not in line or '"tool_result"' in line: continue
-        try: obj = json.loads(line)
-        except ValueError: continue
-        for b in (obj.get("message") or {}).get("content") or []:
-            f = (isinstance(b, dict) and b.get("type") == "tool_use"
-                 and b.get("name") in EDIT_TOOLS and tool_file(b.get("input") or {}))
-            if f and obj.get("timestamp"):
-                try:
-                    t = datetime.fromisoformat(obj["timestamp"].replace("Z", "+00:00"))
-                    calls.append((t.timestamp(), sid, b.get("id"), f, obj.get("cwd") or ""))
-                except ValueError: pass
     if cur: chunks.append("".join(cur))
-    return chunks, calls
-def scan_codex_transcript(path, sid):
+    return chunks
+def scan_codex_transcript(path):
     lines = open(path, errors="replace").readlines()
     parsed = []
     for line in lines:
@@ -367,11 +355,9 @@ def scan_codex_transcript(path, sid):
         except ValueError: parsed.append({})
     task_boundaries = any(o.get("type") == "event_msg" and
                           (o.get("payload") or {}).get("type") == "task_started" for o in parsed)
-    chunks, cur, calls, cwd = [], [], [], ""
+    chunks, cur = [], []
     for line, obj in zip(lines, parsed):
         payload = obj.get("payload") or {}
-        if obj.get("type") in ("session_meta", "turn_context"):
-            cwd = payload.get("cwd") or cwd
         boundary = (obj.get("type") == "event_msg" and payload.get("type") == "task_started")
         if not task_boundaries:
             boundary = ((obj.get("type") == "response_item" and
@@ -379,71 +365,26 @@ def scan_codex_transcript(path, sid):
                         (obj.get("type") == "event_msg" and payload.get("type") == "user_message"))
         if boundary and cur: chunks.append("".join(cur)); cur = []
         cur.append(line)
-        if obj.get("type") != "response_item" or payload.get("type") not in (
-                "function_call", "custom_tool_call"): continue
-        tool = payload.get("name") or ""
-        raw = payload.get("arguments") if payload.get("arguments") is not None \
-            else payload.get("input")
-        inp = raw
-        if isinstance(raw, str):
-            try: inp = json.loads(raw)
-            except ValueError: inp = {}
-        files = tool_files(tool, inp) or patch_files(raw)
-        if not (files and obj.get("timestamp")): continue
-        try: epoch = datetime.fromisoformat(obj["timestamp"].replace("Z", "+00:00")).timestamp()
-        except ValueError: continue
-        calls += [(epoch, sid, payload.get("call_id") or payload.get("id"), f, cwd)
-                  for f in files]
     if cur: chunks.append("".join(cur))
-    return chunks, calls
-def scan_transcript(path, sid, harness="claude"):
-    return (scan_claude_transcript(path, sid) if harness == "claude" else
-            scan_codex_transcript(path, sid))
-def backfill(index):  # attribute pre-existing commits: transcript_backfill on a files+time
-    # window match, else <author>/local with method import; commits with events are skipped
-    have, att, tot, cs, cur = {e.get("commit") for e in events()}, 0, 0, [], None
-    # -c: merges list their conflict-resolution files (result differs from every parent)
-    for l in git("log", "--name-only", "-c", "--pretty=#%H\t%an\t%at", check=False).splitlines():
-        if l.startswith("#"): cur = l[1:].split("\t") + [[]]; cs.append(cur)
-        elif l.strip() and cur: cur[3].append(l)
-    for H, an, at, files in cs:
-        if H in have: continue
-        tot += 1
-        m = {f: c for f in files for c in  # nearest call in the window, across harnesses
-             [min((c for c in index.get(f, []) if abs(c[0] - int(at)) < 1800),
-                  key=lambda c: abs(c[0] - int(at)), default=None)] if c}
-        u = an.replace(" ", "-").lower()
-        match = min(m.values(), key=lambda c: abs(c[0] - int(at)), default=None)
-        actor = agent(match[1], match[3], u) if match else local(u)
-        record(mirror=False, type="edit", actor=actor, commit=H, edits=[
-            {"file": f, "patch": "", "tool_call_id": m[f][2] if f in m else None,
-             "attribution": {"method": "transcript_backfill" if f in m else "import"}}
-            for f in files])
-        att += bool(m)
-    return att, tot
-def do_import(harnesses=("claude",)):  # index every harness first: backfill runs once
-    t0, seen, index, ns, nsub = time.time(), state("imported.json", {}), {}, 0, 0
+    return chunks
+def scan_transcript(path, harness="claude"):
+    return scan_claude_transcript(path) if harness == "claude" else scan_codex_transcript(path)
+def do_import(harnesses=("claude",)):
+    t0, seen, ns, nsub = time.time(), state("imported.json", {}), 0, 0
     share = cfg_share_sessions()
     for harness in harnesses:
         for path, sid, sub in transcript_sources(harness):
             st = os.stat(path)
             if share and seen.get(path) == [st.st_size, int(st.st_mtime)]:
                 continue  # idempotent: only new/changed transcripts are re-read
-            chunks, calls = scan_transcript(path, sid, harness)
-            for t, s, tid, f, cw in calls:  # strip repo root or the transcript's own cwd,
-                pre = next((p + "/" for p in (root(), os.path.realpath(root()), cw)  # clones too
-                            if p and f.startswith(p + "/")), "")
-                fr = re.sub(r"^\.claude/worktrees/[^/]+/", "", f[len(pre):].lstrip("/"))
-                index.setdefault(fr, []).append((t, s, tid, harness))
+            chunks = scan_transcript(path, harness)
             if share:
                 pre = f"subagents/{sub}/" if sub else ""
                 store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
                 seen[path] = [st.st_size, int(st.st_mtime)]
             ns, nsub = ns + (not sub), nsub + bool(sub)
     if share: save_state("imported.json", seen)
-    att, tot = backfill(index); mirror_log()
-    return (f"imported {ns} sessions, {nsub} subagents; "
-            f"attributed {att}/{tot} commits in {time.time() - t0:.1f}s")
+    return f"imported {ns} sessions, {nsub} subagents in {time.time() - t0:.1f}s"
 session_rows = lambda: [(r.split("/", 4)[4], r.split("/")[3], r)  # (sid, user, ref)
                         for r, _ in refs("refs/sun/sessions/")]
 def session_text(ref, sub=None):
@@ -814,7 +755,7 @@ def main(argv=None):
     ps = {c: sub.add_parser(c, help=h) for c, h in [
         ("init", "git repo + .git/sun + hooks + session import"), ("sync", "commit pending local edits"),
         ("hook", "agent-harness hook entrypoint (JSON on stdin)"), ("show", "show operations for a commit"),
-        ("import", "re-import sessions + backfill attribution"), ("gc", "drop session refs older than N days"),
+        ("import", "re-import sessions"), ("gc", "drop session refs older than N days"),
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
         ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log"),
         ("update", "update sun to the latest version"),

@@ -1,11 +1,7 @@
 # sun
 
-Share your team's memory - you, your agents, and your teammate's agents.
-
-Your repo has two histories: the code, and the conversations that produced it. git keeps the
-first and loses the second. sun keeps both. It is an operation log on top of git that records
-who made every change, whether that was you or a specific agent session, and it stores the
-sessions themselves in the repo so your whole team's agents can use them.
+Sun is an operation log on top of git. It records who made every change, whether that was you
+or a specific agent session. Raw conversations stay local unless you explicitly share them.
 
 ![the sun operation log: attributed commits on the left, one commit's events on the right](examples/viz.png)
 
@@ -16,11 +12,11 @@ uv tool install git+https://github.com/sundial-org/sun
 cd your-repo && sun init   # sets up every harness it detects (Claude Code, Codex)
 ```
 
-`sun init` imports every session that ever touched this repo, for each harness it detects
-(`--claude` or `--codex` restricts to one). Worktrees and subagents are included, and
-attribution is backfilled across existing commits. From then on, hooks keep the log current:
-one commit per agent tool call (squashed per turn), with local edits detected in between.
-Codex asks you to review and trust new project hooks through `/hooks` before it runs them.
+`sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
+subagents are included. Raw transcripts remain in their existing local directories by default.
+From then on, hooks keep the log current: one commit per agent tool call (squashed per turn),
+with local edits detected in between. Codex asks you to review and trust new project hooks
+through `/hooks` before it runs them.
 
 ## 1 · Analyze your past sessions
 
@@ -32,15 +28,12 @@ Codex asks you to review and trust new project hooks through `/hooks` before it 
 | `sun sessions [id] [--grep re] [--file p]` | search every session that ran here |
 | `sun undo [--op ID] [--commit H]` | reverse any single operation or commit |
 
-## 2 · Share sessions with your team's agents
+## 2 · Optional raw session sharing
 
-Sessions live as git objects under `refs/sun/*`, never in your worktree and invisible to
-`git status` and PR diffs. They travel with plain `git push` and `git pull`. On a
-teammate's clone, `sun init` surfaces them, and their agents are pointed at
-`.git/sun/sessions/` (the exact `~/.claude/projects` layout, now including teammates'
-sessions) via a `SessionStart` context line and one line in `CLAUDE.md` or `AGENTS.md`. An agent
-debugging auth can read the session where auth was built, whoever's machine it ran on. No
-server needed.
+Pass `--share-sessions` to store raw transcripts under `refs/sun/sessions/*` and share them
+with everyone who can read the git remote. This is off by default because transcripts may
+contain prompts, tool output, file contents, environment data, and secrets. Shared sessions
+stay outside normal branches and PR diffs, but collaborators can inspect them with git.
 
 ## Demos & tests
 

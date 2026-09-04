@@ -97,6 +97,7 @@ class SunTest(unittest.TestCase):
                                        for h in g["hooks"]])
         self.assertEqual(sun.events()[0]["type"], "init")
         self.assertEqual(sun.events()[0]["actor"], "emma/local")
+        self.assertFalse(sun.cfg_share_sessions())
         self.assertTrue(os.path.exists(".git/sun/viz.html"))
         self.assertTrue(os.path.exists(".git/hooks/pre-push"))
 
@@ -109,18 +110,25 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "init", "-q", "--bare", bare], check=True)
         subprocess.run(["git", "remote", "add", "origin", bare], check=True)
         run("init", "--no-claude-md")
-        self.assertIn("+refs/sun/*:refs/sun/*",
+        specs = self.git("config", "--get-all", "remote.origin.fetch")
+        self.assertIn("+refs/sun/log/*:refs/sun/log/*", specs)
+        self.assertIn("+refs/sun/ops/*:refs/sun/ops/*", specs)
+        self.assertNotIn("refs/sun/sessions", specs)
+        self.assertNotIn("refs/sun/sessions", open(".git/hooks/pre-push").read())
+        run("init", "--share-sessions", "--no-claude-md")
+        self.assertIn("+refs/sun/sessions/*:refs/sun/sessions/*",
                       self.git("config", "--get-all", "remote.origin.fetch"))
+        self.assertIn("refs/sun/sessions/emma/*", open(".git/hooks/pre-push").read())
         shutil.rmtree(bare, ignore_errors=True)
 
     def test_init_claude_md_flag(self):
-        run("init", "--claude-md")
+        run("init", "--share-sessions", "--claude-md")
         self.assertIn(sun.CLAUDE_LINE, open("CLAUDE.md").read())
-        run("init", "--claude-md")  # idempotent: one copy
+        run("init", "--share-sessions", "--claude-md")  # idempotent: one copy
         self.assertEqual(open("CLAUDE.md").read().count(".git/sun/sessions/"), 1)
 
     def test_codex_init_installs_hooks_and_agents_md(self):
-        out = run("init", "--codex", "--instructions")
+        out = run("init", "--codex", "--share-sessions", "--instructions")
         self.assertIn("hooks: codex (.codex/hooks.json)", out)
         cfg = json.load(open(".codex/hooks.json"))
         for event in sun.CODEX_HOOK_EVENTS:
@@ -128,7 +136,7 @@ class SunTest(unittest.TestCase):
                           [h["command"] for g in cfg["hooks"][event] for h in g["hooks"]])
         self.assertEqual(sun.configured_harnesses(), ["codex"])
         self.assertIn(sun.CODEX_LINE, open("AGENTS.md").read())
-        run("init", "--codex", "--instructions")
+        run("init", "--codex", "--share-sessions", "--instructions")
         self.assertEqual(len(json.load(open(".codex/hooks.json"))["hooks"]["Stop"]), 1)
 
     def test_init_installs_all_detected_harnesses(self):
@@ -168,7 +176,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("sun hook", open(".claude/settings.json").read())
 
     def test_declined_instructions_hint_keeps_harness_flags(self):
-        out = run("init", "--codex", "--no-instructions")
+        out = run("init", "--codex", "--share-sessions", "--no-instructions")
         self.assertIn("`sun init --codex --instructions`", out)
 
     def test_old_single_harness_config_still_read(self):
@@ -254,6 +262,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
 
     def test_missed_stop_squashes_turn_on_next_prompt(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "missed.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
@@ -274,6 +283,7 @@ class SunTest(unittest.TestCase):
         self.assertIn('{"turn":1}', self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
 
     def test_missed_stop_without_commits_keeps_transcript(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "chat.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
@@ -289,6 +299,7 @@ class SunTest(unittest.TestCase):
         self.assertIn('"chat":1', self.git("cat-file", "blob", f"{ref}:turn-0001.jsonl"))
 
     def test_queued_prompt_before_first_tool_call(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "early.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
@@ -323,6 +334,7 @@ class SunTest(unittest.TestCase):
             '{"type": "user", "message": {"content": "check the tool_result"}}\n'))
 
     def test_queued_prompt_gets_its_own_turn(self):
+        run("init", "--share-sessions", "--no-instructions")
         # neither Stop nor UserPromptSubmit fires between the two turns; the second
         # prompt only shows up in the transcript
         tp = os.path.join(self.proj, "queued.jsonl")
@@ -372,6 +384,7 @@ class SunTest(unittest.TestCase):
                           f"sun: {codex_agent} turn 1 (1 tool calls)"])
 
     def test_queued_prompt_with_text_only_turn_splits_at_stop(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "textonly.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
@@ -404,7 +417,7 @@ class SunTest(unittest.TestCase):
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
 
     def test_codex_task_started_marks_chunk_boundary(self):
-        run("init", "--codex", "--no-instructions")
+        run("init", "--codex", "--share-sessions", "--no-instructions")
         sid, tp = "codex-task-sess", os.path.join(self.codex, "t.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
@@ -534,6 +547,7 @@ class SunTest(unittest.TestCase):
     # -------------------------------------------------------- session storage
 
     def test_stop_appends_turn_chunks_to_session_ref(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "t.jsonl")
         write(tp, "")
         self.agent_turn("session12345", [("a.ts", "1\n")], tpath=tp)
@@ -549,6 +563,14 @@ class SunTest(unittest.TestCase):
         self.assertIn("session12345  emma", out)
         self.assertIn('{"turn":1}', run("sessions", "session12345"))
 
+    def test_transcript_stays_local_by_default(self):
+        tp = os.path.join(self.proj, "local.jsonl")
+        write(tp, "")
+        hook("UserPromptSubmit", transcript_path=tp)
+        write(tp, '{"private":true}\n')
+        hook("Stop", transcript_path=tp)
+        self.assertFalse(sun.refs("refs/sun/sessions/"))
+
     def test_sessions_export_layout_and_index(self):
         sun.store_chunks("sess-x", {"turn-0001.jsonl": '{"x":1}\n',
                                     "subagents/sub-1/turn-0001.jsonl": '{"s":1}\n'})
@@ -560,7 +582,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual((idx[0]["user"], idx[0]["origin"]), ("emma", "local"))
 
     def test_codex_subagent_transcript_is_stored_and_exported(self):
-        run("init", "--codex", "--no-instructions")
+        run("init", "--codex", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.codex, "subagent.jsonl")
         write(tp, '{"subagent":true}\n')
         hook("SubagentStop", "parent-session", harness="codex", agent_id="child-1",
@@ -574,7 +596,7 @@ class SunTest(unittest.TestCase):
             base, "parent-session/subagents/child-1.jsonl")).read())
 
     def test_codex_stop_stores_turn_transcript(self):
-        run("init", "--codex", "--no-instructions")
+        run("init", "--codex", "--share-sessions", "--no-instructions")
         sid, tp = "codex-live-session", os.path.join(self.codex, "live.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
@@ -601,6 +623,7 @@ class SunTest(unittest.TestCase):
     # --------------------------------------------------------- import/backfill
 
     def test_import_backfills_and_stores_sessions(self):
+        run("init", "--share-sessions", "--no-instructions")
         write("src/foo.ts", "x\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual agent commit"], check=True)
@@ -616,6 +639,13 @@ class SunTest(unittest.TestCase):
         run("import")  # idempotent: nothing new
         self.assertEqual(len(sun.events()), n)
 
+    def test_import_keeps_sessions_local_by_default(self):
+        pdir = os.path.join(self.proj, sun.enc(sun.root()))
+        write(os.path.join(pdir, "private-session.jsonl"),
+              transcript_line(os.path.abspath("private.ts")))
+        run("import")
+        self.assertFalse(sun.refs("refs/sun/sessions/"))
+
     def test_import_unmatched_commit_is_local(self):
         write("other.txt", "y\n")
         subprocess.run(["git", "add", "-A"], check=True)
@@ -627,7 +657,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "import")
 
     def test_codex_import_backfills_and_stores_sessions(self):
-        run("init", "--codex", "--no-instructions")
+        run("init", "--codex", "--share-sessions", "--no-instructions")
         write("src/codex.ts", "x\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual codex commit"], check=True)
@@ -746,6 +776,7 @@ class SunTest(unittest.TestCase):
     # ----------------------------------------------------------------- blame
 
     def blame_turn(self, tp, edits, prompt):
+        run("init", "--share-sessions", "--no-instructions")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
         with open(tp, "a") as fh:
@@ -796,6 +827,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("human edit", out)
 
     def test_blame_squashed_bash_calls_resolve_per_call(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "t.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
@@ -896,6 +928,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("[Write tool1]", out)
 
     def test_blame_rename_within_turn(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "t.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
@@ -933,7 +966,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("human edit", out)
 
     def test_blame_codex_transcript(self):
-        run("init", "--codex", "--no-instructions")
+        run("init", "--codex", "--share-sessions", "--no-instructions")
         sid, tp = "codex-blame-session", os.path.join(self.codex, "live.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", sid, harness="codex", transcript_path=tp)
@@ -1058,6 +1091,7 @@ class SunTest(unittest.TestCase):
     # ---------------------------------------------------------------- export
 
     def test_export_pairs_prompt_with_edits(self):
+        run("init", "--share-sessions", "--no-instructions")
         tp = os.path.join(self.proj, "t.jsonl")
         write(tp, "")
         hook("UserPromptSubmit", transcript_path=tp)
@@ -1164,11 +1198,13 @@ class SunTest(unittest.TestCase):
         hook("PreToolUse")  # must not raise
         os.makedirs(".git/sun")
 
-    def test_sessionstart_prints_context_line(self):
+    def test_sessionstart_only_prints_context_when_sharing(self):
+        self.assertEqual(hook("SessionStart"), "")
+        run("init", "--share-sessions", "--no-instructions")
         self.assertIn(".git/sun/sessions/", hook("SessionStart"))
 
     def test_codex_sessionstart_prints_codex_context_line(self):
-        run("init", "--codex", "--no-instructions")
+        run("init", "--codex", "--share-sessions", "--no-instructions")
         out = hook("SessionStart", harness="codex")
         self.assertIn("~/.codex/sessions", out)
 

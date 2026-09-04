@@ -43,8 +43,8 @@ def main():
     choice = input(f"\nwhich repo do you want to `sun init`? [1-{len(items)}] ").strip()
     repo = items[int(choice) - 1][0]
     print(f"\nsun init will: install Claude Code hooks ({repo}/.claude/settings.json),\n"
-          "commit any dirty state as <you>/local, import this repo's sessions into\n"
-          "refs/sun/sessions, and backfill attribution over existing commits.")
+          "commit any dirty state as <you>/local, scan this repo's local sessions,\n"
+          "and backfill attribution over existing commits. Raw sessions stay local.")
     if input(f"run `sun init` in {repo}? [y/N] ").strip().lower() != "y":
         sys.exit("aborted")
     t0 = time.time()

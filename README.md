@@ -42,10 +42,19 @@ sessions) via a `SessionStart` context line and one line in `CLAUDE.md` or `AGEN
 debugging auth can read the session where auth was built, whoever's machine it ran on. No
 server needed.
 
+## Verification without orchestration
+
+Use `sun init --record-only` for a new integration that must not import sessions,
+install hooks, or create commits. `sun verify` snapshots selected evidence and
+records externally produced task-specific findings and human reviews. It never
+runs an assistant. See the [JSON contract and safety boundaries](docs/verification.md).
+For an opt-in Desktop ledger mirror, [`sun record`](docs/records.md) stores exact
+caller-supplied payloads with stable source identities, without committing files.
+
 ## Demos & tests
 
 ```sh
 python3 examples/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 examples/demo_fresh.py  # synthetic end-to-end story -> examples/demo.html
-python3 -m unittest test_sun    # 49 tests
+python3 -m unittest test_sun test_verification test_records
 ```

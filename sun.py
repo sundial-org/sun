@@ -8,9 +8,9 @@ transcript chunk to refs/sun/sessions/<user>/<id>; init imports existing session
 Events: .git/sun/events.jsonl (cache) mirrored to refs/sun/log/<user>, one writer each, merged
 by timestamp at read; refs/sun/* are the source of truth and travel via the refspec + pre-push
 hook init installs. .git/sun/lock (flock) serializes everything, like git's index.lock."""
-import argparse, difflib, fcntl, glob, hashlib, json, os, re, subprocess, sys
+import argparse, difflib, fcntl, glob, hashlib, json, os, re, stat, subprocess, sys
 import time, uuid, zlib
-from datetime import datetime
+from datetime import datetime, timezone
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"}
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
 CODEX_HOOK_EVENTS = HOOK_EVENTS + ("SubagentStart", "SubagentStop")
@@ -59,7 +59,9 @@ def blob(data):  # loose object via hashlib+zlib: no subprocess per chunk (sha1 
 refs = lambda prefix: [l.split("\t") for l in git(  # [(refname, sha)]
     "for-each-ref", "--format=%(refname)\t%(objectname)", prefix, check=False).splitlines()]
 def sun_dir(must=True):  # .git/sun is a per-machine cache; refs/sun/* are the source of truth
-    d = os.path.join(root(), ".git", "sun")
+    d = os.path.join(root(), ".git")
+    if not os.path.isdir(d): d = git("rev-parse", "--absolute-git-dir").strip()
+    d = os.path.join(d, "sun")
     if must and not os.path.isdir(d): sys.exit("sun: not initialized here (run `sun init`)")
     return d
 def jread(path, default):
@@ -616,6 +618,11 @@ def agent_instructions(harnesses, choice, flags=""):  # one prompt covering ever
         print(f"sun: run `sun init{flags} --instructions` later to enable team session sharing")
 def cmd_init(a):
     if quiet("git", "rev-parse", "--git-dir").returncode: sh("git", "init", "-q")
+    if a.record_only:
+        # An opt-in integration surface, not a second harness installation mode.
+        # Do not import, sync, fetch, configure remotes, or change existing hooks.
+        os.makedirs(sun_dir(False), exist_ok=True)
+        return print(json.dumps({"schema_version": 1, "mode": "record-only", "root": root()}))
     os.makedirs(os.path.join(root(), ".git", "sun"), exist_ok=True)
     explicit = [h for h, f in (("claude", a.claude), ("codex", a.codex)) if f]
     harnesses = explicit or detect_harnesses()
@@ -806,8 +813,456 @@ let t=null;play.onclick=()=>{if(t){clearInterval(t);t=null;return}s.value=0;cut(
 t=setInterval(()=>{s.value=+s.value+Math.max(1,Math.ceil(cs.length/150));cut();if(+s.value>=cs.length){clearInterval(t);t=null}},80)};
 s.oninput=cut;cut();</script>
 """
+
+# Verification is submitted by callers. This layer never executes an assistant,
+# interprets a verdict as truth, or mutates the worktree to obtain evidence.
+VERIFY_PREFIX = "refs/sun/verification/"
+SNAPSHOT_PREFIX = "refs/sun/evidence/"
+EXTERNAL_PREFIX = "refs/sun/records/"
+REQUEST_PREFIX = "refs/sun/record-requests/"
+ORDER_PREFIX = "refs/sun/record-order/"
+VERIFY_INPUT_LIMIT = 1024 * 1024
+SNAPSHOT_FILE_LIMIT = 1024 * 1024
+SNAPSHOT_TOTAL_LIMIT = 8 * 1024 * 1024
+
+
+def v_json(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+def v_object(value, required, optional=()):
+    if not isinstance(value, dict) or set(required) - value.keys():
+        raise ValueError("expected object with fields: " + ", ".join(required))
+    unknown = value.keys() - set(required) - set(optional)
+    if unknown: raise ValueError("unknown fields: " + ", ".join(sorted(unknown)))
+    return value
+
+
+def v_text(value, name, limit=256):
+    if not isinstance(value, str) or not value.strip() or len(value) > limit \
+            or any(ord(c) < 32 and c not in "\n\t" for c in value):
+        raise ValueError(f"{name} must be nonempty text of at most {limit} characters")
+    value.encode("utf-8")  # lone surrogates are not portable text
+    return value
+
+
+def v_id(value):
+    if not isinstance(value, str) or not re.fullmatch("[0-9a-f]{64}", value):
+        raise ValueError("record IDs must be 64 lowercase hexadecimal characters")
+    return value
+
+
+def v_path(path):
+    v_text(path, "path", 4096)
+    if "\\" in path or any(ord(c) < 32 for c in path) or any(
+            p in ("", ".", "..") or p.lower() == ".git" for p in path.split("/")):
+        raise ValueError("evidence paths must be normalized relative paths outside .git")
+    return path
+
+
+def v_read_file(path):
+    """Read through no-follow directory descriptors, including on concurrent renames."""
+    parts = v_path(path).split("/")
+    directory = os.open(root(), os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for component in parts[:-1]:
+            child = os.open(component, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                            dir_fd=directory)
+            os.close(directory)
+            directory = child
+        fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+        with os.fdopen(fd, "rb") as source:
+            before = os.fstat(source.fileno())
+            if not stat.S_ISREG(before.st_mode): raise ValueError("evidence must be a regular file")
+            if before.st_size > SNAPSHOT_FILE_LIMIT: raise ValueError("evidence file exceeds 1 MiB")
+            data = source.read(SNAPSHOT_FILE_LIMIT + 1)
+            after = os.fstat(source.fileno())
+            if len(data) > SNAPSHOT_FILE_LIMIT: raise ValueError("evidence file exceeds 1 MiB")
+            if (before.st_size, before.st_mtime_ns, before.st_ctime_ns) != \
+                    (after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+                raise ValueError("evidence changed while reading; retry snapshot")
+            return data
+    finally:
+        os.close(directory)
+
+
+def v_load(prefix, identifier):
+    ref = prefix + v_id(identifier)
+    result = quiet("git", "cat-file", "blob", ref)
+    if result.returncode: raise ValueError("unknown record: " + identifier)
+    return v_decode(prefix, identifier, result.stdout)
+
+
+def v_decode(prefix, identifier, raw):
+    try:
+        value = json.loads(raw)
+        if not isinstance(value, dict) or value.get("id") != identifier \
+                or value.get("schema_version") != 1:
+            raise ValueError()
+        if prefix == SNAPSHOT_PREFIX:
+            if value.get("type") != "snapshot" or hashlib.sha256(v_json(
+                    {k: v for k, v in value.items() if k != "id"}).encode()).hexdigest() != identifier:
+                raise ValueError()
+            for entry in v_array(value["files"], "files", 1, 128):
+                v_object(entry, ("path", "content", "sha256", "bytes"))
+                v_path(entry["path"])
+                data = entry["content"].encode("utf-8")
+                if entry["sha256"] != hashlib.sha256(data).hexdigest() or entry["bytes"] != len(data):
+                    raise ValueError()
+        elif value.get("type") not in ("verification", "review") or \
+                hashlib.sha256((value["type"] + "\0" + value["request_id"]).encode()).hexdigest() != identifier:
+            raise ValueError()
+    except (ValueError, KeyError, TypeError, AttributeError):
+        raise ValueError("corrupt verification record: " + identifier) from None
+    return value
+
+
+def v_store(prefix, value):
+    """A ref is created once. Git objects and CAS refs are atomic and survive gc."""
+    ref = prefix + v_id(value["id"])
+    encoded = v_json(value)
+    sha = git("hash-object", "-w", "--stdin", input=encoded).strip()
+    zero = "0" * len(sha)  # support both SHA-1 and SHA-256 Git repositories
+    result = quiet("git", "update-ref", ref, sha, zero)
+    if result.returncode:
+        existing = v_load(prefix, value["id"])
+        if v_json(existing) != encoded: raise ValueError("immutable record already exists with different content")
+        return existing
+    return value
+
+
+def v_snapshot(paths):
+    if not 1 <= len(paths) <= 128 or len(paths) != len(set(paths)):
+        raise ValueError("snapshot requires 1 to 128 distinct paths")
+    files, total = [], 0
+    for path in sorted(paths):
+        data = v_read_file(path)
+        total += len(data)
+        if total > SNAPSHOT_TOTAL_LIMIT: raise ValueError("snapshot exceeds 8 MiB")
+        files.append({"path": path, "sha256": hashlib.sha256(data).hexdigest(),
+                      "bytes": len(data), "content": data.decode("utf-8")})
+    value = {"schema_version": 1, "type": "snapshot", "files": files}
+    value["id"] = hashlib.sha256(v_json(value).encode()).hexdigest()
+    stored = v_store(SNAPSHOT_PREFIX, value)
+    return {**stored, "files": [{k: v for k, v in f.items() if k != "content"} for f in files]}
+
+
+def v_evidence(reference, citation=False, synthetic=False):
+    if citation and isinstance(reference, dict) and "record_id" in reference:
+        v_object(reference, ("record_id",))
+        record = r_load(reference["record_id"])
+        if record["synthetic"] and not synthetic:
+            raise ValueError("a verification citing synthetic evidence must also be marked synthetic")
+        return record
+    v_object(reference, ("snapshot_id", "path"), ("start_line", "end_line") if citation else ())
+    path = v_path(reference["path"])
+    snapshot = v_load(SNAPSHOT_PREFIX, reference["snapshot_id"])
+    entry = next((f for f in snapshot["files"] if f["path"] == path), None)
+    if entry is None: raise ValueError("path is not present in the referenced snapshot: " + path)
+    if "start_line" in reference or "end_line" in reference:
+        first, last = reference.get("start_line"), reference.get("end_line")
+        if type(first) is not int or type(last) is not int \
+                or not 1 <= first <= last <= len(entry["content"].splitlines()):
+            raise ValueError("citation requires an inclusive, existing start_line/end_line range")
+    return entry
+
+
+def v_array(value, name, minimum=0, maximum=256):
+    if not isinstance(value, list) or not minimum <= len(value) <= maximum:
+        raise ValueError(f"{name} must have {minimum} to {maximum} entries")
+    return value
+
+
+def v_request(value, kind):
+    common = ("request_id", "actor", "synthetic")
+    extra = (("module", "targets", "findings") if kind == "verification" else
+             ("verification_id", "finding_ids", "decision", "rationale"))
+    v_object(value, common + extra, ("metadata", "run_id", "parent_run_id"))
+    v_text(value["request_id"], "request_id")
+    v_object(value["actor"], ("id", "kind"))
+    for key in ("id", "kind"): v_text(value["actor"][key], "actor." + key)
+    if type(value["synthetic"]) is not bool: raise ValueError("synthetic must be a boolean")
+    if "metadata" in value and not isinstance(value["metadata"], dict):
+        raise ValueError("metadata must be an object")
+    for key in ("run_id", "parent_run_id"):
+        if key in value: v_text(value[key], key)
+    if kind == "review":
+        check = v_load(VERIFY_PREFIX, value["verification_id"])
+        if check["type"] != "verification": raise ValueError("review must reference a verification")
+        if check["synthetic"] and not value["synthetic"]:
+            raise ValueError("a review of synthetic verification must also be marked synthetic")
+        known = {f["id"] for f in check["findings"]}
+        selected = v_array(value["finding_ids"], "finding_ids")
+        for identifier in selected:
+            v_text(identifier, "finding_id")
+            if identifier not in known: raise ValueError("unknown finding_id: " + identifier)
+        if len(selected) != len(set(selected)): raise ValueError("finding_ids must be distinct")
+        v_text(value["decision"], "decision")
+        v_text(value["rationale"], "rationale", 32768)
+        return
+    module = v_object(value["module"], ("id", "version"), ("digest",))
+    v_text(module["id"], "module.id"); v_text(module["version"], "module.version")
+    if "digest" in module: v_id(module["digest"])
+    targets = v_array(value["targets"], "targets", 1, 128)
+    for target in targets: v_evidence(target)
+    if len({v_json(t) for t in targets}) != len(targets): raise ValueError("targets must be distinct")
+    ids = set()
+    for finding in v_array(value["findings"], "findings"):
+        v_object(finding, ("id", "criterion", "tier", "verdict", "rationale", "citations"))
+        for key in ("id", "criterion", "tier", "verdict"):
+            v_text(finding[key], "finding." + key, 4096 if key == "criterion" else 256)
+        if finding["id"] in ids: raise ValueError("finding IDs must be distinct")
+        ids.add(finding["id"])
+        v_text(finding["rationale"], "finding.rationale", 32768)
+        for citation in v_array(finding["citations"], "citations", 1, 128):
+            v_evidence(citation, citation=True, synthetic=value["synthetic"])
+
+
+def v_append(value, kind):
+    v_request(value, kind)
+    identifier = hashlib.sha256((kind + "\0" + value["request_id"]).encode()).hexdigest()
+    ref = VERIFY_PREFIX + identifier
+    if not quiet("git", "show-ref", "--verify", "--quiet", ref).returncode:
+        existing = v_load(VERIFY_PREFIX, identifier)
+        original = {k: existing[k] for k in existing if k not in
+                    ("schema_version", "type", "id", "recorded_at", "recorded_by", "attribution")}
+        if v_json(original) != v_json(value): raise ValueError("request_id already used with different content")
+        return existing
+    return v_store(VERIFY_PREFIX, {**value, "schema_version": 1, "type": kind, "id": identifier,
+                                  "recorded_at": datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z"),
+                                  "recorded_by": user(), "attribution": "caller-declared"})
+
+
+def v_freshness(value):
+    # Check evidence as well as targets: changed results can stale an unchanged paper.
+    references = value["targets"] + [c for f in value["findings"] for c in f["citations"]]
+    # Receipts are immutable observations, not files that must remain on disk.
+    # Still validate them on reads so missing/corrupt evidence never looks current.
+    for reference in references:
+        if "record_id" in reference:
+            v_evidence(reference, citation=True, synthetic=value["synthetic"])
+    unique = {(r["snapshot_id"], r["path"]) for r in references if "record_id" not in r}
+    files = []
+    for snapshot_id, path in sorted(unique):
+        entry = v_evidence({"snapshot_id": snapshot_id, "path": path})
+        try:
+            current = hashlib.sha256(v_read_file(path)).hexdigest()
+            status = "current" if current == entry["sha256"] else "stale"
+        except FileNotFoundError:
+            current, status = None, "missing"
+        except (OSError, ValueError):
+            current, status = None, "unavailable"
+        files.append({"snapshot_id": snapshot_id, "path": path, "status": status,
+                      "recorded_sha256": entry["sha256"], "current_sha256": current})
+    status = next((s for s in ("unavailable", "missing", "stale") if any(
+        f["status"] == s for f in files)), "current")
+    return {"status": status, "files": files}
+
+
+def v_records():
+    entries = refs(VERIFY_PREFIX)
+    if not entries: return []
+    # One Git process, not one process per historical record. Byte lengths are
+    # mandatory here: JSON can contain Unicode and escaped line breaks.
+    result = subprocess.run(["git", "cat-file", "--batch"], capture_output=True,
+                            input=("".join(sha + "\n" for ref, sha in entries)).encode())
+    if result.returncode: raise ValueError("could not read verification records")
+    values, offset = [], 0
+    for ref, sha in entries:
+        end = result.stdout.find(b"\n", offset)
+        header = result.stdout[offset:end].split()
+        if end < 0 or len(header) != 3 or header[0].decode() != sha or header[1] != b"blob":
+            raise ValueError("corrupt verification record batch")
+        size = int(header[2])
+        start, offset = end + 1, end + 1 + size
+        if result.stdout[offset:offset + 1] != b"\n": raise ValueError("truncated verification record batch")
+        values.append(v_decode(VERIFY_PREFIX, ref.rsplit("/", 1)[-1], result.stdout[start:offset]))
+        offset += 1
+    if offset != len(result.stdout): raise ValueError("unexpected verification record batch output")
+    return sorted(values, key=lambda v: (v["recorded_at"], v["id"]))
+
+
+def v_lock():
+    # Worktrees share verification refs, so their append lock must also be shared.
+    common = os.path.abspath(git("rev-parse", "--git-common-dir").strip())
+    directory = os.path.join(common, "sun")
+    os.makedirs(directory, exist_ok=True)
+    held = open(os.path.join(directory, "verification.lock"), "a")
+    fcntl.flock(held, fcntl.LOCK_EX)
+    return held
+
+
+def v_view(value, records):
+    if value["type"] != "verification": return value
+    return {**value, "freshness": v_freshness(value), "reviews": [r for r in records
+            if r["type"] == "review" and r["verification_id"] == value["id"]]}
+
+
+def v_input():
+    raw = sys.stdin.buffer.read(VERIFY_INPUT_LIMIT + 1) if hasattr(sys.stdin, "buffer") \
+        else sys.stdin.read(VERIFY_INPUT_LIMIT + 1).encode("utf-8")
+    if len(raw) > VERIFY_INPUT_LIMIT: raise ValueError("request exceeds 1 MiB")
+    def pairs(items):
+        value = {}
+        for key, item in items:
+            if key in value: raise ValueError("duplicate JSON field: " + key)
+            value[key] = item
+        return value
+    def constant(value):
+        raise ValueError("non-finite JSON number: " + value)
+    return json.loads(raw, object_pairs_hook=pairs, parse_constant=constant)
+
+
+def cmd_verify(a):
+    try:
+        if a.verify_cmd == "snapshot":
+            value = v_snapshot(a.paths)
+        elif a.verify_cmd in ("record", "review"):
+            value = v_append(v_input(), "verification" if a.verify_cmd == "record" else "review")
+        elif a.verify_cmd == "evidence":
+            entry = v_evidence({"snapshot_id": a.id, "path": a.path})
+            value = {"schema_version": 1, "snapshot_id": a.id, **entry}
+        elif a.verify_cmd == "show":
+            value = v_view(v_load(VERIFY_PREFIX, a.id), v_records())
+        else:
+            records = v_records()
+            if a.limit is None:
+                if a.before: raise ValueError("--before requires --limit")
+                value = {"schema_version": 1, "records": [v_view(v, records) for v in records]}
+            else:
+                if not 1 <= a.limit <= 100: raise ValueError("limit must be between 1 and 100")
+                checks = [v for v in records if v["type"] == "verification"]
+                end = len(checks)
+                if a.before:
+                    positions = [i for i, v in enumerate(checks) if v["id"] == v_id(a.before)]
+                    if not positions: raise ValueError("before cursor is not a verification in this repository")
+                    end = positions[0]
+                page = checks[max(0, end - a.limit):end]
+                value = {"schema_version": 1, "records": [v_view(v, records) for v in page],
+                         "total": len(checks), "offset": len(checks) - end,
+                         "next_cursor": page[0]["id"] if end > a.limit else None}
+        print(v_json(value))
+    except (ValueError, OSError, UnicodeError, RecursionError) as error:
+        print(v_json({"schema_version": 1, "error": str(error)}), file=sys.stderr)
+        raise SystemExit(2) from None
+
+
+def r_source(source):
+    v_object(source, ("installation_id", "project_id", "stream", "row_id"))
+    for key in ("installation_id", "project_id", "stream"): v_text(source[key], "source." + key)
+    if type(source["row_id"]) is not int or not 1 <= source["row_id"] <= 9007199254740991:
+        raise ValueError("source.row_id must be a positive JSON-safe integer")
+    return hashlib.sha256(("external\0" + v_json(source)).encode()).hexdigest()
+
+
+def r_request(value):
+    v_object(value, ("request_id", "source", "actor", "synthetic", "payload"),
+             ("module", "run_id", "parent_run_id"))
+    v_text(value["request_id"], "request_id")
+    r_source(value["source"])
+    v_object(value["actor"], ("id", "kind"))
+    for key in ("id", "kind"): v_text(value["actor"][key], "actor." + key)
+    if type(value["synthetic"]) is not bool: raise ValueError("synthetic must be a boolean")
+    if not isinstance(value["payload"], dict): raise ValueError("payload must be an object")
+    if "module" in value:
+        v_object(value["module"], ("id", "version"), ("digest",))
+        for key in ("id", "version"): v_text(value["module"][key], "module." + key)
+        if "digest" in value["module"]: v_id(value["module"]["digest"])
+    for key in ("run_id", "parent_run_id"):
+        if key in value: v_text(value[key], key)
+
+
+def r_load(identifier):
+    result = quiet("git", "cat-file", "blob", EXTERNAL_PREFIX + v_id(identifier))
+    if result.returncode: raise ValueError("unknown external record: " + identifier)
+    try:
+        value = json.loads(result.stdout)
+        envelope = ("schema_version", "type", "id", "recorded_at", "recorded_by", "attribution")
+        if value["schema_version"] != 1 or value["type"] != "external_record" \
+                or value["id"] != identifier or r_source(value["source"]) != identifier:
+            raise ValueError()
+        v_text(value["recorded_at"], "recorded_at")
+        r_request({k: v for k, v in value.items() if k not in envelope})
+        return value
+    except (KeyError, TypeError, ValueError, AttributeError):
+        raise ValueError("corrupt external record: " + identifier) from None
+
+
+def r_append(value):
+    r_request(value)
+    identifier = r_source(value["source"])
+    ref = EXTERNAL_PREFIX + identifier
+    request_ref = REQUEST_PREFIX + hashlib.sha256(value["request_id"].encode()).hexdigest()
+    existing_ref = quiet("git", "show-ref", "--verify", "--quiet", ref).returncode == 0
+    existing_request = quiet("git", "show-ref", "--verify", "--quiet", request_ref).returncode == 0
+    if existing_ref:
+        existing = r_load(identifier)
+        original = {k: v for k, v in existing.items() if k not in
+                    ("schema_version", "type", "id", "recorded_at", "recorded_by", "attribution")}
+        if v_json(original) != v_json(value):
+            raise ValueError("source identity already recorded with different content or request_id")
+        if not existing_request or git("rev-parse", request_ref).strip() != git("rev-parse", ref).strip():
+            raise ValueError("external record request index is missing or inconsistent")
+        if git("rev-parse", "-q", "--verify", r_order(existing), check=False).strip() != git("rev-parse", ref).strip():
+            raise ValueError("external record order index is missing or inconsistent")
+        return existing
+    if existing_request: raise ValueError("request_id already used for another source identity")
+    stored = {**value, "schema_version": 1, "type": "external_record", "id": identifier,
+              "recorded_at": datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z"),
+              "recorded_by": user(), "attribution": "caller-declared"}
+    sha = git("hash-object", "-w", "--stdin", input=v_json(stored)).strip()
+    # Both identity constraints commit or neither does, including on a crash.
+    transaction = (f"start\ncreate {ref} {sha}\ncreate {request_ref} {sha}\n"
+                   f"create {r_order(stored)} {sha}\nprepare\ncommit\n")
+    result = quiet("git", "update-ref", "--stdin", input=transaction)
+    if result.returncode: raise ValueError("record transaction failed; retry with the same request_id")
+    return stored
+
+
+def r_order(value):
+    timestamp = value["recorded_at"].replace("-", "").replace(":", "").replace(".", "")
+    return ORDER_PREFIX + timestamp + "-" + value["id"]
+
+
+def cmd_records(a):
+    try:
+        if a.cmd == "record":
+            value = r_append(v_input())
+        elif a.records_cmd == "show":
+            value = r_load(a.id)
+        else:
+            if not 1 <= a.limit <= 1000: raise ValueError("limit must be between 1 and 1000")
+            if a.stream is not None:
+                v_text(a.stream, "stream")
+            after = ""
+            if a.after is not None:
+                cursor = r_load(a.after)
+                if a.stream is not None and cursor["source"]["stream"] != a.stream:
+                    raise ValueError("unknown pagination cursor for this stream")
+                after = r_order(cursor)
+            page, ordered = [], refs(ORDER_PREFIX)
+            if {ref.rsplit("-", 1)[-1] for ref, sha in ordered} != {
+                    ref.rsplit("/", 1)[-1] for ref, sha in refs(EXTERNAL_PREFIX)}:
+                raise ValueError("external record order index is missing or inconsistent")
+            for ref, sha in ordered:
+                if ref <= after: continue
+                item = r_load(ref.rsplit("-", 1)[-1])
+                if r_order(item) != ref: raise ValueError("external record order index is inconsistent")
+                if a.stream is not None and item["source"]["stream"] != a.stream: continue
+                page.append(item)
+                if len(page) > a.limit: break
+            value = {"schema_version": 1, "records": page[:a.limit],
+                     "next_cursor": page[a.limit - 1]["id"] if len(page) > a.limit else None}
+        print(v_json(value))
+    except (ValueError, OSError, UnicodeError, RecursionError) as error:
+        print(v_json({"schema_version": 1, "error": str(error)}), file=sys.stderr)
+        raise SystemExit(2) from None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="sun", description=__doc__)
+    ap.add_argument("--expected-root", metavar="ABSOLUTE_PATH",
+                    help="require this exact repository root for record-only integrations")
     sub = ap.add_subparsers(dest="cmd", required=True)
     ps = {c: sub.add_parser(c, help=h) for c, h in [
         ("init", "git repo + .git/sun + hooks + session import"), ("sync", "commit pending local edits"),
@@ -816,6 +1271,9 @@ def main(argv=None):
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
         ("undo", "undo one operation (default: latest) or a commit"), ("viz", "HTML visualization of the op log"),
         ("update", "update sun to the latest version"),
+        ("verify", "record and inspect externally produced verifications; never executes agents"),
+        ("record", "append exact attributed payload from an external ledger; no worktree commits"),
+        ("records", "inspect paginated external ledger records"),
         ("export", "dump history as fine-tuning JSONL (prompt + tool_calls + edits per turn)"),
         ("blame", "the conversation behind a file:line")]}
     ps["init"].add_argument("--claude", action="store_true",
@@ -826,6 +1284,28 @@ def main(argv=None):
                             action="store_true", default=None)
     ps["init"].add_argument("--no-instructions", "--no-claude-md", dest="instructions",
                             action="store_false")
+    ps["init"].add_argument("--record-only", action="store_true",
+                            help="initialize local record storage only; no imports, hooks, commits, or network")
+    verification = ps["verify"].add_subparsers(dest="verify_cmd", required=True)
+    for name in ("snapshot", "record", "review", "list", "show", "evidence"):
+        parser = verification.add_parser(name)
+        parser.add_argument("--json", action="store_true", help="JSON output (also the default)")
+        if name == "snapshot": parser.add_argument("paths", nargs="+")
+        if name in ("show", "evidence"): parser.add_argument("id")
+        if name == "evidence": parser.add_argument("path")
+        if name == "list":
+            parser.add_argument("--limit", type=int, help="page checks newest-first; reviews stay attached")
+            parser.add_argument("--before", help="older checks before this page cursor")
+    ps["record"].add_argument("--json", action="store_true", help="JSON output (also the default)")
+    records = ps["records"].add_subparsers(dest="records_cmd", required=True)
+    for name in ("list", "show"):
+        parser = records.add_parser(name)
+        parser.add_argument("--json", action="store_true", help="JSON output (also the default)")
+        if name == "show": parser.add_argument("id")
+        else:
+            parser.add_argument("--limit", type=int, default=100)
+            parser.add_argument("--after")
+            parser.add_argument("--stream")
     ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
     ps["sessions"].add_argument("id", nargs="?"); ps["sessions"].add_argument("--grep")
     ps["sessions"].add_argument("--file"); ps["gc"].add_argument("--older-than", type=int, required=True)
@@ -836,11 +1316,25 @@ def main(argv=None):
     ps["export"].add_argument("-o", "--output", default=None)
     ps["blame"].add_argument("file"); ps["blame"].add_argument("line", type=int)
     a = ap.parse_args(argv)
+    if a.expected_root is not None:
+        if a.cmd not in ("verify", "record", "records") and not (a.cmd == "init" and a.record_only):
+            ap.error("--expected-root is supported only for record APIs and init --record-only")
+        resolved = quiet("git", "rev-parse", "--show-toplevel")
+        actual = resolved.stdout.strip() if resolved.returncode == 0 else os.getcwd()
+        if not os.path.isabs(a.expected_root) or os.path.realpath(actual) != os.path.realpath(a.expected_root):
+            print(v_json({"schema_version": 1, "error": "Sun repository root does not match the project; "
+                          "open the repository root instead: " + actual}), file=sys.stderr)
+            raise SystemExit(2)
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
-        os.chdir(root()); sun_dir(); a.lock = lock()
-    {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
-     "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
-     "gc": cmd_gc, "update": cmd_update, "export": cmd_export, "blame": cmd_blame}[a.cmd](a)
+        os.chdir(root()); sun_dir()
+        a.lock = v_lock() if a.cmd in ("verify", "record", "records") else lock()
+    try:
+        {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
+         "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
+         "gc": cmd_gc, "update": cmd_update, "export": cmd_export, "blame": cmd_blame,
+         "verify": cmd_verify, "record": cmd_records, "records": cmd_records}[a.cmd](a)
+    finally:
+        if hasattr(a, "lock"): a.lock.close()
 if __name__ == "__main__":
     main()

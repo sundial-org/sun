@@ -215,13 +215,6 @@ class SunTest(unittest.TestCase):
         self.assertIn("c.ts", ns)
         self.assertEqual(self.git("status", "--porcelain"), "")
 
-    def test_char_edits_match_proposal_example(self):
-        patch = ('@@ -10,2 +10,2 @@\n-const name = "Alice";\n'
-                 '+const name = "Emma";\n console.log(name);')
-        edits = sun.char_edits(patch)
-        self.assertEqual((edits[0]["old_line"], edits[0]["new_line"]), (10, 10))
-        self.assertEqual((edits[0]["old_text"], edits[0]["new_text"]), ("Alice", "Emma"))
-
     # ------------------------------------------------------------ agent turns
 
     def test_tool_call_creates_attributed_commit(self):

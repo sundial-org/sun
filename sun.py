@@ -3,8 +3,8 @@
 
 Commits are attributed as <user>/<source>: <user>/local, or <user>/agent:<harness>/<session>.
 PreToolUse commits dirty state as local; PostToolUse commits the pre->post diff as the agent's;
-Stop squashes the turn (per-call commits stay under refs/sun/ops) and appends the turn's
-transcript chunk to refs/sun/sessions/<user>/<id>; init imports existing sessions + backfills.
+Stop squashes the turn (per-call commits stay under refs/sun/ops); raw transcripts are shared
+under refs/sun/sessions/<user>/<id> only when the user opts in.
 Events: .git/sun/events.jsonl (cache) mirrored to refs/sun/log/<user>, one writer each, merged
 by timestamp at read; refs/sun/* are the source of truth and travel via the refspec + pre-push
 hook init installs. .git/sun/lock (flock) serializes everything, like git's index.lock."""
@@ -257,7 +257,7 @@ def prompt_boundary(sid, payload, harness="claude"):
     for boundary, _ in bs:  # are queued prompts, each starting a new turn
         squash_turn(sid, harness)  # close the previous turn before this turn's first commit
         f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
-        if data and not t.get("stopped") and cfg_track():  # store its transcript slice too
+        if data and not t.get("stopped") and cfg_share_sessions():
             store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
         sync()  # dirty local edits predate the queued turn: commit them outside it
         t.update(n=t["n"] + 1, start=head(), toffset=boundary); t.pop("stopped", None)
@@ -268,13 +268,13 @@ def stop_chunk(sid, payload, harness="claude"):
     # Stop: append this turn's transcript slice to the session ref
     turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
     tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
-    if not (t and tp and os.path.exists(tp) and cfg_track()): return
+    if not (t and tp and os.path.exists(tp) and cfg_share_sessions()): return
     f = open(tp, errors="replace"); f.seek(t.get("toffset", 0)); data = f.read()
     if data: store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
     t.update(toffset=os.path.getsize(tp), stopped=True); save_state("turns.json", turns)
 def subagent_chunk(sid, payload):
     tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
-    if not (tp and sub and os.path.exists(tp) and cfg_track()): return
+    if not (tp and sub and os.path.exists(tp) and cfg_share_sessions()): return
     store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": open(tp, errors="replace").read()})
 def cmd_hook(a):
     try: payload = json.load(sys.stdin)
@@ -297,10 +297,12 @@ def cmd_hook(a):
     if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
         sync()  # everything dirty before an agent tool runs is <user>/local
     if event == "SessionStart":  # stdout lands in the agent's context
+        if not cfg_share_sessions(): return
         native = "~/.claude/projects" if harness == "claude" else "~/.codex/sessions"
         print(f"sun: past sessions for this repo (yours + teammates') are in "
               f".git/sun/sessions/, not {native}; {export_sessions()} sessions")
     elif event == "SubagentStart":
+        if not cfg_share_sessions(): return
         print("sun: past sessions for this repo are in .git/sun/sessions/; "
               "use `sun sessions` to search them")
     elif event == "UserPromptSubmit":
@@ -440,10 +442,11 @@ def backfill(index):  # attribute pre-existing commits: transcript_backfill on a
     return att, tot
 def do_import(harnesses=("claude",)):  # index every harness first: backfill runs once
     t0, seen, index, ns, nsub = time.time(), state("imported.json", {}), {}, 0, 0
+    share = cfg_share_sessions()
     for harness in harnesses:
         for path, sid, sub in transcript_sources(harness):
             st = os.stat(path)
-            if seen.get(path) == [st.st_size, int(st.st_mtime)]:
+            if share and seen.get(path) == [st.st_size, int(st.st_mtime)]:
                 continue  # idempotent: only new/changed transcripts are re-read
             chunks, calls = scan_transcript(path, sid, harness)
             for t, s, tid, f, cw in calls:  # strip repo root or the transcript's own cwd,
@@ -451,12 +454,12 @@ def do_import(harnesses=("claude",)):  # index every harness first: backfill run
                             if p and f.startswith(p + "/")), "")
                 fr = re.sub(r"^\.claude/worktrees/[^/]+/", "", f[len(pre):].lstrip("/"))
                 index.setdefault(fr, []).append((t, s, tid, harness))
-            if cfg_track():
+            if share:
                 pre = f"subagents/{sub}/" if sub else ""
                 store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
-            seen[path] = [st.st_size, int(st.st_mtime)]
+                seen[path] = [st.st_size, int(st.st_mtime)]
             ns, nsub = ns + (not sub), nsub + bool(sub)
-    save_state("imported.json", seen)
+    if share: save_state("imported.json", seen)
     att, tot = backfill(index); mirror_log()
     return (f"imported {ns} sessions, {nsub} subagents; "
             f"attributed {att}/{tot} commits in {time.time() - t0:.1f}s")
@@ -546,13 +549,16 @@ def cmd_gc(a):
            if int(git("show", "-s", "--format=%ct", sha).strip()) < time.time() - a.older_than * 86400]
     for r in old: git("update-ref", "-d", r)
     print(f"sun: dropped {len(old)} session refs (git gc will prune the objects)")
-def cfg_track():  # ask once; tty only, so never on hook runs; default yes
+def cfg_share_sessions(): return state("config.json", {}).get("share_sessions", False)
+def configure_session_sharing(choice):
     cfg = state("config.json", {})
-    if "track_sessions" not in cfg:
-        cfg["track_sessions"] = (not sys.stdin.isatty() or
-                                 input("sun: track sessions in git? [Y/n] ").strip().lower() != "n")
-        save_state("config.json", cfg)
-    return cfg["track_sessions"]
+    if choice is None and "share_sessions" in cfg: return cfg["share_sessions"]
+    if choice is None:
+        choice = (sys.stdin.isatty() and input(
+            "sun: share raw agent transcripts with everyone who can read this remote? "
+            "They may contain secrets and private data. [y/N] ").strip().lower() == "y")
+    cfg["share_sessions"] = choice; save_state("config.json", cfg)
+    return choice
 def detect_harnesses():  # every harness with state on this machine (SUN_* overrides apply)
     hs = [h for h, home, d in (("claude", "~/.claude", projects()),
                                ("codex", "~/.codex", codex_sessions()))
@@ -588,15 +594,28 @@ def remove_hooks(harness):  # a restrictive re-init un-installs the excluded har
         cfg["hooks"][event] = [g for g in cfg["hooks"][event] if g.get("hooks")]
         if not cfg["hooks"][event]: del cfg["hooks"][event]
     jwrite(path, cfg)
-def install_push():  # travel: fetch refspec + fail-soft pre-push mirror of refs/sun/*
+def refspecs(share_sessions=False):
+    specs = ["+refs/sun/log/*:refs/sun/log/*", "+refs/sun/ops/*:refs/sun/ops/*"]
+    return specs + (["+refs/sun/sessions/*:refs/sun/sessions/*"] if share_sessions else [])
+def install_push(share_sessions=False):  # fail-soft push of shared sun refs
     if "origin" in git("remote", check=False).split():
-        spec = "+refs/sun/*:refs/sun/*"
-        if spec not in git("config", "--get-all", "remote.origin.fetch", check=False):
-            git("config", "--add", "remote.origin.fetch", spec)
+        for old in ("+refs/sun/*:refs/sun/*", "+refs/sun/sessions/*:refs/sun/sessions/*"):
+            git("config", "--fixed-value", "--unset-all", "remote.origin.fetch", old, check=False)
+        current = git("config", "--get-all", "remote.origin.fetch", check=False).splitlines()
+        for spec in refspecs(share_sessions):
+            if spec not in current: git("config", "--add", "remote.origin.fetch", spec)
     hp = os.path.join(root(), ".git", "hooks", "pre-push")
-    if not os.path.exists(hp):
-        open(hp, "w").write('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
-                            'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
+    old = open(hp).read() if os.path.exists(hp) else ""
+    legacy = ('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
+              'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
+    managed = old == legacy or old.startswith('#!/bin/sh\n# sun: mirror shared refs, fail-soft\n')
+    if not old or managed:
+        lines = ['#!/bin/sh', '# sun: mirror shared refs, fail-soft',
+                 f'git push --no-verify "$1" "+refs/sun/log/{user()}:refs/sun/log/{user()}" >/dev/null 2>&1 || true',
+                 'git push --no-verify "$1" "+refs/sun/ops/*:refs/sun/ops/*" >/dev/null 2>&1 || true']
+        if share_sessions:
+            lines.append(f'git push --no-verify "$1" "+refs/sun/sessions/{user()}/*:refs/sun/sessions/{user()}/*" >/dev/null 2>&1 || true')
+        open(hp, "w").write("\n".join(lines) + "\n")
         os.chmod(hp, 0o755)
 def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
     todo = []
@@ -621,19 +640,21 @@ def cmd_init(a):
     harnesses = explicit or detect_harnesses()
     cfg = state("config.json", {}); cfg.pop("harness", None)
     cfg["harnesses"] = harnesses; save_state("config.json", cfg)
+    share_sessions = configure_session_sharing(a.share_sessions)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
-        git("fetch", "-q", "origin", "+refs/sun/*:refs/sun/*", check=False)
+        git("fetch", "-q", "origin", *refspecs(share_sessions), check=False)
     p, sha = os.path.join(sun_dir(), "events.jsonl"), git(  # rebuild cache from our own ref
         "rev-parse", "-q", "--verify", f"refs/sun/log/{user()}", check=False).strip()
     if sha and not os.path.exists(p): open(p, "w").write(git("cat-file", "blob", sha))
-    installed = ", ".join(install_hooks(h) for h in harnesses); install_push()
+    installed = ", ".join(install_hooks(h) for h in harnesses); install_push(share_sessions)
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
     if quiet("git", "rev-parse", "HEAD").returncode or changed_files():
         c = commit_files(["."], "sun: initial state", local())
         record(type="init", actor=local(), commit=c, edits=[])
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
-    agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
+    if share_sessions:
+        agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
     cmd_viz(argparse.Namespace(n=0, output=os.path.join(sun_dir(), "viz.html")))
     print(f"open file://{sun_dir()}/viz.html to see your history")
 def cmd_sync(a):
@@ -822,6 +843,9 @@ def main(argv=None):
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
                             help="set up Codex only (default: every detected harness)")
+    ps["init"].add_argument("--share-sessions", dest="share_sessions", action="store_true",
+                            default=None, help="share raw transcripts through git refs")
+    ps["init"].add_argument("--no-share-sessions", dest="share_sessions", action="store_false")
     ps["init"].add_argument("--instructions", "--claude-md", dest="instructions",
                             action="store_true", default=None)
     ps["init"].add_argument("--no-instructions", "--no-claude-md", dest="instructions",

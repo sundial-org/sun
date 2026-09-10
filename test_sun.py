@@ -613,9 +613,9 @@ class SunTest(unittest.TestCase):
         self.assertEqual([r[0].split("/")[-1] for r in sun.refs("refs/sun/sessions/")],
                          ["new-sess"])
 
-    # --------------------------------------------------------- import/backfill
+    # ---------------------------------------------------------------- import
 
-    def test_import_backfills_and_stores_sessions(self):
+    def test_import_stores_sessions_without_attributing_old_commits(self):
         run("init", "--share-sessions", "--no-instructions")
         write("src/foo.ts", "x\n")
         subprocess.run(["git", "add", "-A"], check=True)
@@ -625,8 +625,8 @@ class SunTest(unittest.TestCase):
               transcript_line(os.path.abspath("src/foo.ts")))
         out = run("import")
         self.assertIn("imported 1 sessions", out)
-        ev = next(e for e in sun.events() if e["actor"].startswith("emma/agent:claude/sess-imp"))
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
+        self.assertNotIn(self.git("rev-parse", "HEAD").strip(),
+                         {e.get("commit") for e in sun.events()})
         self.assertTrue(sun.refs("refs/sun/sessions/emma/sess-import-42"))
         n = len(sun.events())
         run("import")  # idempotent: nothing new
@@ -639,17 +639,14 @@ class SunTest(unittest.TestCase):
         run("import")
         self.assertFalse(sun.refs("refs/sun/sessions/"))
 
-    def test_import_unmatched_commit_is_local(self):
+    def test_import_leaves_old_commit_untracked(self):
         write("other.txt", "y\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "no transcript"], check=True)
         run("import")
-        ev = next(e for e in sun.events() if e.get("commit") ==
-                  self.git("rev-parse", "HEAD").strip())
-        self.assertEqual(ev["actor"], "emma/local")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "import")
+        self.assertIn("[untracked]", run("log").splitlines()[0])
 
-    def test_codex_import_backfills_and_stores_sessions(self):
+    def test_codex_import_stores_sessions_without_attributing_old_commits(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
         write("src/codex.ts", "x\n")
         subprocess.run(["git", "add", "-A"], check=True)
@@ -668,79 +665,9 @@ class SunTest(unittest.TestCase):
         write(path, "".join(json.dumps(line) + "\n" for line in lines))
         out = run("import")
         self.assertIn("imported 1 sessions", out)
-        ev = next(e for e in sun.events() if e["actor"].startswith(
-            "emma/agent:codex/codex-im"))
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
+        self.assertNotIn(self.git("rev-parse", "HEAD").strip(),
+                         {e.get("commit") for e in sun.events()})
         self.assertTrue(sun.refs(f"refs/sun/sessions/emma/{sid}"))
-
-    def test_dual_harness_import_attributes_codex_commits(self):
-        # both harnesses configured (setUp default): the claude pass must not
-        # backfill codex-authored commits as local before the codex index exists
-        write("src/codex.ts", "x\n")
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "manual codex commit"], check=True)
-        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        lines = [
-            {"type": "session_meta", "timestamp": ts,
-             "payload": {"id": "codex-dual-session", "cwd": sun.root(), "source": "cli"}},
-            {"type": "response_item", "timestamp": ts, "payload": {
-                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-1",
-                "input": "*** Begin Patch\n*** Update File: src/codex.ts\n*** End Patch"}},
-        ]
-        write(os.path.join(self.codex, "rollout.jsonl"),
-              "".join(json.dumps(line) + "\n" for line in lines))
-        run("import")
-        ev = next(e for e in sun.events() if e.get("commit") ==
-                  self.git("rev-parse", "HEAD").strip())
-        self.assertEqual(ev["actor"], "emma/agent:codex/codex-du")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "transcript_backfill")
-
-    def test_backfill_picks_nearest_call_across_harnesses(self):
-        write("src/both.ts", "x\n")
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "codex-authored commit"], check=True)
-        at = int(self.git("log", "-1", "--pretty=%at").strip())
-        fmt = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
-        pdir = os.path.join(self.proj, sun.enc(sun.root()))
-        write(os.path.join(pdir, "sess-claude-far.jsonl"),  # 20 min off, indexed first
-              transcript_line(os.path.abspath("src/both.ts"), ts=fmt(at - 1200)))
-        lines = [
-            {"type": "session_meta", "timestamp": fmt(at),
-             "payload": {"id": "codex-near-session", "cwd": sun.root(), "source": "cli"}},
-            {"type": "response_item", "timestamp": fmt(at), "payload": {
-                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-1",
-                "input": "*** Begin Patch\n*** Update File: src/both.ts\n*** End Patch"}},
-        ]
-        write(os.path.join(self.codex, "near.jsonl"),
-              "".join(json.dumps(line) + "\n" for line in lines))
-        run("import")
-        ev = next(e for e in sun.events() if e.get("commit") ==
-                  self.git("rev-parse", "HEAD").strip())
-        self.assertEqual(ev["actor"], "emma/agent:codex/codex-ne")
-
-    def test_backfill_multi_file_commit_actor_is_globally_nearest(self):
-        write("a.ts", "x\n")
-        write("b.ts", "y\n")
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "two-file commit"], check=True)
-        at = int(self.git("log", "-1", "--pretty=%at").strip())
-        fmt = lambda t: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
-        pdir = os.path.join(self.proj, sun.enc(sun.root()))
-        write(os.path.join(pdir, "sess-claude-a.jsonl"),  # matches a.ts, 20 min off
-              transcript_line(os.path.abspath("a.ts"), ts=fmt(at - 1200)))
-        lines = [
-            {"type": "session_meta", "timestamp": fmt(at),
-             "payload": {"id": "codex-b-session", "cwd": sun.root(), "source": "cli"}},
-            {"type": "response_item", "timestamp": fmt(at), "payload": {
-                "type": "custom_tool_call", "name": "apply_patch", "call_id": "call-b",
-                "input": "*** Begin Patch\n*** Update File: b.ts\n*** End Patch"}},
-        ]
-        write(os.path.join(self.codex, "b.jsonl"),
-              "".join(json.dumps(line) + "\n" for line in lines))
-        run("import")
-        ev = next(e for e in sun.events() if e.get("commit") ==
-                  self.git("rev-parse", "HEAD").strip())
-        self.assertEqual(ev["actor"], "emma/agent:codex/codex-b-")
 
     # ------------------------------------------------------------------ show
 
@@ -1104,15 +1031,6 @@ class SunTest(unittest.TestCase):
         loc = next(r for r in recs if r["edits"][0]["file"] == "local.txt")
         self.assertEqual((loc["actor"], loc["prompt"]), ("emma/local", None))
 
-    def test_export_backfilled_commit_reconstructs_patch(self):
-        write("legacy.txt", "old\n")
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "pre-sun commit"], check=True)
-        run("import")  # backfill stores patch: ""
-        rec = next(r for r in map(json.loads, run("export").splitlines())
-                   if r["edits"][0]["file"] == "legacy.txt")
-        self.assertIn("+old", rec["edits"][0]["patch"])
-
     def test_export_groups_unsquashed_turn_events(self):
         sid = "session12345"
         hook("UserPromptSubmit", sid)
@@ -1149,25 +1067,6 @@ class SunTest(unittest.TestCase):
         finally: os.dup2(old, 1); os.close(old)
         self.assertTrue(all(d["file"] != "dump.jsonl" for e in sun.events()
                             for d in e.get("edits", [])))
-
-    def test_export_backfilled_merge_resolution(self):
-        base = self.git("rev-parse", "--abbrev-ref", "HEAD").strip()
-        q = dict(capture_output=True)
-        write("m.txt", "base\n")
-        subprocess.run(["git", "add", "-A"], check=True); subprocess.run(
-            ["git", "commit", "-q", "-m", "base"], check=True)
-        subprocess.run(["git", "checkout", "-q", "-b", "side"], check=True)
-        write("m.txt", "side\n"); subprocess.run(["git", "commit", "-qam", "side"], check=True)
-        subprocess.run(["git", "checkout", "-q", base], check=True)
-        write("m.txt", "trunk\n"); subprocess.run(["git", "commit", "-qam", "trunk"], check=True)
-        subprocess.run(["git", "merge", "side"], **q)  # conflicts
-        write("m.txt", "resolved\n")
-        subprocess.run(["git", "add", "m.txt"], check=True)
-        subprocess.run(["git", "commit", "-q", "--no-edit"], check=True)
-        run("import")
-        rec = next(r for r in map(json.loads, run("export").splitlines())
-                   if any("resolved" in d["patch"] for d in r["edits"]))
-        self.assertEqual(rec["edits"][0]["file"], "m.txt")
 
     def test_export_includes_undo_ops(self):
         self.agent_turn("session12345", [("a.ts", "1\n")])

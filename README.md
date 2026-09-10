@@ -14,9 +14,9 @@ cd your-repo && sun init   # sets up every harness it detects (Claude Code, Code
 
 `sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
 subagents are included. Raw transcripts remain in their existing local directories by default.
-From then on, hooks keep the log current: one commit per agent tool call (squashed per turn),
-with local edits detected in between. Codex asks you to review and trust new project hooks
-through `/hooks` before it runs them.
+Existing commits stay untracked because sun did not observe them. From then on, hooks keep the
+log current: one commit per agent tool call (squashed per turn), with local edits detected in
+between. Codex asks you to review and trust new project hooks through `/hooks` before it runs them.
 
 ## 1 · Analyze your past sessions
 

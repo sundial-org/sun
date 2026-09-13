@@ -3,14 +3,17 @@
 
 Commits are attributed as <user>/<source>: <user>/local, or <user>/agent:<harness>/<session>.
 PreToolUse commits dirty state as local; PostToolUse commits the pre->post diff as the agent's;
-Stop squashes the turn (per-call commits stay under refs/sun/ops); raw transcripts are shared
-under refs/sun/sessions/<user>/<id> only when the user opts in.
+Commits form an independent DAG under refs/sun/heads/main and never touch normal Git history.
+Stop squashes each turn while per-call commits stay under refs/sun/ops. Raw transcripts are
+shared under refs/sun/sessions/<user>/<id> only when the user opts in.
 Events: .git/sun/events.jsonl (cache) mirrored to refs/sun/log/<user>, one writer each, merged
 by timestamp at read; refs/sun/* are the source of truth and travel via the refspec + pre-push
 hook init installs. .git/sun/lock (flock) serializes everything, like git's index.lock."""
 import argparse, difflib, fcntl, glob, hashlib, json, os, re, subprocess, sys
 import time, uuid, zlib
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"}
+SHADOW_REF = "refs/sun/heads/main"
+SHADOW_REMOTE_REF = "refs/sun/remotes/origin/main"
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
 CODEX_HOOK_EVENTS = HOOK_EVENTS + ("SubagentStart", "SubagentStop")
 CLAUDE_LINE = ("Past sessions for this repo, yours and other team members', are in "
@@ -30,21 +33,23 @@ git = lambda *a, **k: sh("git", *a, **k)
 _r = {}
 def root():  # memoized per cwd: called on every event, and hooks chdir before using it
     return _r.get(os.getcwd()) or _r.setdefault(os.getcwd(), git("rev-parse", "--show-toplevel").strip())
-head = lambda: git("rev-parse", "HEAD").strip()
 quiet = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
 patches = lambda pre, post, files: {f: git("diff", pre, post, "--", f) for f in files}
 def changed_files():
-    # status.renames=false lists a rename as D+A so commit --only keeps the deletion
-    return [l[3:].strip('"') for l in
-            git("-c", "core.quotepath=false", "-c", "status.renames=false",
-                "status", "--porcelain", "-uall").splitlines()]
-def commit_files(files, message, author):
-    git("add", "-A", "--", *files, check=False)  # pathspec may legitimately match nothing
-    c = ("-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "--allow-empty",
-         "--author", f"{author} <sun@sun>", "-m", message)
-    # --only keeps unrelated pre-staged paths out; empty repo matches no pathspec -> plain commit
-    quiet("git", *c, "--only", "--", *files).returncode and git(*c)
-    return head()
+    tip, ix = history_head(False), shadow_index()
+    env = {**os.environ, "GIT_INDEX_FILE": ix}
+    if os.path.exists(ix): os.remove(ix)
+    if tip: git("read-tree", tip, env=env)
+    else: git("read-tree", "--empty", env=env)
+    quiet("git", "update-index", "--refresh", env=env)
+    tracked = (git("-c", "core.quotepath=false", "-c", "diff.renames=false",
+                   "diff-index", "--name-only", tip, "--", env=env,
+                   check=False).splitlines() if tip else [])
+    untracked = git("-c", "core.quotepath=false", "ls-files", "--others",
+                    "--exclude-standard", env=env, check=False).splitlines()
+    return list(dict.fromkeys(tracked + untracked))
+def commit_files(files, message, author, reconcile=True):
+    return commit_shadow(files, message, author, reconcile)
 patch_id = lambda c: (git("patch-id", "--stable", check=False,
                           input=git("show", "--format=", c, check=False)).split() or [None])[0]
 def blob(data):  # loose object via hashlib+zlib: no subprocess per chunk (sha1 repos)
@@ -67,6 +72,46 @@ def jread(path, default):
 jwrite = lambda path, obj: json.dump(obj, open(path, "w"), indent=1)
 state = lambda name, default: jread(os.path.join(sun_dir(), name), default)
 save_state = lambda name, obj: jwrite(os.path.join(sun_dir(), name), obj)
+def ref_oid(ref):
+    return git("rev-parse", "-q", "--verify", ref, check=False).strip()
+def history_head(required=True):
+    oid = ref_oid(SHADOW_REF)
+    if required and not oid: sys.exit("sun: shadow history has no commits (run `sun init`)")
+    return oid
+def history_refs():
+    return [r for r in (SHADOW_REF, SHADOW_REMOTE_REF) if ref_oid(r)]
+def resolve_history_rev(rev):
+    if rev == "HEAD": rev = SHADOW_REF
+    return git("rev-parse", rev).strip()
+def fast_forward_shadow():
+    """Adopt a fetched shared tip when doing so cannot discard local Sun commits."""
+    local, remote = ref_oid(SHADOW_REF), ref_oid(SHADOW_REMOTE_REF)
+    if not remote or local == remote: return
+    if not local or not quiet("git", "merge-base", "--is-ancestor", local, remote).returncode:
+        git("update-ref", SHADOW_REF, remote, local or "0" * 40)
+    elif quiet("git", "merge-base", "--is-ancestor", remote, local).returncode:
+        sys.exit("sun: local and remote shadow histories diverged; run `sun merge`")
+def shadow_index():
+    return os.path.join(sun_dir(), "shadow-index")
+def make_shadow_commit(tree, message, author, parents=()):
+    ident = {**os.environ, "GIT_AUTHOR_NAME": author, "GIT_AUTHOR_EMAIL": "sun@sun",
+             "GIT_COMMITTER_NAME": author, "GIT_COMMITTER_EMAIL": "sun@sun"}
+    args = ["-c", "commit.gpgsign=false", "commit-tree", tree]
+    for parent in parents: args += ["-p", parent]
+    return git(*args, "-m", message, env=ident).strip()
+def commit_shadow(files, message, author, reconcile=True):
+    """Snapshot files into an independent commit graph without touching HEAD or the real index."""
+    if reconcile: fast_forward_shadow()
+    parent, ix = history_head(False), shadow_index()
+    if os.path.exists(ix): os.remove(ix)
+    env = {**os.environ, "GIT_INDEX_FILE": ix}
+    if parent: git("read-tree", parent, env=env)
+    else: git("read-tree", "--empty", env=env)
+    git("add", "-A", "--", *files, env=env, check=False)
+    tree = git("write-tree", env=env).strip()
+    commit = make_shadow_commit(tree, message, author, [parent] if parent else [])
+    git("update-ref", SHADOW_REF, commit, parent or "0" * 40)
+    return commit
 def parse_events(text):  # skips torn lines rather than bricking every command
     out = []
     for l in text.splitlines():
@@ -135,12 +180,13 @@ def relative_tool_files(tool, inp):
     return [rel_to_root(f) for f in tool_files(tool, inp)]
 edits_msg = lambda actor, files: (f"sun: {actor} edits " + ", ".join(files[:3])
                                   + (f" +{len(files) - 3} more" if len(files) > 3 else ""))
-def sync(exclude=()):  # commit unclaimed changes as <user>/local
+def sync(exclude=(), reconcile=True):  # commit unclaimed changes as <user>/local
+    if reconcile: fast_forward_shadow()
     exclude = set(exclude) | {f for s in state("active.json", {}).values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
     if not files: return None
-    pre, actor = head(), local()
-    c = commit_files(files, edits_msg(actor, files), actor)
+    pre, actor = history_head(), local()
+    c = commit_files(files, edits_msg(actor, files), actor, reconcile)
     p = patches(pre, c, files)
     return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
                   edits=[{"file": f, "patch": p[f],
@@ -165,7 +211,7 @@ def finish_call(sid, active, payload, harness="claude"):
     # overlay; for other tools (Bash, ...) the whole diff is the agent's
     a_files = [f for f in files if f in claimed] if tool in EDIT_TOOLS and claimed else files
     h_files = [f for f in files if f not in a_files]
-    actor, pre = agent(sid, harness), head()
+    actor, pre = agent(sid, harness), history_head()
     turn = state("turns.json", {}).get(session_key(sid, harness), {}).get("n", 0)
     c = commit_files(files, f"sun: {actor} {tool}" if a_files else edits_msg(local(), files),
                      actor if a_files else local())
@@ -183,17 +229,18 @@ def squash_turn(sid, harness="claude"):
     # Stop: squash the turn's tool-call commits into one commit per turn;
     # skipped when a foreign commit landed mid-turn, and per-call commits stay either way
     t = state("turns.json", {}).get(session_key(sid, harness))
-    if not t or quiet("git", "merge-base", "--is-ancestor", t["start"], "HEAD").returncode: return
+    tip = history_head()
+    if not t or quiet("git", "merge-base", "--is-ancestor", t["start"], tip).returncode: return
     start, actor = t["start"], agent(sid, harness)
-    rng = git("rev-list", f"{start}..HEAD").split()
+    rng = git("rev-list", f"{start}..{tip}").split()
     ops = [e for e in events() if e.get("commit") in rng]
     mine = [e for e in ops if e["actor"] == actor and "squashes" not in e]
     if not rng or set(rng) - {e["commit"] for e in mine}: return
     # commit-tree + update-ref never touch the worktree/index: edits after the last call stay dirty
-    c = git("-c", f"user.name={actor}", "-c", "user.email=sun@sun", "commit-tree",
-            git("rev-parse", "HEAD^{tree}").strip(), "-p", start,
-            "-m", f"sun: {actor} turn {t['n']} ({len(rng)} tool calls)").strip()
-    git("update-ref", "HEAD", c, head())
+    c = make_shadow_commit(git("rev-parse", f"{tip}^{{tree}}").strip(),
+                           f"sun: {actor} turn {t['n']} ({len(rng)} tool calls)",
+                           actor, [start])
+    git("update-ref", SHADOW_REF, c, tip)
     files = git("diff", "--name-only", start, c).splitlines()
     p = patches(start, c, files)
     record(type="edit", actor=actor, turn=f"turn{t['n']}", commit=c, patch_id=patch_id(c),
@@ -240,7 +287,7 @@ def prompt_boundary(sid, payload, harness="claude"):
         if data and not t.get("stopped") and cfg_share_sessions():
             store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
         sync()  # dirty local edits predate the queued turn: commit them outside it
-        t.update(n=t["n"] + 1, start=head(), toffset=boundary); t.pop("stopped", None)
+        t.update(n=t["n"] + 1, start=history_head(), toffset=boundary); t.pop("stopped", None)
     t.update(soffset=end, seen=1 if bs else seen + len(prompts))
     turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)
@@ -288,7 +335,7 @@ def cmd_hook(a):
     elif event == "UserPromptSubmit":
         turns, tp = state("turns.json", {}), payload.get("transcript_path", "")
         key = session_key(sid, harness)
-        turns[key] = {"n": turns.get(key, {}).get("n", 0) + 1, "start": head(),
+        turns[key] = {"n": turns.get(key, {}).get("n", 0) + 1, "start": history_head(),
                       "transcript": tp,
                       "toffset": os.path.getsize(tp) if os.path.exists(tp) else 0}
         save_state("turns.json", turns)
@@ -517,11 +564,13 @@ def remove_hooks(harness):  # a restrictive re-init un-installs the excluded har
         if not cfg["hooks"][event]: del cfg["hooks"][event]
     jwrite(path, cfg)
 def refspecs(share_sessions=False):
-    specs = ["+refs/sun/log/*:refs/sun/log/*", "+refs/sun/ops/*:refs/sun/ops/*"]
+    specs = ["+refs/sun/log/*:refs/sun/log/*", "+refs/sun/ops/*:refs/sun/ops/*",
+             "+refs/sun/heads/*:refs/sun/remotes/origin/*"]
     return specs + (["+refs/sun/sessions/*:refs/sun/sessions/*"] if share_sessions else [])
-def install_push(share_sessions=False):  # fail-soft push of shared sun refs
+def install_push(share_sessions=False):
     if "origin" in git("remote", check=False).split():
-        for old in ("+refs/sun/*:refs/sun/*", "+refs/sun/sessions/*:refs/sun/sessions/*"):
+        for old in ("+refs/sun/*:refs/sun/*", "+refs/sun/sessions/*:refs/sun/sessions/*",
+                    "+refs/sun/heads/*:refs/sun/heads/*"):
             git("config", "--fixed-value", "--unset-all", "remote.origin.fetch", old, check=False)
         current = git("config", "--get-all", "remote.origin.fetch", check=False).splitlines()
         for spec in refspecs(share_sessions):
@@ -530,11 +579,13 @@ def install_push(share_sessions=False):  # fail-soft push of shared sun refs
     old = open(hp).read() if os.path.exists(hp) else ""
     legacy = ('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
               'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
-    managed = old == legacy or old.startswith('#!/bin/sh\n# sun: mirror shared refs, fail-soft\n')
+    managed = old == legacy or any(old.startswith(f'#!/bin/sh\n{marker}\n') for marker in (
+        '# sun: mirror shared refs', '# sun: mirror shared refs, fail-soft'))
     if not old or managed:
-        lines = ['#!/bin/sh', '# sun: mirror shared refs, fail-soft',
+        lines = ['#!/bin/sh', '# sun: mirror shared refs',
                  f'git push --no-verify "$1" "+refs/sun/log/{user()}:refs/sun/log/{user()}" >/dev/null 2>&1 || true',
                  'git push --no-verify "$1" "+refs/sun/ops/*:refs/sun/ops/*" >/dev/null 2>&1 || true']
+        lines.insert(2, 'git push --no-verify "$1" "refs/sun/heads/*:refs/sun/heads/*" || { echo "sun: shadow history push rejected; fetch and reconcile before pushing" >&2; exit 1; }')
         if share_sessions:
             lines.append(f'git push --no-verify "$1" "+refs/sun/sessions/{user()}/*:refs/sun/sessions/{user()}/*" >/dev/null 2>&1 || true')
         open(hp, "w").write("\n".join(lines) + "\n")
@@ -561,17 +612,20 @@ def cmd_init(a):
     explicit = [h for h, f in (("claude", a.claude), ("codex", a.codex)) if f]
     harnesses = explicit or detect_harnesses()
     cfg = state("config.json", {}); cfg.pop("harness", None)
-    cfg["harnesses"] = harnesses; save_state("config.json", cfg)
+    cfg["harnesses"] = harnesses
+    cfg.pop("shadow_history", None)
+    save_state("config.json", cfg)
     share_sessions = configure_session_sharing(a.share_sessions)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
         git("fetch", "-q", "origin", *refspecs(share_sessions), check=False)
+    fast_forward_shadow()
     p, sha = os.path.join(sun_dir(), "events.jsonl"), git(  # rebuild cache from our own ref
         "rev-parse", "-q", "--verify", f"refs/sun/log/{user()}", check=False).strip()
     if sha and not os.path.exists(p): open(p, "w").write(git("cat-file", "blob", sha))
     installed = ", ".join(install_hooks(h) for h in harnesses); install_push(share_sessions)
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
-    if quiet("git", "rev-parse", "HEAD").returncode or changed_files():
+    if not history_head(False) or changed_files():
         c = commit_files(["."], "sun: initial state", local())
         record(type="init", actor=local(), commit=c, edits=[])
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
@@ -580,6 +634,27 @@ def cmd_init(a):
     print("run `sun viz` to explore your attributed history")
 def cmd_sync(a):
     ev = sync(); print(f"sun: committed local edits as op {ev['id']}" if ev else "sun: nothing to sync")
+def cmd_merge(a):
+    if "origin" in git("remote", check=False).split():
+        git("fetch", "-q", "origin",
+            "+refs/sun/heads/*:refs/sun/remotes/origin/*", check=False)
+    remote = ref_oid(SHADOW_REMOTE_REF)
+    if not remote: sys.exit("sun: no shared shadow history found on origin")
+    sync(reconcile=False)  # the current worktree is the user's merge resolution
+    local_tip = history_head()
+    if local_tip == remote or not quiet(
+            "git", "merge-base", "--is-ancestor", remote, local_tip).returncode:
+        return print("sun: shadow history is already up to date")
+    if not quiet("git", "merge-base", "--is-ancestor", local_tip, remote).returncode:
+        git("update-ref", SHADOW_REF, remote, local_tip)
+        return print(f"sun: fast-forwarded shadow history to {remote[:8]}")
+    tree = git("rev-parse", f"{local_tip}^{{tree}}").strip()
+    actor = local()
+    commit = make_shadow_commit(tree, "sun: merge shared shadow history", actor,
+                                [local_tip, remote])
+    git("update-ref", SHADOW_REF, commit, local_tip)
+    record(type="merge", actor=actor, commit=commit, parents=[local_tip, remote], edits=[])
+    print(f"sun: merged shared shadow history in {commit[:8]}")
 def cmd_import(a):
     print("sun: " + do_import(configured_harnesses()))
 def cmd_update(a):  # uv re-resolves the git source to the latest commit
@@ -593,7 +668,9 @@ def cmd_log(a):
     maybe_sync()
     by_commit = {}
     for ev in events(): by_commit.setdefault(ev.get("commit"), []).append(ev)
-    for line in git("log", f"-{a.n}", "--pretty=%H\t%h\t%ad\t%s", "--date=short").splitlines():
+    revisions = history_refs()
+    for line in git("log", *revisions, f"-{a.n}", "--pretty=%H\t%h\t%ad\t%s",
+                    "--date=short").splitlines():
         H, h, date, subj = line.split("\t", 3)
         tags = "".join(f"  [{e['actor']}" + (f" {e['turn']}" if e.get("turn") else "")
                        + (f" pr#{e['pr']}" if e.get("pr") else "")
@@ -601,7 +678,7 @@ def cmd_log(a):
                        for e in by_commit.get(H, []))
         print(f"{h} {date} {subj}{tags or '  [untracked]'}")
 def cmd_show(a):
-    maybe_sync(); H = git("rev-parse", a.commit).strip()
+    maybe_sync(); H = resolve_history_rev(a.commit)
     print(git("show", "--stat", "--pretty=format:commit %h  %ad%n%s%n", "--date=short", H))
     evs = [e for e in events() if e.get("commit") == H]
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
@@ -633,7 +710,7 @@ def cmd_blame(a):
     d, b = os.path.split(a.file)  # blame a symlink itself: resolve only its directory
     f = os.path.relpath(os.path.join(os.path.realpath(d or "."), b), root())
     out = git("-c", "core.quotepath=false", "blame", "--porcelain",
-              "-L", f"{a.line},{a.line}", "--", f)
+              "-L", f"{a.line},{a.line}", history_head(), "--", f)
     H, orig = out.split()[:2]  # originating commit + the line's number in it
     if H == "0" * 40: sys.exit(f"sun: {f}:{a.line} is uncommitted")
     of = next((l[9:] for l in out.splitlines() if l.startswith("filename ")), f)  # pre-rename path
@@ -688,12 +765,13 @@ def cmd_blame(a):
 def cmd_undo(a):
     maybe_sync(); actor = local()
     if a.commit is not None:
-        H = git("rev-parse", a.commit).strip()
-        merge = ["-m", "1"] if len(git("rev-list", "--parents", "-n1", H).split()) > 2 else []
-        r = quiet("git", "revert", "--no-commit", "--no-edit", *merge, H)
-        if r.returncode:
-            quiet("git", "revert", "--abort"); sys.exit(f"sun: cannot revert {H[:8]} cleanly")
-        files, pre = changed_files(), head()
+        H = resolve_history_rev(a.commit)
+        parents = git("rev-list", "--parents", "-n1", H).split()[1:]
+        if not parents: sys.exit("sun: cannot undo the initial shadow commit")
+        patch = git("diff", parents[0], H)
+        if quiet("git", "apply", "-R", input=patch).returncode:
+            sys.exit(f"sun: cannot revert {H[:8]} cleanly")
+        files, pre = changed_files(), history_head()
         c = commit_files(files or ["."], f"sun: undo commit {H[:8]}", actor)
         record(type="undo", actor=actor, commit=c, target_commit=H,
                edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
@@ -705,7 +783,7 @@ def cmd_undo(a):
     if quiet("git", "apply", "-R", input=combined).returncode:  # atomic: all or nothing
         sys.exit(f"sun: cannot undo op {target['id']}: its patch no longer applies cleanly; "
                  "try `sun undo --commit <hash>` instead")
-    files, pre = [ed["file"] for ed in target["edits"]], head()
+    files, pre = [ed["file"] for ed in target["edits"]], history_head()
     c = commit_files(files, f"sun: undo op {target['id']}", actor)
     record(type="undo", actor=actor, commit=c, target_op=target["id"],
            edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
@@ -735,7 +813,8 @@ def viz_operation(ev, by_id):
             "generated_operations": children}
 def viz_data(n=0):
     limit = [f"-{n}"] if n else []
-    log = git("log", "--exclude=refs/sun/*", "--all", *limit, "--date=iso",
+    scope = history_refs()
+    log = git("log", *scope, *limit, "--date=iso",
               "--pretty=%H\x1f%h\x1f%P\x1f%D\x1f%ad\x1f%s\x1f%an\x1f%ae\x1f%cn\x1f%ce")
     cols = ["hash", "short", "parents", "refs", "date", "subject", "author_name",
             "author_email", "committer_name", "committer_email"]
@@ -747,7 +826,7 @@ def viz_data(n=0):
     by_id = {ev.get("id"): ev for ev in all_events if ev.get("id")}
     hash_pids = {}
     if by_pid and any(c["hash"] not in by_commit for c in commits):
-        patches_log = git("log", "--exclude=refs/sun/*", "--all", *limit,
+        patches_log = git("log", *scope, *limit,
                           "--pretty=format:%H", "-p")
         hash_pids = {H: pid for pid, H in (line.split()[:2] for line in
                      git("patch-id", "--stable", input=patches_log).splitlines())}
@@ -936,6 +1015,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     ps = {c: sub.add_parser(c, help=h) for c, h in [
         ("init", "git repo + .git/sun + hooks + session import"), ("sync", "commit pending local edits"),
+        ("merge", "join divergent local and shared shadow histories"),
         ("hook", "agent-harness hook entrypoint (JSON on stdin)"), ("show", "show operations for a commit"),
         ("import", "re-import sessions"), ("gc", "drop session refs older than N days"),
         ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
@@ -971,7 +1051,8 @@ def main(argv=None):
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
         os.chdir(root()); sun_dir(); a.lock = lock()
-    {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "log": cmd_log, "show": cmd_show,
+    {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge,
+     "log": cmd_log, "show": cmd_show,
      "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
      "gc": cmd_gc, "update": cmd_update, "export": cmd_export, "blame": cmd_blame}[a.cmd](a)
 if __name__ == "__main__":

@@ -15,8 +15,9 @@ cd your-repo && sun init   # sets up every harness it detects (Claude Code, Code
 `sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
 subagents are included. Raw transcripts remain in their existing local directories by default.
 Existing commits stay untracked because sun did not observe them. From then on, hooks keep an
-independent Sun history current: one commit per agent tool call, squashed per turn, with local
-edits detected in between. Sun commits share Git's object database but never move normal `HEAD`
+independent Sun history current: one preserved commit per agent tool call and one aggregate
+commit per turn. Human edits observed during a turn remain separately attributed operations
+inside that turn commit. Sun commits share Git's object database but never move normal `HEAD`
 or the real index, and they do not appear in GitHub's branch history. Codex asks you to review
 and trust new project hooks through `/hooks` before it runs them.
 
@@ -42,7 +43,8 @@ details, left/right to move the replay boundary, `r` to replay from the beginnin
 quit. Each commit shows its native git author alongside Sun's observed actors. Operation
 details identify the human or agent that generated them, including harness, session, turn,
 tool call, attribution method, files, and patches. Squashed turns retain their individual
-generated operations.
+generated operations. A `sync` attribution means a Sun command discovered an uncaptured
+dirty edit later. It does not mean an agent hook observed the edit when it happened.
 
 ## 2 · Optional raw session sharing
 

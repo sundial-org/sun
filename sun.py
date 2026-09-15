@@ -4,8 +4,8 @@
 Commits are attributed as <user>/<source>: <user>/local, or <user>/agent:<harness>/<session>.
 PreToolUse commits dirty state as local; PostToolUse commits the pre->post diff as the agent's;
 Commits form an independent DAG under refs/sun/heads/main and never touch normal Git history.
-Stop squashes each turn while per-call commits stay under refs/sun/ops. Raw transcripts are
-shared under refs/sun/sessions/<user>/<id> only when the user opts in.
+Stop squashes each turn while original operation commits stay under refs/sun/ops. Raw
+transcripts are shared under refs/sun/sessions/<user>/<id> only when the user opts in.
 Events: .git/sun/events.jsonl (cache) mirrored to refs/sun/log/<user>, one writer each, merged
 by timestamp at read; refs/sun/* are the source of truth and travel via the refspec + pre-push
 hook init installs. .git/sun/lock (flock) serializes everything, like git's index.lock."""
@@ -180,7 +180,7 @@ def relative_tool_files(tool, inp):
     return [rel_to_root(f) for f in tool_files(tool, inp)]
 edits_msg = lambda actor, files: (f"sun: {actor} edits " + ", ".join(files[:3])
                                   + (f" +{len(files) - 3} more" if len(files) > 3 else ""))
-def sync(exclude=(), reconcile=True):  # commit unclaimed changes as <user>/local
+def sync(exclude=(), reconcile=True, method="sync"):  # commit unclaimed changes as local
     if reconcile: fast_forward_shadow()
     exclude = set(exclude) | {f for s in state("active.json", {}).values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
@@ -190,7 +190,7 @@ def sync(exclude=(), reconcile=True):  # commit unclaimed changes as <user>/loca
     p = patches(pre, c, files)
     return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
                   edits=[{"file": f, "patch": p[f],
-                          "attribution": {"method": "hook"}} for f in files])
+                          "attribution": {"method": method}} for f in files])
 def maybe_sync(exclude=()):  # skipped while an agent tool call is in flight
     state("active.json", {}) or sync(exclude)
 def finish_call(sid, active, payload, harness="claude"):
@@ -226,8 +226,8 @@ def finish_call(sid, active, payload, harness="claude"):
                edits=[{"file": f, "patch": p[f],
                        "attribution": {"method": "hook"}} for f in h_files])
 def squash_turn(sid, harness="claude"):
-    # Stop: squash the turn's tool-call commits into one commit per turn;
-    # skipped when a foreign commit landed mid-turn, and per-call commits stay either way
+    # Stop: squash the turn's agent calls and intervening local edits into one turn commit.
+    # A different agent or an already-aggregated commit remains a hard boundary.
     t = state("turns.json", {}).get(session_key(sid, harness))
     tip = history_head()
     if not t or quiet("git", "merge-base", "--is-ancestor", t["start"], tip).returncode: return
@@ -235,18 +235,25 @@ def squash_turn(sid, harness="claude"):
     rng = git("rev-list", f"{start}..{tip}").split()
     ops = [e for e in events() if e.get("commit") in rng]
     mine = [e for e in ops if e["actor"] == actor and "squashes" not in e]
-    if not rng or set(rng) - {e["commit"] for e in mine}: return
+    allowed = {actor, local()}
+    raw = [e for e in ops if e.get("type") == "edit" and "squashes" not in e
+           and e["actor"] in allowed]
+    if not rng or not mine or len(raw) != len(ops) or set(rng) - {e["commit"] for e in raw}:
+        return
+    # Rewriting the turn removes these commits from the main shadow lineage. Keep every
+    # operation snapshot, including intervening human edits, reachable and shareable.
+    for H in rng: git("update-ref", f"refs/sun/ops/{H}", H)
     # commit-tree + update-ref never touch the worktree/index: edits after the last call stay dirty
     c = make_shadow_commit(git("rev-parse", f"{tip}^{{tree}}").strip(),
-                           f"sun: {actor} turn {t['n']} ({len(rng)} tool calls)",
+                           f"sun: {actor} turn {t['n']} ({len(mine)} tool calls)",
                            actor, [start])
     git("update-ref", SHADOW_REF, c, tip)
-    files = git("diff", "--name-only", start, c).splitlines()
-    p = patches(start, c, files)
+    agent_edits = [{**ed, "attribution": {"method": "squash"}}
+                   for e in mine for ed in e["edits"]]
     record(type="edit", actor=actor, turn=f"turn{t['n']}", commit=c, patch_id=patch_id(c),
            squashes=[e["id"] for e in mine], tool_calls=[tc for e in mine for tc in e["tool_calls"]],
-           edits=[{"file": f, "patch": p[f], "attribution": {"method": "squash"}} for f in files])
-    for e in ops:  # local overlays inside the agent's commits follow the squash
+           edits=agent_edits)
+    for e in ops:  # local operations inside the turn follow the squash
         if e not in mine:
             record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"], overlay_of=e["id"])
 def prompt_line(l, harness="claude"):
@@ -286,7 +293,7 @@ def prompt_boundary(sid, payload, harness="claude"):
         f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
         if data and not t.get("stopped") and cfg_share_sessions():
             store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
-        sync()  # dirty local edits predate the queued turn: commit them outside it
+        sync(method="hook")  # dirty local edits predate the queued turn
         t.update(n=t["n"] + 1, start=history_head(), toffset=boundary); t.pop("stopped", None)
     t.update(soffset=end, seen=1 if bs else seen + len(prompts))
     turns[session_key(sid, harness)] = t
@@ -322,7 +329,7 @@ def cmd_hook(a):
         stop_chunk(sid, payload, harness)
     elif event == "PreToolUse": prompt_boundary(sid, payload, harness)
     if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
-        sync()  # everything dirty before an agent tool runs is <user>/local
+        sync(method="hook")  # everything dirty before an agent tool runs is local
     if event == "SessionStart":  # stdout lands in the agent's context
         if not cfg_share_sessions(): return
         native = "~/.claude/projects" if harness == "claude" else "~/.codex/sessions"
@@ -631,6 +638,9 @@ def cmd_init(a):
         c = commit_files(["."], "sun: initial state", local())
         record(type="init", actor=local(), commit=c, edits=[])
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
+    if "codex" in harnesses:
+        print("sun: Codex requires separate hook approval; open `/hooks`, review "
+              "`.codex/hooks.json`, and trust the Sun hooks before testing")
     print("run `sun viz` to explore your attributed history")
 def cmd_sync(a):
     ev = sync(); print(f"sun: committed local edits as op {ev['id']}" if ev else "sun: nothing to sync")

@@ -147,6 +147,8 @@ class SunTest(unittest.TestCase):
     def test_codex_init_installs_hooks_and_agents_md(self):
         out = run("init", "--codex", "--share-sessions", "--instructions")
         self.assertIn("hooks: codex (.codex/hooks.json)", out)
+        self.assertIn("open `/hooks`", out)
+        self.assertIn("trust the Sun hooks", out)
         cfg = json.load(open(".codex/hooks.json"))
         for event in sun.CODEX_HOOK_EVENTS:
             self.assertIn("sun hook --harness codex",
@@ -294,7 +296,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("[emma/local]", out.splitlines()[0])
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], "emma/local")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "sync")
         self.assertIn("+v1", ev["edits"][0]["patch"])
         self.assertTrue(ev["patch_id"])
         sha = self.git("rev-parse", "refs/sun/log/emma").strip()  # mirrored
@@ -585,17 +587,28 @@ class SunTest(unittest.TestCase):
                          ("emma/local", self.sun_head()))
         self.assertIn("[emma/local]", run("log").splitlines()[0])
 
-    def test_local_edits_mid_turn_block_squash(self):
+    def test_local_edits_mid_turn_join_squash_and_keep_operation_commit(self):
         sid = "session12345"
         hook("UserPromptSubmit", sid)
+        start = self.sun_head()
         self.tool_call(sid, "a.ts", "1\n", 0)
         write("local.txt", "h\n")
         self.tool_call(sid, "b.ts", "2\n", 1)  # PreToolUse commits local.txt
+        original = sun.events()[-3:]
+        human = next(e for e in original if e["actor"] == "emma/local")
         hook("Stop", sid)
-        self.assertEqual(self.git("log", "-3", "--pretty=%s", sun.SHADOW_REF).splitlines(),
-                         [f"sun: {AGENT} Write", "sun: emma/local edits local.txt",
-                          f"sun: {AGENT} Write"])
-        self.assertNotIn("squashes", sun.events()[-1])
+        self.assertEqual(self.git("rev-parse", f"{sun.SHADOW_REF}^").strip(), start)
+        self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (2 tool calls)")
+        turn, overlay = sun.events()[-2:]
+        self.assertEqual(turn["squashes"],
+                         [e["id"] for e in original if e["actor"] == AGENT])
+        self.assertEqual((overlay["actor"], overlay["commit"], overlay["overlay_of"]),
+                         ("emma/local", self.sun_head(), human["id"]))
+        for e in original:
+            self.assertEqual(self.git("rev-parse", f"refs/sun/ops/{e['commit']}").strip(),
+                             e["commit"])
+        actors = {a["id"] for a in sun.viz_data()["commits"][0]["attribution"]["actors"]}
+        self.assertEqual(actors, {AGENT, "emma/local"})
 
     def test_local_edit_after_last_call_stays_dirty_through_squash(self):
         self.agent_turn("session12345", [("a.ts", "1\n")], local_edits=[("late.txt", "h\n")])
@@ -1200,17 +1213,20 @@ class SunTest(unittest.TestCase):
         loc = next(r for r in recs if r["edits"][0]["file"] == "local.txt")
         self.assertEqual((loc["actor"], loc["prompt"]), ("emma/local", None))
 
-    def test_export_groups_unsquashed_turn_events(self):
+    def test_export_keeps_mid_turn_local_edit_out_of_agent_record(self):
         sid = "session12345"
         hook("UserPromptSubmit", sid)
         self.tool_call(sid, "a.ts", "1\n", 0)
         write("local.txt", "h\n")
-        self.tool_call(sid, "b.ts", "2\n", 1)  # mid-turn local edit blocks the squash
+        self.tool_call(sid, "b.ts", "2\n", 1)
         hook("Stop", sid)
-        turns = [r for r in map(json.loads, run("export").splitlines()) if r["actor"] == AGENT]
-        self.assertEqual(len(turns), 1)  # one record per turn even without a squash
+        records = list(map(json.loads, run("export").splitlines()))
+        turns = [r for r in records if r["actor"] == AGENT]
+        self.assertEqual(len(turns), 1)
         self.assertEqual([c["id"] for c in turns[0]["tool_calls"]], ["tool0", "tool1"])
         self.assertEqual({d["file"] for d in turns[0]["edits"]}, {"a.ts", "b.ts"})
+        local = next(r for r in records if r["actor"] == "emma/local")
+        self.assertEqual([d["file"] for d in local["edits"]], ["local.txt"])
 
     def test_export_output_file_is_not_synced_back(self):
         run("export", "-o", "dump.jsonl")

@@ -625,12 +625,12 @@ def cmd_init(a):
     installed = ", ".join(install_hooks(h) for h in harnesses); install_push(share_sessions)
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
+    if share_sessions:
+        agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
     if not history_head(False) or changed_files():
         c = commit_files(["."], "sun: initial state", local())
         record(type="init", actor=local(), commit=c, edits=[])
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
-    if share_sessions:
-        agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
     print("run `sun viz` to explore your attributed history")
 def cmd_sync(a):
     ev = sync(); print(f"sun: committed local edits as op {ev['id']}" if ev else "sun: nothing to sync")

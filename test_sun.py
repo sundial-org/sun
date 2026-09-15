@@ -156,6 +156,14 @@ class SunTest(unittest.TestCase):
         run("init", "--codex", "--share-sessions", "--instructions")
         self.assertEqual(len(json.load(open(".codex/hooks.json"))["hooks"]["Stop"]), 1)
 
+    def test_init_includes_its_instruction_file_in_the_initial_snapshot(self):
+        subprocess.run(["git", "update-ref", "-d", sun.SHADOW_REF], check=True)
+        run("init", "--codex", "--share-sessions", "--instructions")
+        commits = self.git("rev-list", sun.SHADOW_REF).splitlines()
+        self.assertEqual(len(commits), 1)
+        self.assertIn(sun.CODEX_LINE, self.git("show", f"{sun.SHADOW_REF}:AGENTS.md"))
+        self.assertEqual(sun.changed_files(), [])
+
     def test_init_installs_all_detected_harnesses(self):
         # setUp's SUN_PROJECTS + SUN_CODEX_SESSIONS dirs exist -> both detected
         self.assertEqual(sun.configured_harnesses(), ["claude", "codex"])

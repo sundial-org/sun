@@ -55,6 +55,8 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "config", "user.name", "emma"], check=True)
         subprocess.run(["git", "config", "user.email", "emma@test"], check=True)
         write("README.md", "hello\n")
+        subprocess.run(["git", "add", "README.md"], check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "normal baseline"], check=True)
         run("init", "--no-claude-md")
 
     def tearDown(self):
@@ -69,7 +71,21 @@ class SunTest(unittest.TestCase):
                               check=True).stdout
 
     def head_subject(self):
-        return self.git("log", "-1", "--pretty=%s").strip()
+        return self.git("log", "-1", "--pretty=%s", sun.SHADOW_REF).strip()
+
+    def sun_head(self):
+        return self.git("rev-parse", sun.SHADOW_REF).strip()
+
+    def plumbing_commit(self, parent, files, message="rewritten"):
+        index = os.path.join(self.dir, ".git", "sun", "test-index")
+        if os.path.exists(index): os.remove(index)
+        env = {**os.environ, "GIT_INDEX_FILE": index}
+        subprocess.run(["git", "read-tree", parent], env=env, check=True)
+        subprocess.run(["git", "add", "-A", "--", *files], env=env, check=True)
+        tree = subprocess.run(["git", "write-tree"], env=env, check=True,
+                              capture_output=True, text=True).stdout.strip()
+        return subprocess.run(["git", "commit-tree", tree, "-p", parent, "-m", message],
+                              env=env, check=True, capture_output=True, text=True).stdout.strip()
 
     def tool_call(self, sid, f, text, i=0, tool="Write"):
         inp = {"file_path": os.path.abspath(f)}
@@ -113,6 +129,7 @@ class SunTest(unittest.TestCase):
         specs = self.git("config", "--get-all", "remote.origin.fetch")
         self.assertIn("+refs/sun/log/*:refs/sun/log/*", specs)
         self.assertIn("+refs/sun/ops/*:refs/sun/ops/*", specs)
+        self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
         self.assertNotIn("refs/sun/sessions", specs)
         self.assertNotIn("refs/sun/sessions", open(".git/hooks/pre-push").read())
         run("init", "--share-sessions", "--no-claude-md")
@@ -138,6 +155,14 @@ class SunTest(unittest.TestCase):
         self.assertIn(sun.CODEX_LINE, open("AGENTS.md").read())
         run("init", "--codex", "--share-sessions", "--instructions")
         self.assertEqual(len(json.load(open(".codex/hooks.json"))["hooks"]["Stop"]), 1)
+
+    def test_init_includes_its_instruction_file_in_the_initial_snapshot(self):
+        subprocess.run(["git", "update-ref", "-d", sun.SHADOW_REF], check=True)
+        run("init", "--codex", "--share-sessions", "--instructions")
+        commits = self.git("rev-list", sun.SHADOW_REF).splitlines()
+        self.assertEqual(len(commits), 1)
+        self.assertIn(sun.CODEX_LINE, self.git("show", f"{sun.SHADOW_REF}:AGENTS.md"))
+        self.assertEqual(sun.changed_files(), [])
 
     def test_init_installs_all_detected_harnesses(self):
         # setUp's SUN_PROJECTS + SUN_CODEX_SESSIONS dirs exist -> both detected
@@ -183,6 +208,83 @@ class SunTest(unittest.TestCase):
         sun.save_state("config.json", {"harness": "codex", "track_sessions": True})
         self.assertEqual(sun.configured_harnesses(), ["codex"])
 
+    # --------------------------------------------------------- shadow history
+
+    def test_shadow_history_is_independent_and_leaves_git_untouched(self):
+        normal = self.git("rev-parse", "HEAD").strip()
+        initial = self.sun_head()
+        self.assertEqual(len(self.git("rev-list", "--parents", "-n1", initial).split()), 1)
+        self.assertNotEqual(initial, normal)
+        self.assertNotEqual(subprocess.run(
+            ["git", "merge-base", initial, normal], capture_output=True).returncode, 0)
+
+        write("shadow.txt", "one\n")
+        real_index = self.git("write-tree").strip()
+        run("sync")
+        shadow = self.git("rev-parse", sun.SHADOW_REF).strip()
+        self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
+        self.assertEqual(self.git("write-tree").strip(), real_index)
+        self.assertNotEqual(shadow, initial)
+        self.assertEqual(self.git("show", f"{shadow}:shadow.txt"), "one\n")
+        self.assertIn("shadow.txt", self.git("status", "--porcelain"))
+
+    def test_shadow_history_keeps_per_call_commits_and_drives_viz(self):
+        normal = self.git("rev-parse", "HEAD").strip()
+        self.agent_turn("session12345", [("a.ts", "1\n"), ("b.ts", "2\n")])
+        commits = self.git("rev-list", sun.SHADOW_REF).splitlines()
+        self.assertEqual(len(commits), 2)  # initial snapshot + squashed turn
+        self.assertEqual(len(sun.refs("refs/sun/ops/")), 2)  # per-call commits survive
+        self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
+        data = sun.viz_data()
+        self.assertEqual([c["hash"] for c in data["commits"]], commits)
+        self.assertEqual(data["summary"]["operations"], 3)  # init + two generated calls
+        self.assertTrue(all(c["hash"] != normal for c in data["commits"]))
+
+    def test_shadow_history_fetches_to_remote_tracking_ref(self):
+        bare = tempfile.mkdtemp()
+        try:
+            subprocess.run(["git", "init", "-q", "--bare", bare], check=True)
+            subprocess.run(["git", "remote", "add", "origin", bare], check=True)
+            run("init", "--no-claude-md")
+            specs = self.git("config", "--get-all", "remote.origin.fetch")
+            self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
+            hook_text = open(".git/hooks/pre-push").read()
+            self.assertIn('"refs/sun/heads/*:refs/sun/heads/*"', hook_text)
+            self.assertNotIn('"+refs/sun/heads/*:refs/sun/heads/*"', hook_text)
+            subprocess.run(["git", "push", "--no-verify", "origin",
+                            f"{sun.SHADOW_REF}:{sun.SHADOW_REF}"], check=True,
+                           capture_output=True)
+            subprocess.run(["git", "fetch", "-q", "origin",
+                            "+refs/sun/heads/*:refs/sun/remotes/origin/*"], check=True)
+            self.assertEqual(self.git("rev-parse", sun.SHADOW_REMOTE_REF),
+                             self.git("rev-parse", sun.SHADOW_REF))
+        finally:
+            shutil.rmtree(bare, ignore_errors=True)
+
+    def test_merge_joins_divergent_shadow_history_using_worktree(self):
+        normal = self.git("rev-parse", "HEAD").strip()
+        base = self.sun_head()
+        write("remote.txt", "remote\n")
+        remote = self.plumbing_commit(base, ["remote.txt"], "remote shadow edit")
+        os.remove("remote.txt")
+        write("local.txt", "local\n")
+        local = self.plumbing_commit(base, ["local.txt"], "local shadow edit")
+        subprocess.run(["git", "update-ref", sun.SHADOW_REF, local], check=True)
+        subprocess.run(["git", "update-ref", sun.SHADOW_REMOTE_REF, remote], check=True)
+
+        # Normal Git has already resolved the source tree before Sun joins its DAG.
+        write("remote.txt", "remote\n")
+        out = run("merge")
+        merged = self.sun_head()
+        parents = self.git("rev-list", "--parents", "-n1", merged).split()[1:]
+        self.assertIn("merged shared shadow history", out)
+        self.assertEqual(len(parents), 2)
+        self.assertEqual(parents[1], remote)
+        self.assertEqual(self.git("show", f"{merged}:local.txt"), "local\n")
+        self.assertEqual(self.git("show", f"{merged}:remote.txt"), "remote\n")
+        self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
+        self.assertEqual(sun.events()[-1]["type"], "merge")
+
     # ------------------------------------------------------- local edit sync
 
     def test_log_commits_pending_local_edits(self):
@@ -205,15 +307,15 @@ class SunTest(unittest.TestCase):
         self.assertEqual(self.head_subject(),
                          "sun: emma/local edits a.txt, b.txt, c.txt +1 more")
 
-    def test_sync_commits_both_sides_of_staged_rename(self):
+    def test_sync_commits_both_sides_of_rename(self):
         write("b.ts", "x\n")
         run("sync")
-        subprocess.run(["git", "mv", "b.ts", "c.ts"], check=True)
+        os.rename("b.ts", "c.ts")
         run("sync")
-        ns = self.git("show", "--name-status", "--format=", "HEAD").split()
+        ns = self.git("show", "--name-status", "--format=", sun.SHADOW_REF).split()
         self.assertIn("b.ts", ns)  # rename shows as R b.ts c.ts (or D+A), never A alone
         self.assertIn("c.ts", ns)
-        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(sun.changed_files(), [])
 
     # ------------------------------------------------------------ agent turns
 
@@ -231,10 +333,10 @@ class SunTest(unittest.TestCase):
                          ev["commit"])
 
     def test_stop_squashes_tool_calls_into_one_turn_commit(self):
-        start = self.git("rev-parse", "HEAD").strip()
+        start = self.sun_head()
         self.agent_turn("session12345", [("a.ts", "1\n"), ("b.ts", "2\n")])
         self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (2 tool calls)")
-        self.assertEqual(self.git("rev-parse", "HEAD^").strip(), start)
+        self.assertEqual(self.git("rev-parse", f"{sun.SHADOW_REF}^").strip(), start)
         turn, calls = sun.events()[-1], sun.events()[-3:-1]
         self.assertEqual(turn["squashes"], [c["id"] for c in calls])
         self.assertEqual([t["id"] for t in turn["tool_calls"]], ["tool0", "tool1"])
@@ -245,9 +347,9 @@ class SunTest(unittest.TestCase):
 
     def test_stop_twice_does_not_squash_twice(self):
         self.agent_turn("session12345", [("a.ts", "1\n")])
-        before = self.git("rev-parse", "HEAD").strip()
+        before = self.sun_head()
         hook("Stop")
-        self.assertEqual(self.git("rev-parse", "HEAD").strip(), before)
+        self.assertEqual(self.sun_head(), before)
 
     def test_turn_numbers_increment_per_session(self):
         self.agent_turn("session12345", [("a.ts", "1\n")])
@@ -267,7 +369,7 @@ class SunTest(unittest.TestCase):
             f.write('{"turn":2}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
         hook("Stop", transcript_path=tp)
-        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.SHADOW_REF).splitlines(),
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
         ref = "refs/sun/sessions/emma/session12345"  # neither turn's transcript is lost
@@ -340,7 +442,7 @@ class SunTest(unittest.TestCase):
             f.write('{"type": "user", "message": {"content": "two"}}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
         hook("Stop", transcript_path=tp)
-        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.SHADOW_REF).splitlines(),
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
@@ -372,7 +474,7 @@ class SunTest(unittest.TestCase):
                     f.write(user % ("two", "two"))
         hook("Stop", sid, harness="codex", transcript_path=tp)
         codex_agent = "emma/agent:codex/codex-qu"
-        self.assertEqual(self.git("log", "-2", "--pretty=%s").splitlines(),
+        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.SHADOW_REF).splitlines(),
                          [f"sun: {codex_agent} turn 2 (1 tool calls)",
                           f"sun: {codex_agent} turn 1 (1 tool calls)"])
 
@@ -404,7 +506,7 @@ class SunTest(unittest.TestCase):
             f.write('{"type": "user", "message": {"content": "two"}}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
         hook("Stop", transcript_path=tp)
-        self.assertEqual(self.git("log", "-3", "--pretty=%s").splitlines(),
+        self.assertEqual(self.git("log", "-3", "--pretty=%s", sun.SHADOW_REF).splitlines(),
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           "sun: emma/local edits local.txt",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
@@ -480,7 +582,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("turn 1 (1 tool calls)", self.head_subject())
         ev = sun.events()[-1]  # overlay re-pointed at the turn commit
         self.assertEqual((ev["actor"], ev["commit"]),
-                         ("emma/local", self.git("rev-parse", "HEAD").strip()))
+                         ("emma/local", self.sun_head()))
         self.assertIn("[emma/local]", run("log").splitlines()[0])
 
     def test_local_edits_mid_turn_block_squash(self):
@@ -490,7 +592,7 @@ class SunTest(unittest.TestCase):
         write("local.txt", "h\n")
         self.tool_call(sid, "b.ts", "2\n", 1)  # PreToolUse commits local.txt
         hook("Stop", sid)
-        self.assertEqual(self.git("log", "-3", "--pretty=%s").splitlines(),
+        self.assertEqual(self.git("log", "-3", "--pretty=%s", sun.SHADOW_REF).splitlines(),
                          [f"sun: {AGENT} Write", "sun: emma/local edits local.txt",
                           f"sun: {AGENT} Write"])
         self.assertNotIn("squashes", sun.events()[-1])
@@ -639,12 +741,12 @@ class SunTest(unittest.TestCase):
         run("import")
         self.assertFalse(sun.refs("refs/sun/sessions/"))
 
-    def test_import_leaves_old_commit_untracked(self):
+    def test_import_does_not_infer_agent_attribution_for_git_commit(self):
         write("other.txt", "y\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "no transcript"], check=True)
         run("import")
-        self.assertIn("[untracked]", run("log").splitlines()[0])
+        self.assertIn("[emma/local]", run("log").splitlines()[0])
 
     def test_codex_import_stores_sessions_without_attributing_old_commits(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
@@ -673,25 +775,27 @@ class SunTest(unittest.TestCase):
 
     def test_show_prints_operations_for_commit(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
-        out = run("show", self.git("rev-parse", "HEAD").strip()[:8])
+        out = run("show", self.sun_head()[:8])
         self.assertIn("foo.ts", out)
         self.assertIn(AGENT, out)
 
-    def test_show_untracked_commit(self):
+    def test_normal_commit_is_not_in_shadow_history(self):
+        shadow = self.sun_head()
         write("x.txt", "1\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
-        self.assertIn("no sun operations recorded", run("show", "HEAD"))
+        normal = self.git("rev-parse", "HEAD").strip()
+        self.assertEqual(self.sun_head(), shadow)
+        self.assertNotIn(normal, self.git("rev-list", sun.SHADOW_REF).splitlines())
 
     def test_show_matches_moved_sha_by_patch_id(self):
         write("a.txt", "v1\n")
         run("sync")
-        op = sun.events()[-1]["id"]
-        subprocess.run(["git", "checkout", "-qb", "side", "HEAD~1"], check=True)
-        write("a.txt", "v1\n")  # same change, new sha (like a squash-merge)
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "squashed"], check=True)
-        self.assertIn(op, run("show", "HEAD"))
+        original, op = self.sun_head(), sun.events()[-1]["id"]
+        parent = self.git("rev-parse", f"{original}^").strip()
+        moved = self.plumbing_commit(parent, ["a.txt"], "rewritten")
+        self.assertNotEqual(moved, original)
+        self.assertIn(op, run("show", moved))
 
     # ----------------------------------------------------------------- blame
 
@@ -787,8 +891,7 @@ class SunTest(unittest.TestCase):
         tp = os.path.join(self.proj, "t.jsonl")
         self.blame_turn(tp, [("a.ts", "1\n", "First a.ts."), ("b.ts", "2\n", "Then b.ts.")],
                         "make two files")
-        subprocess.run(["git", "mv", "b.ts", "c.ts"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "rename"], check=True)
+        os.rename("b.ts", "c.ts")
         out = run("blame", "c.ts", "1")
         self.assertIn("agent: Then b.ts.", out)
         self.assertIn("[Write tool1]", out)
@@ -815,15 +918,16 @@ class SunTest(unittest.TestCase):
         base = "".join(f"l{i}\n" for i in range(1, 7))
         write("f.py", base)
         run("sync")
-        pre = self.git("rev-parse", "HEAD").strip()
+        pre = self.sun_head()
         self.blame_turn(tp, [("f.py", base + "one\n", "Adding one."),
                              ("f.py", base + "one\ntwo\n", "Adding two.")], "two lines")
-        S = self.git("rev-parse", "HEAD").strip()
-        subprocess.run(["git", "checkout", "-qb", "side", pre], check=True)
+        original = self.sun_head()
         write("f.py", "zero\n" + base)  # shift the squash's lines down by one
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "insert zero"], check=True)
-        subprocess.run(["git", "cherry-pick", S], check=True, capture_output=True)
+        shifted = self.plumbing_commit(pre, ["f.py"], "insert zero")
+        write("f.py", "zero\n" + base + "one\ntwo\n")
+        moved = self.plumbing_commit(shifted, ["f.py"], "rewritten squash")
+        self.assertEqual(sun.patch_id(original), sun.patch_id(moved))
+        subprocess.run(["git", "update-ref", sun.SHADOW_REF, moved, original], check=True)
         out = run("blame", "f.py", "8")
         self.assertIn("agent: Adding one.", out)
         self.assertIn("[Write tool0]", out)
@@ -836,13 +940,14 @@ class SunTest(unittest.TestCase):
         base = "".join(f"l{i}\n" for i in range(1, 7))
         write("f.py", base)
         run("sync")
-        pre = self.git("rev-parse", "HEAD").strip()
+        pre = self.sun_head()
         self.blame_turn(tp, [("f.py", base + "one\n", "Adding one."),
                              ("f.py", base + "one\n  x = 2\n", "Adding two.")], "two lines")
-        subprocess.run(["git", "checkout", "-qb", "side", pre], check=True)
+        original = self.sun_head()
         write("f.py", base + "one\nx  =  2\n")  # same change reformatted: same patch-id
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "reformatted squash"], check=True)
+        moved = self.plumbing_commit(pre, ["f.py"], "reformatted squash")
+        self.assertEqual(sun.patch_id(original), sun.patch_id(moved))
+        subprocess.run(["git", "update-ref", sun.SHADOW_REF, moved, original], check=True)
         out = run("blame", "f.py", "8")
         self.assertIn("agent: Adding two.", out)
         self.assertIn("[Write tool1]", out)
@@ -918,13 +1023,13 @@ class SunTest(unittest.TestCase):
         self.assertIn("emma/local", out)
         self.assertIn("human edit", out)
 
-    def test_blame_untracked_commit(self):
+    def test_blame_snapshots_normal_commit_as_local_content(self):
         write("x.txt", "1\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
         out = run("blame", "x.txt", "1")
-        self.assertIn("untracked", out)
-        self.assertIn("no sun operations recorded", out)
+        self.assertIn("emma/local", out)
+        self.assertIn("human edit", out)
 
     # ------------------------------------------------------------------ undo
 
@@ -948,7 +1053,7 @@ class SunTest(unittest.TestCase):
     def test_undo_latest_commit(self):
         write("a.txt", "v1\n")
         run("sync")
-        target = self.git("rev-parse", "HEAD").strip()
+        target = self.sun_head()
         self.assertIn("undid commit", run("undo", "--commit"))
         self.assertFalse(os.path.exists("a.txt"))
         self.assertEqual(sun.events()[-1]["target_commit"], target)
@@ -974,7 +1079,7 @@ class SunTest(unittest.TestCase):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         run("viz", "-o", "viz.html")
         html = open("viz.html").read()
-        self.assertIn(self.git("rev-parse", "--short", "HEAD").strip(), html)
+        self.assertIn(self.git("rev-parse", "--short", sun.SHADOW_REF).strip(), html)
         self.assertIn(AGENT, html)
         self.assertIn("replay", html)
         self.assertIn("generated by", html)
@@ -992,7 +1097,7 @@ class SunTest(unittest.TestCase):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         data = sun.viz_data()
         commit = data["commits"][0]
-        self.assertEqual(commit["git_author"]["name"], "emma")
+        self.assertEqual(commit["git_author"]["name"], AGENT)
         self.assertEqual(commit["attribution"]["actors"][0], {
             "id": AGENT, "user": "emma", "kind": "agent", "harness": "claude",
             "session": "session1"})
@@ -1004,14 +1109,17 @@ class SunTest(unittest.TestCase):
         self.assertEqual(generated["tool_calls"][0]["tool"], "Write")
         self.assertEqual(data["actors"][0]["operations"], 1)
 
-    def test_viz_commit_detail_labels_untracked_git_author(self):
+    def test_viz_uses_sun_commit_instead_of_normal_git_commit(self):
         write("manual.txt", "x\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
-        commit = sun.viz_data()["commits"][0]
+        normal = self.git("rev-parse", "HEAD").strip()
+        data = sun.viz_data()
+        commit = data["commits"][0]
         detail = "\n".join(sun.commit_lines(commit))
-        self.assertIn("git author    emma <emma@test>", detail)
-        self.assertIn("sun actors    untracked", detail)
+        self.assertNotIn(normal, [c["hash"] for c in data["commits"]])
+        self.assertIn("git author    emma/local <sun@sun>", detail)
+        self.assertIn("sun actors    emma/local", detail)
 
     def test_viz_tui_renders_commit_and_operation_attribution(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
@@ -1108,7 +1216,7 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "add", "dump.jsonl"], check=True)
         write("other.txt", "x\n")
         run("export", "-o", "dump.jsonl")  # syncs other.txt; staged dump must not ride along
-        self.assertEqual(self.git("show", "--name-only", "--format=", "HEAD").split(),
+        self.assertEqual(self.git("show", "--name-only", "--format=", sun.SHADOW_REF).split(),
                          ["other.txt"])
         self.assertIn("dump.jsonl", self.git("status", "--porcelain"))
 

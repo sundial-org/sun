@@ -14,9 +14,16 @@ cd your-repo && sun init   # sets up every harness it detects (Claude Code, Code
 
 `sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
 subagents are included. Raw transcripts remain in their existing local directories by default.
-Existing commits stay untracked because sun did not observe them. From then on, hooks keep the
-log current: one commit per agent tool call (squashed per turn), with local edits detected in
-between. Codex asks you to review and trust new project hooks through `/hooks` before it runs them.
+Existing commits stay untracked because sun did not observe them. From then on, hooks keep an
+independent Sun history current: one commit per agent tool call, squashed per turn, with local
+edits detected in between. Sun commits share Git's object database but never move normal `HEAD`
+or the real index, and they do not appear in GitHub's branch history. Codex asks you to review
+and trust new project hooks through `/hooks` before it runs them.
+
+Sun stores the shared history under `refs/sun/heads/main`. Normal `git pull` fetches it into
+`refs/sun/remotes/origin/main`, and the pre-push hook publishes the local Sun tip without force.
+`sun log`, `sun show`, `sun blame`, and `sun viz` read this history. A repository must be
+initialized with Sun on each machine because Git does not clone local hook or refspec settings.
 
 ## 1 · Analyze your past sessions
 
@@ -24,6 +31,7 @@ between. Codex asks you to review and trust new project hooks through `/hooks` b
 | --- | --- |
 | `sun log` | git log annotated with the actor and turn behind each commit |
 | `sun show <commit>` | a commit's events and patches, even after a squash-merge (patch-id) |
+| `sun merge` | join divergent Sun histories after resolving the normal worktree |
 | `sun viz` | interactive terminal history with commit and operation attribution |
 | `sun viz --html [-o path]` | optional self-contained HTML export |
 | `sun sessions [id] [--grep re] [--file p]` | search every session that ran here |

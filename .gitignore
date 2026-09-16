@@ -1,5 +1,7 @@
 __pycache__/
-example/demo/
-example/demo.html
+examples/demo/
+examples/demo.html
+examples/demo-plan/
+examples/demo-twelve/
 .DS_Store
 dist/

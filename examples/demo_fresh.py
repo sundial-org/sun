@@ -5,7 +5,7 @@ Simulates the sundial story: a human scaffolds an app, two Claude sessions
 implement features (one commit per tool call, squashed per turn at Stop),
 a human edits during and between agent turns, and one operation is undone.
 
-Usage: python3 example/demo_fresh.py   ->  example/demo/ + example/demo.html
+Usage: python3 examples/demo_fresh.py   ->  examples/demo/ + examples/demo.html
 """
 import json, os, shutil, subprocess, sys
 sys.stdin = open(os.devnull)  # demos never prompt

@@ -31,6 +31,16 @@ def write(path, text):
         f.write(text)
 
 
+def read(path):
+    with open(path) as f:
+        return f.read()
+
+
+def read_json(path):
+    with open(path) as f:
+        return json.load(f)
+
+
 def transcript_line(file_path, tool="Edit", tid="tool0", ts=None):
     ts = ts or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     return json.dumps({"type": "assistant", "timestamp": ts, "message": {"content": [
@@ -106,7 +116,7 @@ class SunTest(unittest.TestCase):
     def test_init_creates_state_and_hooks(self):
         self.assertTrue(os.path.isdir(".git/sun"))
         self.assertEqual(self.head_subject(), "sun: initial state")
-        cfg = json.load(open(".claude/settings.json"))
+        cfg = read_json(".claude/settings.json")
         for event in ("SessionStart", "UserPromptSubmit", "PreToolUse",
                       "PostToolUse", "Stop"):
             self.assertIn("sun hook", [h["command"] for g in cfg["hooks"][event]
@@ -119,7 +129,7 @@ class SunTest(unittest.TestCase):
 
     def test_init_is_idempotent_for_hooks(self):
         run("init", "--no-claude-md")
-        self.assertEqual(len(json.load(open(".claude/settings.json"))["hooks"]["Stop"]), 1)
+        self.assertEqual(len(read_json(".claude/settings.json")["hooks"]["Stop"]), 1)
 
     def test_init_adds_refspec_when_remote_exists(self):
         bare = tempfile.mkdtemp()
@@ -131,32 +141,32 @@ class SunTest(unittest.TestCase):
         self.assertIn("+refs/sun/ops/*:refs/sun/ops/*", specs)
         self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
         self.assertNotIn("refs/sun/sessions", specs)
-        self.assertNotIn("refs/sun/sessions", open(".git/hooks/pre-push").read())
+        self.assertNotIn("refs/sun/sessions", read(".git/hooks/pre-push"))
         run("init", "--share-sessions", "--no-claude-md")
         self.assertIn("+refs/sun/sessions/*:refs/sun/sessions/*",
                       self.git("config", "--get-all", "remote.origin.fetch"))
-        self.assertIn("refs/sun/sessions/emma/*", open(".git/hooks/pre-push").read())
+        self.assertIn("refs/sun/sessions/emma/*", read(".git/hooks/pre-push"))
         shutil.rmtree(bare, ignore_errors=True)
 
     def test_init_claude_md_flag(self):
         run("init", "--share-sessions", "--claude-md")
-        self.assertIn(sun.CLAUDE_LINE, open("CLAUDE.md").read())
+        self.assertIn(sun.CLAUDE_LINE, read("CLAUDE.md"))
         run("init", "--share-sessions", "--claude-md")  # idempotent: one copy
-        self.assertEqual(open("CLAUDE.md").read().count(".git/sun/sessions/"), 1)
+        self.assertEqual(read("CLAUDE.md").count(".git/sun/sessions/"), 1)
 
     def test_codex_init_installs_hooks_and_agents_md(self):
         out = run("init", "--codex", "--share-sessions", "--instructions")
         self.assertIn("hooks: codex (.codex/hooks.json)", out)
         self.assertIn("open `/hooks`", out)
         self.assertIn("trust the Sun hooks", out)
-        cfg = json.load(open(".codex/hooks.json"))
+        cfg = read_json(".codex/hooks.json")
         for event in sun.CODEX_HOOK_EVENTS:
             self.assertIn("sun hook --harness codex",
                           [h["command"] for g in cfg["hooks"][event] for h in g["hooks"]])
         self.assertEqual(sun.configured_harnesses(), ["codex"])
-        self.assertIn(sun.CODEX_LINE, open("AGENTS.md").read())
+        self.assertIn(sun.CODEX_LINE, read("AGENTS.md"))
         run("init", "--codex", "--share-sessions", "--instructions")
-        self.assertEqual(len(json.load(open(".codex/hooks.json"))["hooks"]["Stop"]), 1)
+        self.assertEqual(len(read_json(".codex/hooks.json")["hooks"]["Stop"]), 1)
 
     def test_init_includes_its_instruction_file_in_the_initial_snapshot(self):
         subprocess.run(["git", "update-ref", "-d", sun.SHADOW_REF], check=True)
@@ -171,7 +181,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(sun.configured_harnesses(), ["claude", "codex"])
         for path, cmd in ((".claude/settings.json", "sun hook"),
                           (".codex/hooks.json", "sun hook --harness codex")):
-            cfg = json.load(open(path))
+            cfg = read_json(path)
             self.assertIn(cmd, [h["command"] for g in cfg["hooks"]["Stop"]
                                 for h in g["hooks"]])
 
@@ -199,8 +209,8 @@ class SunTest(unittest.TestCase):
 
     def test_restrictive_reinit_removes_other_harness_hook(self):
         run("init", "--claude", "--no-claude-md")  # setUp installed both
-        self.assertNotIn("sun hook", open(".codex/hooks.json").read())
-        self.assertIn("sun hook", open(".claude/settings.json").read())
+        self.assertNotIn("sun hook", read(".codex/hooks.json"))
+        self.assertIn("sun hook", read(".claude/settings.json"))
 
     def test_declined_instructions_hint_keeps_harness_flags(self):
         out = run("init", "--codex", "--share-sessions", "--no-instructions")
@@ -250,7 +260,7 @@ class SunTest(unittest.TestCase):
             run("init", "--no-claude-md")
             specs = self.git("config", "--get-all", "remote.origin.fetch")
             self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
-            hook_text = open(".git/hooks/pre-push").read()
+            hook_text = read(".git/hooks/pre-push")
             self.assertIn('"refs/sun/heads/*:refs/sun/heads/*"', hook_text)
             self.assertNotIn('"+refs/sun/heads/*:refs/sun/heads/*"', hook_text)
             subprocess.run(["git", "push", "--no-verify", "origin",
@@ -684,9 +694,9 @@ class SunTest(unittest.TestCase):
                                     "subagents/sub-1/turn-0001.jsonl": '{"s":1}\n'})
         run("sessions", "export")
         base = os.path.join(".git/sun/sessions", sun.enc(sun.root()))
-        self.assertEqual(open(os.path.join(base, "sess-x.jsonl")).read(), '{"x":1}\n')
+        self.assertEqual(read(os.path.join(base, "sess-x.jsonl")), '{"x":1}\n')
         self.assertTrue(os.path.exists(os.path.join(base, "sess-x/subagents/sub-1.jsonl")))
-        idx = json.load(open(os.path.join(base, "sessions-index.json")))
+        idx = read_json(os.path.join(base, "sessions-index.json"))
         self.assertEqual((idx[0]["user"], idx[0]["origin"]), ("emma", "local"))
 
     def test_codex_subagent_transcript_is_stored_and_exported(self):
@@ -700,8 +710,8 @@ class SunTest(unittest.TestCase):
                       self.git("ls-tree", "-r", "--name-only", ref))
         run("sessions", "export")
         base = os.path.join(".git/sun/sessions", sun.enc(sun.root()))
-        self.assertIn("subagent", open(os.path.join(
-            base, "parent-session/subagents/child-1.jsonl")).read())
+        self.assertIn("subagent", read(os.path.join(
+            base, "parent-session/subagents/child-1.jsonl")))
 
     def test_codex_stop_stores_turn_transcript(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
@@ -1052,7 +1062,7 @@ class SunTest(unittest.TestCase):
         write("a.txt", "v2\n")
         run("sync")
         self.assertIn("undid op", run("undo"))
-        self.assertEqual(open("a.txt").read(), "v1\n")
+        self.assertEqual(read("a.txt"), "v1\n")
         ev = sun.events()[-1]
         self.assertEqual((ev["type"], ev["actor"]), ("undo", "emma/local"))
         self.assertEqual(ev["target_op"], sun.events()[-2]["id"])
@@ -1084,14 +1094,14 @@ class SunTest(unittest.TestCase):
         run("sync")
         with self.assertRaises(SystemExit):
             run("undo", "--op", op)
-        self.assertEqual(open("a.txt").read(), "A2\n")  # untouched, not half-undone
+        self.assertEqual(read("a.txt"), "A2\n")  # untouched, not half-undone
 
     # ------------------------------------------------------------------- viz
 
     def test_viz_writes_selfcontained_html(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         run("viz", "-o", "viz.html")
-        html = open("viz.html").read()
+        html = read("viz.html")
         self.assertIn(self.git("rev-parse", "--short", sun.SHADOW_REF).strip(), html)
         self.assertIn(AGENT, html)
         self.assertIn("replay", html)
@@ -1165,7 +1175,7 @@ class SunTest(unittest.TestCase):
         self.agent_turn("session12345", [("a.ts", "1\n")])
         sun.store_chunks("sess-viz", {"turn-0001.jsonl": "{}\n"})
         run("viz", "-o", "viz.html")
-        html = open("viz.html").read()
+        html = read("viz.html")
         data = json.loads(html.split("const D=", 1)[1].split(",cs=D.commits", 1)[0]
                           .replace("<\\/", "</"))
         subjects = [c["subject"] for c in data["commits"]]
@@ -1203,7 +1213,7 @@ class SunTest(unittest.TestCase):
         hook("Stop", transcript_path=tp)
         write("local.txt", "h\n")
         run("export", "-o", "dump.jsonl")
-        recs = [json.loads(l) for l in open("dump.jsonl")]
+        recs = [json.loads(line) for line in read("dump.jsonl").splitlines()]
         turn = next(r for r in recs if r["actor"] == AGENT)
         self.assertEqual((turn["session"], turn["turn"], turn["prompt"]),
                          ("session12345", "turn1", "add feature"))

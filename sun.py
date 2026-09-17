@@ -11,6 +11,58 @@ by timestamp at read; refs/sun/* are the source of truth and travel via the refs
 hook init installs. .git/sun/lock (flock) serializes everything, like git's index.lock."""
 import argparse, difflib, fcntl, glob, hashlib, json, os, re, subprocess, sys
 import time, uuid, zlib
+from typing import Any, Dict, List, Optional, TypedDict
+
+
+class Attribution(TypedDict, total=False):
+    method: str
+
+
+class Edit(TypedDict, total=False):
+    file: str
+    patch: str
+    tool_call_id: Optional[str]
+    attribution: Attribution
+
+
+class ToolCall(TypedDict, total=False):
+    id: Optional[str]
+    tool: str
+    input: Dict[str, Any]
+
+
+class Event(TypedDict, total=False):
+    id: str
+    timestamp: str
+    type: str
+    actor: str
+    commit: str
+    patch_id: Optional[str]
+    turn: str
+    tool_calls: List[ToolCall]
+    edits: List[Edit]
+    squashes: List[str]
+    overlay_of: str
+    target_op: str
+    target_commit: str
+    parents: List[str]
+    pr: int
+
+
+class TurnState(TypedDict, total=False):
+    n: int
+    start: str
+    transcript: str
+    toffset: int
+    soffset: int
+    seen: int
+    stopped: bool
+
+
+class ActiveCall(TypedDict):
+    files: List[str]
+
+
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"}
 SHADOW_REF = "refs/sun/heads/main"
 SHADOW_REMOTE_REF = "refs/sun/remotes/origin/main"
@@ -22,19 +74,33 @@ CLAUDE_LINE = ("Past sessions for this repo, yours and other team members', are 
 CODEX_LINE = ("Past sessions for this repo, yours and other team members', are in "
               ".git/sun/sessions/ (with a sessions-index.json). Look there instead of "
               "~/.codex/sessions/, or use `sun sessions` to search them.")
-projects = lambda: os.environ.get("SUN_PROJECTS", os.path.expanduser("~/.claude/projects"))
-codex_sessions = lambda: os.environ.get(
-    "SUN_CODEX_SESSIONS", os.path.expanduser("~/.codex/sessions"))
+def projects():
+    return os.environ.get("SUN_PROJECTS", os.path.expanduser("~/.claude/projects"))
+
+
+def codex_sessions():
+    return os.environ.get("SUN_CODEX_SESSIONS", os.path.expanduser("~/.codex/sessions"))
+
+
 def sh(*a, input=None, check=True, env=None):
     p = subprocess.run(a, capture_output=True, text=True, input=input, env=env)
     if check and p.returncode: sys.exit(f"sun: `{' '.join(a)}` failed: {p.stderr.strip()}")
     return p.stdout
-git = lambda *a, **k: sh("git", *a, **k)
+def git(*args, **kwargs):
+    return sh("git", *args, **kwargs)
+
+
 _r = {}
 def root():  # memoized per cwd: called on every event, and hooks chdir before using it
     return _r.get(os.getcwd()) or _r.setdefault(os.getcwd(), git("rev-parse", "--show-toplevel").strip())
-quiet = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
-patches = lambda pre, post, files: {f: git("diff", pre, post, "--", f) for f in files}
+def quiet(*args, **kwargs):
+    return subprocess.run(args, capture_output=True, text=True, **kwargs)
+
+
+def patches(pre, post, files):
+    return {f: git("diff", pre, post, "--", f) for f in files}
+
+
 def changed_files():
     tip, ix = history_head(False), shadow_index()
     env = {**os.environ, "GIT_INDEX_FILE": ix}
@@ -50,28 +116,63 @@ def changed_files():
     return list(dict.fromkeys(tracked + untracked))
 def commit_files(files, message, author, reconcile=True):
     return commit_shadow(files, message, author, reconcile)
-patch_id = lambda c: (git("patch-id", "--stable", check=False,
-                          input=git("show", "--format=", c, check=False)).split() or [None])[0]
+def patch_id(commit):
+    output = git("patch-id", "--stable", check=False,
+                 input=git("show", "--format=", commit, check=False))
+    return (output.split() or [None])[0]
+
+
 def blob(data):  # loose object via hashlib+zlib: no subprocess per chunk (sha1 repos)
     b = data.encode() if isinstance(data, str) else data
     hdr = b"blob %d\x00" % len(b); sha = hashlib.sha1(hdr + b).hexdigest()
     p = os.path.join(root(), ".git", "objects", sha[:2], sha[2:])
     if not os.path.exists(p):
         os.makedirs(os.path.dirname(p), exist_ok=True)
-        open(p, "wb").write(zlib.compress(hdr + b))
+        with open(p, "wb") as f:
+            f.write(zlib.compress(hdr + b))
     return sha
-refs = lambda prefix: [l.split("\t") for l in git(  # [(refname, sha)]
-    "for-each-ref", "--format=%(refname)\t%(objectname)", prefix, check=False).splitlines()]
+
+
+def refs(prefix):  # [(refname, sha)]
+    output = git("for-each-ref", "--format=%(refname)\t%(objectname)", prefix, check=False)
+    return [line.split("\t") for line in output.splitlines()]
+
+
 def sun_dir(must=True):  # .git/sun is a per-machine cache; refs/sun/* are the source of truth
     d = os.path.join(root(), ".git", "sun")
     if must and not os.path.isdir(d): sys.exit("sun: not initialized here (run `sun init`)")
     return d
 def jread(path, default):
-    try: return json.load(open(path))
-    except (OSError, ValueError): return default
-jwrite = lambda path, obj: json.dump(obj, open(path, "w"), indent=1)
-state = lambda name, default: jread(os.path.join(sun_dir(), name), default)
-save_state = lambda name, obj: jwrite(os.path.join(sun_dir(), name), obj)
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def jwrite(path, obj):
+    with open(path, "w") as f:
+        json.dump(obj, f, indent=1)
+
+
+def read_text(path, errors=None):
+    with open(path, errors=errors) as f:
+        return f.read()
+
+
+def write_text(path, text, mode="w"):
+    with open(path, mode) as f:
+        f.write(text)
+
+
+def state(name, default):
+    return jread(os.path.join(sun_dir(), name), default)
+
+
+def save_state(name, obj):
+    jwrite(os.path.join(sun_dir(), name), obj)
+
+
 def ref_oid(ref):
     return git("rev-parse", "-q", "--verify", ref, check=False).strip()
 def history_head(required=True):
@@ -112,14 +213,14 @@ def commit_shadow(files, message, author, reconcile=True):
     commit = make_shadow_commit(tree, message, author, [parent] if parent else [])
     git("update-ref", SHADOW_REF, commit, parent or "0" * 40)
     return commit
-def parse_events(text):  # skips torn lines rather than bricking every command
-    out = []
+def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bricking every command
+    out: List[Event] = []
     for l in text.splitlines():
         try: out.append(json.loads(l))
         except ValueError: pass
     return out
-def events():  # own cache first (file order), then teammates' logs; stable-sorted
-    try: evs = parse_events(open(os.path.join(sun_dir(), "events.jsonl")).read())
+def events() -> List[Event]:  # own cache first (file order), then teammates' logs; stable-sorted
+    try: evs = parse_events(read_text(os.path.join(sun_dir(), "events.jsonl")))
     except OSError: evs = []
     for ref, sha in refs("refs/sun/log/"):
         if ref.split("/")[-1] != user():
@@ -128,15 +229,17 @@ def events():  # own cache first (file order), then teammates' logs; stable-sort
 def lock():
     lk = open(os.path.join(sun_dir(False), "lock"), "a")
     fcntl.flock(lk, fcntl.LOCK_EX)
-    return lk  # held until process exit
+    return lk  # closing the file releases the lock
 def mirror_log():  # one writer per user: refs/sun/log/<user> mirrors the local cache
     p = os.path.join(sun_dir(), "events.jsonl")
-    if os.path.exists(p): git("update-ref", f"refs/sun/log/{user()}", blob(open(p).read()))
-def record(mirror=True, **ev):
+    if os.path.exists(p): git("update-ref", f"refs/sun/log/{user()}", blob(read_text(p)))
+def record(mirror: bool = True, **ev: Any) -> Event:
     ev = {"id": uuid.uuid4().hex[:8], "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"), **ev}
     with open(os.path.join(sun_dir(), "events.jsonl"), "a") as f:
         f.write(json.dumps(ev) + "\n")
-    return mirror and mirror_log() or ev
+    if mirror:
+        mirror_log()
+    return ev
 def store_chunks(sid, files, u=None):  # {path: text} -> refs/sun/sessions/<u>/<sid> tree
     if not files: return
     ref, ix = f"refs/sun/sessions/{u or user()}/{sid}", os.path.join(sun_dir(), "tmpindex")
@@ -193,7 +296,7 @@ def sync(exclude=(), reconcile=True, method="sync"):  # commit unclaimed changes
                           "attribution": {"method": method}} for f in files])
 def maybe_sync(exclude=()):  # skipped while an agent tool call is in flight
     state("active.json", {}) or sync(exclude)
-def finish_call(sid, active, payload, harness="claude"):
+def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     # PostToolUse: the pre->post diff is the agent's tool call
     st = (active.pop(call_key(sid, payload, harness), None)  # or an id-less claim
           or active.pop(call_key(sid, {}, harness), None) or {"files": []})
@@ -271,45 +374,57 @@ def prompt_line(l, harness="claude"):
 def prompt_boundary(sid, payload, harness="claude"):
     # PreToolUse: a prompt can reach the transcript with no hook between turns (queued
     # message, missed Stop); a user line past the first scan means a new turn started
-    turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
+    turns: Dict[str, TurnState] = state("turns.json", {})
+    t = turns.get(session_key(sid, harness))
     tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
     if not (t and tp and os.path.exists(tp)): return
-    f = open(tp, "rb"); prompts = []
-    f.seek(t.get("soffset", t.get("toffset", 0)))
-    while True:
-        pos, l = f.tell(), f.readline()
-        if not l: break
-        k = prompt_line(l, harness)
-        if k: prompts.append((pos, k))
-    end = f.tell(); kinds = {k for _, k in prompts}
-    # codex mirrors one prompt across records: prefer task_started (the earliest, as
-    # scan_codex_transcript does), else count just one of the user-record kinds
-    if 3 in kinds: prompts = [x for x in prompts if x[1] == 3]
-    elif {1, 2} <= kinds: prompts = [x for x in prompts if x[1] == 1]
-    seen = t.get("seen", 0)  # the turn's own prompt is the first record seen for it,
-    bs = prompts[0 if seen else 1:]  # however late the harness flushes it; the rest
-    for boundary, _ in bs:  # are queued prompts, each starting a new turn
-        squash_turn(sid, harness)  # close the previous turn before this turn's first commit
-        f.seek(t.get("toffset", 0)); data = f.read(boundary - f.tell())
-        if data and not t.get("stopped") and cfg_share_sessions():
-            store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
-        sync(method="hook")  # dirty local edits predate the queued turn
-        t.update(n=t["n"] + 1, start=history_head(), toffset=boundary); t.pop("stopped", None)
-    t.update(soffset=end, seen=1 if bs else seen + len(prompts))
+    with open(tp, "rb") as f:
+        prompts = []
+        f.seek(t.get("soffset", t.get("toffset", 0)))
+        while True:
+            pos, line = f.tell(), f.readline()
+            if not line:
+                break
+            kind = prompt_line(line, harness)
+            if kind:
+                prompts.append((pos, kind))
+        end = f.tell()
+        kinds = {kind for _, kind in prompts}
+        # Codex mirrors one prompt across records. Prefer task_started, otherwise
+        # count just one of the duplicate user-record kinds.
+        if 3 in kinds:
+            prompts = [item for item in prompts if item[1] == 3]
+        elif {1, 2} <= kinds:
+            prompts = [item for item in prompts if item[1] == 1]
+        seen = t.get("seen", 0)
+        boundaries = prompts[0 if seen else 1:]
+        for boundary, _ in boundaries:
+            squash_turn(sid, harness)
+            f.seek(t.get("toffset", 0))
+            data = f.read(boundary - f.tell())
+            if data and not t.get("stopped") and cfg_share_sessions():
+                store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
+            sync(method="hook")
+            t.update(n=t["n"] + 1, start=history_head(), toffset=boundary)
+            t.pop("stopped", None)
+    t.update(soffset=end, seen=1 if boundaries else seen + len(prompts))
     turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)
 def stop_chunk(sid, payload, harness="claude"):
     # Stop: append this turn's transcript slice to the session ref
-    turns = state("turns.json", {}); t = turns.get(session_key(sid, harness))
+    turns: Dict[str, TurnState] = state("turns.json", {})
+    t = turns.get(session_key(sid, harness))
     tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
     if not (t and tp and os.path.exists(tp) and cfg_share_sessions()): return
-    f = open(tp, errors="replace"); f.seek(t.get("toffset", 0)); data = f.read()
+    with open(tp, errors="replace") as f:
+        f.seek(t.get("toffset", 0))
+        data = f.read()
     if data: store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
     t.update(toffset=os.path.getsize(tp), stopped=True); save_state("turns.json", turns)
 def subagent_chunk(sid, payload):
     tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
     if not (tp and sub and os.path.exists(tp) and cfg_share_sessions()): return
-    store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": open(tp, errors="replace").read()})
+    store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": read_text(tp, errors="replace")})
 def cmd_hook(a):
     try: payload = json.load(sys.stdin)
     except (ValueError, OSError): payload = {}
@@ -319,10 +434,14 @@ def cmd_hook(a):
     if p.returncode or not os.path.isdir(os.path.join(p.stdout.strip(), ".git", "sun")):
         return  # not a sun repo; hooks must never break the harness
     os.chdir(p.stdout.strip())
-    lk = lock()  # serialize concurrent hooks (parallel sessions/subagents)
+    with lock():  # serialize concurrent hooks (parallel sessions/subagents)
+        handle_hook(a, payload)
+
+
+def handle_hook(a, payload):
     event, sid, harness = (payload.get("hook_event_name", ""),
                            payload.get("session_id", "?"), a.harness)
-    active = state("active.json", {})
+    active: Dict[str, ActiveCall] = state("active.json", {})
     if event == "UserPromptSubmit" and not state("turns.json", {}).get(
             session_key(sid, harness), {}).get("stopped"):  # Stop never fired:
         squash_turn(sid, harness)  # squash the turn + store its transcript slice
@@ -371,7 +490,7 @@ def repo_locations():
     return {os.path.realpath(p) for p in [root()] + wt}
 def codex_meta(path):
     try:
-        for line in open(path, errors="replace"):
+        for line in read_text(path, errors="replace").splitlines():
             try: obj = json.loads(line)
             except ValueError: continue
             if obj.get("type") == "session_meta": return obj.get("payload") or {}
@@ -394,7 +513,7 @@ def transcript_sources(harness="claude"):
         yield path, sid, sid if "subagent" in source else None
 def scan_claude_transcript(path):
     chunks, cur = [], []
-    for line in open(path, errors="replace"):
+    for line in read_text(path, errors="replace").splitlines(keepends=True):
         if cur and "tool_result" not in line \
                 and ('"type":"user"' in line or '"type": "user"' in line):
             chunks.append("".join(cur)); cur = []
@@ -402,7 +521,7 @@ def scan_claude_transcript(path):
     if cur: chunks.append("".join(cur))
     return chunks
 def scan_codex_transcript(path):
-    lines = open(path, errors="replace").readlines()
+    lines = read_text(path, errors="replace").splitlines(keepends=True)
     parsed = []
     for line in lines:
         try: parsed.append(json.loads(line))
@@ -451,11 +570,11 @@ def export_sessions():  # mirror session refs to .git/sun/sessions/ in ~/.claude
     os.makedirs(base, exist_ok=True)
     for sid, u, ref in session_rows():
         fp = os.path.join(base, sid + ".jsonl")
-        open(fp, "w").write(session_text(ref))
+        write_text(fp, session_text(ref))
         for s in sorted({n.split("/")[1] for n in git("ls-tree", "-r", "--name-only", ref)
                         .splitlines() if n.startswith("subagents/")}):
             os.makedirs(os.path.join(base, sid, "subagents"), exist_ok=True)
-            open(os.path.join(base, sid, "subagents", s + ".jsonl"), "w").write(session_text(ref, s))
+            write_text(os.path.join(base, sid, "subagents", s + ".jsonl"), session_text(ref, s))
         idx.append({"id": sid, "user": u, "path": fp, "origin": "local" if u == user() else "team"})
     jwrite(os.path.join(base, "sessions-index.json"), idx)
     return len(idx)
@@ -583,7 +702,7 @@ def install_push(share_sessions=False):
         for spec in refspecs(share_sessions):
             if spec not in current: git("config", "--add", "remote.origin.fetch", spec)
     hp = os.path.join(root(), ".git", "hooks", "pre-push")
-    old = open(hp).read() if os.path.exists(hp) else ""
+    old = read_text(hp) if os.path.exists(hp) else ""
     legacy = ('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
               'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
     managed = old == legacy or any(old.startswith(f'#!/bin/sh\n{marker}\n') for marker in (
@@ -595,14 +714,14 @@ def install_push(share_sessions=False):
         lines.insert(2, 'git push --no-verify "$1" "refs/sun/heads/*:refs/sun/heads/*" || { echo "sun: shadow history push rejected; fetch and reconcile before pushing" >&2; exit 1; }')
         if share_sessions:
             lines.append(f'git push --no-verify "$1" "+refs/sun/sessions/{user()}/*:refs/sun/sessions/{user()}/*" >/dev/null 2>&1 || true')
-        open(hp, "w").write("\n".join(lines) + "\n")
+        write_text(hp, "\n".join(lines) + "\n")
         os.chmod(hp, 0o755)
 def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
     todo = []
     for h in harnesses:
         name, line = ("CLAUDE.md", CLAUDE_LINE) if h == "claude" else ("AGENTS.md", CODEX_LINE)
         p = os.path.join(root(), name)
-        cur = open(p).read() if os.path.exists(p) else ""
+        cur = read_text(p) if os.path.exists(p) else ""
         if line not in cur: todo.append((p, cur, line, name))
     if not todo: return
     if choice is None and sys.stdin.isatty():
@@ -610,7 +729,7 @@ def agent_instructions(harnesses, choice, flags=""):  # one prompt covering ever
                        "team sessions? [Y/n] ").strip().lower() != "n"
     if choice:
         for p, cur, line, _ in todo:
-            open(p, "a").write(("\n" if cur and not cur.endswith("\n") else "") + line + "\n")
+            write_text(p, ("\n" if cur and not cur.endswith("\n") else "") + line + "\n", "a")
     else:
         print(f"sun: run `sun init{flags} --instructions` later to enable team session sharing")
 def cmd_init(a):
@@ -628,7 +747,7 @@ def cmd_init(a):
     fast_forward_shadow()
     p, sha = os.path.join(sun_dir(), "events.jsonl"), git(  # rebuild cache from our own ref
         "rev-parse", "-q", "--verify", f"refs/sun/log/{user()}", check=False).strip()
-    if sha and not os.path.exists(p): open(p, "w").write(git("cat-file", "blob", sha))
+    if sha and not os.path.exists(p): write_text(p, git("cat-file", "blob", sha))
     installed = ", ".join(install_hooks(h) for h in harnesses); install_push(share_sessions)
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
@@ -988,7 +1107,7 @@ def run_viz_tui(data):
     curses.wrapper(viz_tui, data)
 def write_viz_html(data, out):
     encoded = json.dumps(data).replace("</", "<\\/")
-    open(out, "w").write(VIZ.replace("__DATA__", encoded))
+    write_text(out, VIZ.replace("__DATA__", encoded))
     print(f"sun: wrote {out}")
 def cmd_viz(a):
     maybe_sync()
@@ -1067,12 +1186,19 @@ def main(argv=None):
     ps["export"].add_argument("-o", "--output", default=None)
     ps["blame"].add_argument("file"); ps["blame"].add_argument("line", type=int)
     a = ap.parse_args(argv)
+    commands = {
+        "init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge,
+        "log": cmd_log, "show": cmd_show, "undo": cmd_undo, "viz": cmd_viz,
+        "import": cmd_import, "sessions": cmd_sessions, "gc": cmd_gc,
+        "update": cmd_update, "export": cmd_export, "blame": cmd_blame,
+    }
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
-        os.chdir(root()); sun_dir(); a.lock = lock()
-    {"init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge,
-     "log": cmd_log, "show": cmd_show,
-     "undo": cmd_undo, "viz": cmd_viz, "import": cmd_import, "sessions": cmd_sessions,
-     "gc": cmd_gc, "update": cmd_update, "export": cmd_export, "blame": cmd_blame}[a.cmd](a)
+        os.chdir(root())
+        sun_dir()
+        with lock():
+            commands[a.cmd](a)
+    else:
+        commands[a.cmd](a)
 if __name__ == "__main__":
     main()

@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-"""sun: an operation log for humans + agents on top of git.
+"""Record human and agent edits in an independent Git-backed operation history.
 
-Commits are attributed as <user>/<source>: <user>/local, or <user>/agent:<harness>/<session>.
-PreToolUse commits dirty state as local; PostToolUse commits the pre->post diff as the agent's;
-Commits form an independent DAG under refs/sun/heads/main and never touch normal Git history.
-Stop squashes each turn while hidden operation snapshots stay under refs/sun/ops. Raw
-transcripts are shared under refs/sun/sessions/<user>/<id> only when the user opts in.
-Events: .git/sun/events.jsonl (cache) mirrored to refs/sun/log/<user>, one writer each, merged
-by timestamp at read; refs/sun/* are the source of truth and travel via the refspec + pre-push
-hook init installs. .git/sun/lock (flock) serializes everything, like git's index.lock."""
-import argparse, difflib, fcntl, glob, hashlib, json, os, re, subprocess, sys
+Sun does not change normal Git commits. Agent tool calls are grouped into one commit per turn
+while remaining individually inspectable and undoable. Raw transcripts are shared only when
+you explicitly enable session sharing."""
+import argparse, difflib, fcntl, glob, hashlib, json, os, re, shutil, subprocess, sys
 import time, uuid, zlib
 from typing import Any, Dict, List, Optional, TypedDict
 
@@ -36,6 +31,7 @@ class Event(TypedDict, total=False):
     timestamp: str
     type: str
     actor: str
+    session_id: str
     commit: str
     snapshot: str
     patch_id: Optional[str]
@@ -321,7 +317,8 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     p = patches(pre, c, files)
     if a_files:
         git("update-ref", f"refs/sun/ops/{c}", c)  # survives the turn squash + git gc
-        record(type="edit", actor=actor, turn=f"turn{turn}", commit=c, patch_id=patch_id(c),
+        record(type="edit", actor=actor, session_id=sid, turn=f"turn{turn}", commit=c,
+               patch_id=patch_id(c),
                tool_calls=[call], edits=[{"file": f, "patch": p[f], "tool_call_id": call["id"],
                                           "attribution": {"method": "hook"}} for f in a_files])
     if h_files:
@@ -545,21 +542,21 @@ def scan_codex_transcript(path):
 def scan_transcript(path, harness="claude"):
     return scan_claude_transcript(path) if harness == "claude" else scan_codex_transcript(path)
 def do_import(harnesses=("claude",)):
+    if not cfg_share_sessions():
+        return "session sharing disabled; transcripts remain in their native harness directories"
     t0, seen, ns, nsub = time.time(), state("imported.json", {}), 0, 0
-    share = cfg_share_sessions()
     for harness in harnesses:
         for path, sid, sub in transcript_sources(harness):
             st = os.stat(path)
-            if share and seen.get(path) == [st.st_size, int(st.st_mtime)]:
+            if seen.get(path) == [st.st_size, int(st.st_mtime)]:
                 continue  # idempotent: only new/changed transcripts are re-read
             chunks = scan_transcript(path, harness)
-            if share:
-                pre = f"subagents/{sub}/" if sub else ""
-                store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
-                seen[path] = [st.st_size, int(st.st_mtime)]
+            pre = f"subagents/{sub}/" if sub else ""
+            store_chunks(sid, {f"{pre}turn-{i:04d}.jsonl": c for i, c in enumerate(chunks, 1)})
+            seen[path] = [st.st_size, int(st.st_mtime)]
             ns, nsub = ns + (not sub), nsub + bool(sub)
-    if share: save_state("imported.json", seen)
-    return f"imported {ns} sessions, {nsub} subagents in {time.time() - t0:.1f}s"
+    save_state("imported.json", seen)
+    return f"stored {ns} sessions, {nsub} subagents in {time.time() - t0:.1f}s"
 session_rows = lambda: [(r.split("/", 4)[4], r.split("/")[3], r)  # (sid, user, ref)
                         for r, _ in refs("refs/sun/sessions/")]
 def session_text(ref, sub=None):
@@ -567,8 +564,9 @@ def session_text(ref, sub=None):
     names = sorted(n for n in git("ls-tree", "-r", "--name-only", ref).splitlines()
                    if n.startswith(pre) and n.count("/") == pre.count("/"))
     return "".join(git("cat-file", "blob", f"{ref}:{n}") for n in names)
+def session_export_dir(): return os.path.join(sun_dir(), "sessions", enc(root()))
 def export_sessions():  # mirror session refs to .git/sun/sessions/ in ~/.claude/projects layout
-    base, idx = os.path.join(sun_dir(), "sessions", enc(root())), []
+    base, idx = session_export_dir(), []
     os.makedirs(base, exist_ok=True)
     for sid, u, ref in session_rows():
         fp = os.path.join(base, sid + ".jsonl")
@@ -581,17 +579,46 @@ def export_sessions():  # mirror session refs to .git/sun/sessions/ in ~/.claude
     jwrite(os.path.join(base, "sessions-index.json"), idx)
     return len(idx)
 def cmd_sessions(a):
-    if a.id == "export":
+    if a.session_cmd == "import":
+        if not cfg_share_sessions():
+            sys.exit("sun: session sharing is disabled; run `sun init --share-sessions`")
+        return print("sun: " + do_import(configured_harnesses()))
+    if a.session_cmd == "export":
         return print(f"sun: exported {export_sessions()} sessions to .git/sun/sessions/")
+    if a.session_cmd == "prune":
+        if a.older_than < 0: sys.exit("sun: --older-than must be zero or greater")
+        prefix = f"refs/sun/sessions/{user()}/"
+        cutoff = time.time() - a.older_than * 86400
+        old = [r for r, sha in refs(prefix)
+               if int(git("show", "-s", "--format=%ct", sha).strip()) < cutoff]
+        if a.remote and old:
+            if "origin" not in git("remote", check=False).split():
+                sys.exit("sun: cannot prune remote sessions without an origin remote")
+            git("push", "origin", "--delete", *old)
+        for ref in old:
+            git("update-ref", "-d", ref)
+            sid = ref[len(prefix):]
+            try: os.remove(os.path.join(session_export_dir(), sid + ".jsonl"))
+            except FileNotFoundError: pass
+            shutil.rmtree(os.path.join(session_export_dir(), sid), ignore_errors=True)
+        if os.path.isdir(session_export_dir()): export_sessions()
+        where = "local and remote" if a.remote else "local"
+        return print(f"sun: pruned {len(old)} {where} session refs; "
+                     "Git may garbage-collect their objects later")
     rows = session_rows()
-    if a.id:
-        for sid, u, ref in rows:
-            if sid.startswith(a.id): return print(session_text(ref), end="")
-        sys.exit("sun: no such session")
-    pat = a.grep or (a.file and re.escape(a.file))
+    if a.session_cmd == "show":
+        matches = [row for row in rows if row[0] == a.id] or \
+                  [row for row in rows if row[0].startswith(a.id)]
+        if not matches: sys.exit("sun: no such session")
+        if len(matches) > 1: sys.exit("sun: session prefix is ambiguous; use more of the ID")
+        return print(session_text(matches[0][2]), end="")
+    pat = a.grep
     for sid, u, ref in rows:
-        if pat and not re.search(pat, session_text(ref)): continue
-        print(f"{sid}  {u}  {len(git('ls-tree', '--name-only', ref).splitlines())} turns")
+        text = session_text(ref)
+        if pat and not re.search(pat, text): continue
+        if a.contains and a.contains not in text: continue
+        count = len(git("ls-tree", "-r", "--name-only", ref).splitlines())
+        print(f"{sid}  {u}  {count} transcript chunks")
 def chunk_prompt(text):  # first user message of a stored transcript chunk (claude or codex)
     for o in parse_events(text):
         m, p = o.get("message") or {}, o.get("payload") or {}
@@ -617,19 +644,18 @@ def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt pai
     maybe_sync([rel_to_root(a.output)] if a.output else stdout_file())  # never re-ingest our dump
     rows, evs, merged = session_rows(), events(), {}
     for e in evs:
-        if e.get("type") not in ("edit", "undo") or not e.get("edits"): continue
+        if e.get("type") not in ("edit", "undo", "restore") or not e.get("edits"): continue
         key = (e["actor"], e["turn"]) if e.get("turn") else e["id"]  # unsquashed turns regroup
         m = merged.setdefault(key, {**e, "tool_calls": e.get("tool_calls", [])[:],
                                     "edits": e["edits"][:]})
         if m["id"] != e["id"]: m["tool_calls"] += e.get("tool_calls", []); m["edits"] += e["edits"]
     out = open(a.output, "w") if a.output else sys.stdout
     for e in merged.values():
-        sid = prompt = None
-        m = re.match(r"([^/]+)/agent:[^/]+/(.+)", e["actor"])
-        hit = m and next(((s, r) for s, u, r in rows
-                          if u == m.group(1) and s.startswith(m.group(2))), None)
+        sid, prompt = e.get("session_id"), None
+        owner = e["actor"].split("/", 1)[0]
+        hit = sid and next(((s, r) for s, u, r in rows if u == owner and s == sid), None)
         if hit:
-            sid, n = hit[0], int(e.get("turn", "turn0")[4:])
+            n = int(e.get("turn", "turn0")[4:])
             prompt = n and chunk_prompt(git("cat-file", "blob",
                                             f"{hit[1]}:turn-{n:04d}.jsonl", check=False)) or None
         out.write(json.dumps({"timestamp": e["timestamp"], "actor": e["actor"], "session": sid,
@@ -639,11 +665,6 @@ def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt pai
                                   "show", "--format=", e.get("commit") or "", "--", d["file"],
                                   check=False)} for d in e["edits"]]}) + "\n")
     if a.output: out.close(); print(f"sun: exported to {a.output}")
-def cmd_gc(a):
-    old = [r for r, sha in refs("refs/sun/sessions/")
-           if int(git("show", "-s", "--format=%ct", sha).strip()) < time.time() - a.older_than * 86400]
-    for r in old: git("update-ref", "-d", r)
-    print(f"sun: dropped {len(old)} session refs (git gc will prune the objects)")
 def cfg_share_sessions(): return state("config.json", {}).get("share_sessions", False)
 def configure_session_sharing(choice):
     cfg = state("config.json", {})
@@ -784,8 +805,6 @@ def cmd_merge(a):
     git("update-ref", SHADOW_REF, commit, local_tip)
     record(type="merge", actor=actor, commit=commit, parents=[local_tip, remote], edits=[])
     print(f"sun: merged shared shadow history in {commit[:8]}")
-def cmd_import(a):
-    print("sun: " + do_import(configured_harnesses()))
 def installed_git_source():
     from importlib.metadata import distribution
     try:
@@ -816,7 +835,7 @@ def cmd_log(a):
         tags = "".join(dict.fromkeys(
             f"  [{e['actor']}" + (f" {e['turn']}" if e.get("turn") else "")
             + (f" pr#{e['pr']}" if e.get("pr") else "")
-            + (" undo" if e["type"] == "undo" else "") + "]"
+            + (f" {e['type']}" if e["type"] in ("undo", "restore") else "") + "]"
             for e in by_commit.get(H, [])))
         print(f"{h} {date} {subj}{tags or '  [untracked]'}")
 def cmd_show(a):
@@ -884,14 +903,14 @@ def cmd_blame(a):
     if not ev: return print("no sun operations recorded for this commit")
     if "/agent:" not in ev["actor"]:
         return print(f"human edit ({ev['actor']}): no conversation\n" + json.dumps(ev, indent=2))
-    u, sid8, tcs = ev["actor"].split("/", 1)[0], ev["actor"].rsplit("/", 1)[1], ev.get("tool_calls") or []
+    u, sid, tcs = ev["actor"].split("/", 1)[0], ev.get("session_id"), ev.get("tool_calls") or []
     mine = [tc for tc in tcs if of in ((tc.get("input") or {}).get("files")
                                        or [(tc.get("input") or {}).get("file")])]
     tid = next((ed["tool_call_id"] for ed in ev.get("edits") or []
                 if ed.get("file") == of and ed.get("tool_call_id")), None) \
         or next((tc["id"] for tc in mine + tcs if tc.get("id")), None)
-    hit = next(((sid, ref) for sid, ru, ref in session_rows()
-                if ru == u and sid.startswith(sid8)), None)
+    hit = next(((stored, ref) for stored, ru, ref in session_rows()
+                if ru == u and stored == sid), None)
     if not (tid and hit): return print("no transcript stored for this edit")
     sid, ref = hit
     for n in sorted(git("ls-tree", "-r", "--name-only", ref).splitlines()):
@@ -903,15 +922,21 @@ def cmd_blame(a):
     if prompt: print(f"user: {prompt.strip()}")
     if ctx: print(f"agent: {ctx.strip()}")
     print(f"[{tool or '?'} {tid}]")
+def apply_checked(patch, reverse, failure, dry_run=False):
+    args = ["apply"] + (["-R"] if reverse else [])
+    if quiet("git", *args, "--check", input=patch).returncode: sys.exit(failure)
+    if not dry_run: git(*args, input=patch)
 def cmd_undo(a):
-    maybe_sync(); actor = local()
+    actor = local()
     if a.commit is not None:
         H = resolve_history_rev(a.commit)
         parents = git("rev-list", "--parents", "-n1", H).split()[1:]
         if not parents: sys.exit("sun: cannot undo the initial shadow commit")
-        patch = git("diff", parents[0], H)
-        if quiet("git", "apply", "-R", input=patch).returncode:
-            sys.exit(f"sun: cannot revert {H[:8]} cleanly")
+        if len(parents) != 1: sys.exit("sun: cannot undo a merge commit; restore a parent instead")
+        patch = git("diff", "--binary", parents[0], H)
+        if not a.dry_run: maybe_sync()
+        apply_checked(patch, True, f"sun: cannot undo commit {H[:8]} cleanly", a.dry_run)
+        if a.dry_run: return print(f"sun: can undo commit {H[:8]}")
         files, pre = changed_files(), history_head()
         c = commit_files(files or ["."], f"sun: undo commit {H[:8]}", actor)
         record(type="undo", actor=actor, commit=c, target_commit=H,
@@ -921,14 +946,30 @@ def cmd_undo(a):
                    if (e["id"] == a.op or not a.op) and e.get("edits")), None)
     if not target: sys.exit("sun: no such operation")
     combined = "".join(ed["patch"] for ed in target["edits"] if ed["patch"].strip())
-    if quiet("git", "apply", "-R", input=combined).returncode:  # atomic: all or nothing
-        sys.exit(f"sun: cannot undo op {target['id']}: its patch no longer applies cleanly; "
-                 "try `sun undo --commit <hash>` instead")
-    files, pre = [ed["file"] for ed in target["edits"]], history_head()
+    if not a.dry_run: maybe_sync()
+    apply_checked(combined, True,
+                  f"sun: cannot undo op {target['id']}: its patch no longer applies cleanly",
+                  a.dry_run)
+    files = list(dict.fromkeys(ed["file"] for ed in target["edits"]))
+    if a.dry_run:
+        return print(f"sun: can undo op {target['id']} by {target['actor']} "
+                     f"({', '.join(files)})")
+    pre = history_head()
     c = commit_files(files, f"sun: undo op {target['id']}", actor)
     record(type="undo", actor=actor, commit=c, target_op=target["id"],
            edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
     print(f"sun: undid op {target['id']} in {c[:8]}")
+def cmd_restore(a):
+    target = resolve_history_rev(a.commit)
+    maybe_sync(); pre = history_head()
+    patch = git("diff", "--binary", pre, target)
+    if not patch: return print(f"sun: already at {target[:8]}")
+    apply_checked(patch, False, f"sun: cannot restore {target[:8]} cleanly")
+    files = changed_files()
+    c = commit_files(files or ["."], f"sun: restore {target[:8]}", local())
+    record(type="restore", actor=local(), commit=c, target_commit=target,
+           edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
+    print(f"sun: restored {target[:8]} in {c[:8]}")
 def actor_info(actor):
     """Split a stable actor id into fields the visualizations can present."""
     actor = actor or "unknown"
@@ -956,7 +997,8 @@ def viz_operation(ev):
     return {"id": ev.get("id"), "type": ev.get("type", "edit"),
             "actor": ev.get("actor", "unknown"),
             "actor_info": actor_info(ev.get("actor", "unknown")),
-            "timestamp": ev.get("timestamp"), "turn": ev.get("turn"), "pr": ev.get("pr"),
+            "session_id": ev.get("session_id"), "timestamp": ev.get("timestamp"),
+            "turn": ev.get("turn"), "pr": ev.get("pr"),
             "target_op": ev.get("target_op"), "target_commit": ev.get("target_commit"),
             "attribution_methods": methods, "tool_calls": ev.get("tool_calls") or [],
             "edits": ev.get("edits") or []}
@@ -1003,11 +1045,13 @@ def operation_lines(op, prefix=""):
     info = op["actor_info"]
     out = [f"{prefix}operation {op['id']}  {op['type']}",
            f"{prefix}edited by     {actor_label(info)}"]
+    if op.get("session_id"): out.append(f"{prefix}session       {op['session_id']}")
     if op.get("turn"): out.append(f"{prefix}turn          {op['turn']}")
     if op.get("timestamp"): out.append(f"{prefix}timestamp     {op['timestamp']}")
     if op.get("target_op"): out.append(f"{prefix}undoes        operation {op['target_op']}")
     if op.get("target_commit"):
-        out.append(f"{prefix}undoes        commit {op['target_commit'][:8]}")
+        verb = "restores" if op["type"] == "restore" else "undoes"
+        out.append(f"{prefix}{verb:<14}commit {op['target_commit'][:8]}")
     for call in op["tool_calls"]:
         target = (call.get("input") or {}).get("file") or \
                  ", ".join((call.get("input") or {}).get("files") or [])
@@ -1143,7 +1187,8 @@ c.innerHTML=cs.map(x=>`<li>${x.short} ${x.date.slice(0,10)} ${esc(x.subject)} ${
 const rows=[...c.children];rows.forEach((li,i)=>li.onclick=()=>{rows.forEach(r=>r.classList.remove('sel'));li.classList.add('sel');detail(cs[i]);});
 s.max=cs.length;s.value=cs.length;
 function cut(){const n=+s.value;pos.textContent=n+'/'+cs.length;rows.forEach((li,i)=>li.style.display=cs.length-1-i<n?'':'none');}
-function operation(e,p=''){let i=e.actor_info,o=`${p}operation ${e.id}  ${e.type}\\n${p}generated by  ${e.actor}\\n${p}source        ${i.kind}${i.kind=='agent'?` via ${i.harness} session ${i.session}`:''}\\n`;
+function operation(e,p=''){let i=e.actor_info,o=`${p}operation ${e.id}  ${e.type}\\n${p}generated by  ${e.actor}\\n${p}source        ${i.kind}${i.kind=='agent'?` via ${i.harness}`:''}\\n`;
+if(e.session_id)o+=`${p}session       ${e.session_id}\\n`;
 if(e.turn)o+=`${p}turn          ${e.turn}\\n`;if(e.timestamp)o+=`${p}observed      ${e.timestamp}\\n`;
 if(e.attribution_methods.length)o+=`${p}attribution   ${e.attribution_methods.join(', ')}\\n`;
 for(const tc of e.tool_calls){const input=tc.input||{},target=input.file||(input.files||[]).join(', ');o+=`${p}tool          ${tc.tool||'?'} ${tc.id||''}${target?'  '+target:''}\\n`;}
@@ -1157,48 +1202,81 @@ t=setInterval(()=>{s.value=+s.value+Math.max(1,Math.ceil(cs.length/150));cut();i
 s.oninput=cut;cut();if(rows.length)rows[0].click();</script>
 """
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="sun", description=__doc__)
-    sub = ap.add_subparsers(dest="cmd", required=True)
+    ap = argparse.ArgumentParser(
+        prog="sun", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Start with `sun init`, then use `sun viz` to explore recorded work.")
+    sub = ap.add_subparsers(dest="cmd", required=True, title="commands", metavar="COMMAND")
     ps = {c: sub.add_parser(c, help=h) for c, h in [
-        ("init", "git repo + .git/sun + hooks + session import"), ("sync", "commit pending local edits"),
-        ("merge", "join divergent local and shared shadow histories"),
-        ("hook", "agent-harness hook entrypoint (JSON on stdin)"), ("show", "show operations for a commit"),
-        ("import", "re-import sessions"), ("gc", "drop session refs older than N days"),
-        ("sessions", "list/read/export sessions in refs/sun/sessions"), ("log", "git log with actors + turns"),
-        ("undo", "undo one operation (default: latest) or a commit"),
-        ("viz", "terminal visualization of the op log"),
-        ("update", "update sun to the latest version"),
-        ("export", "dump history as fine-tuning JSONL (prompt + tool_calls + edits per turn)"),
-        ("blame", "the conversation behind a file:line")]}
+        ("init", "initialize Sun and install agent hooks"),
+        ("sync", "snapshot pending human edits into Sun history"),
+        ("log", "list Sun commits with attributed actors and turns"),
+        ("show", "show a Sun commit and its recorded operations"),
+        ("viz", "browse Sun commits and operations interactively"),
+        ("blame", "show who changed a line and its stored conversation, when available"),
+        ("undo", "reverse an operation or Sun commit and record the undo"),
+        ("restore", "restore files to a Sun commit and record the restoration"),
+        ("sessions", "manage explicitly shared agent transcripts"),
+        ("merge", "reconcile divergent Sun histories after resolving the worktree"),
+        ("export", "export operations as fine-tuning JSONL"),
+        ("update", "upgrade the uv-installed Sun CLI")]}
+    ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
+    sub._choices_actions = [choice for choice in sub._choices_actions if choice.dest != "hook"]
     ps["init"].add_argument("--claude", action="store_true",
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
                             help="set up Codex only (default: every detected harness)")
     ps["init"].add_argument("--share-sessions", dest="share_sessions", action="store_true",
                             default=None, help="share raw transcripts through git refs")
-    ps["init"].add_argument("--no-share-sessions", dest="share_sessions", action="store_false")
+    ps["init"].add_argument("--no-share-sessions", dest="share_sessions", action="store_false",
+                            help="keep raw transcripts only in their native harness directories")
     ps["init"].add_argument("--instructions", "--claude-md", dest="instructions",
-                            action="store_true", default=None)
+                            action="store_true", default=None,
+                            help="add agent instructions for finding shared sessions")
     ps["init"].add_argument("--no-instructions", "--no-claude-md", dest="instructions",
-                            action="store_false")
+                            action="store_false", help="do not edit agent instruction files")
     ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
-    ps["sessions"].add_argument("id", nargs="?"); ps["sessions"].add_argument("--grep")
-    ps["sessions"].add_argument("--file"); ps["gc"].add_argument("--older-than", type=int, required=True)
-    ps["log"].add_argument("-n", type=int, default=30); ps["show"].add_argument("commit")
-    ps["undo"].add_argument("--op", nargs="?", const="", default=None, metavar="ID")
-    ps["undo"].add_argument("--commit", nargs="?", const="HEAD", default=None, metavar="HASH")
+    session_sub = ps["sessions"].add_subparsers(
+        dest="session_cmd", required=True, title="session commands", metavar="ACTION")
+    session_ps = {c: session_sub.add_parser(c, help=h) for c, h in [
+        ("list", "list stored transcripts"), ("show", "print one stored transcript"),
+        ("import", "store new or changed native transcripts in Sun refs"),
+        ("export", "materialize stored transcripts under .git/sun/sessions"),
+        ("prune", "delete your old stored transcript refs")]}
+    session_ps["list"].add_argument("--grep", metavar="REGEX",
+                                    help="show transcripts matching a regular expression")
+    session_ps["list"].add_argument("--contains", metavar="TEXT",
+                                    help="show transcripts containing literal text")
+    session_ps["show"].add_argument("id", help="full session ID or unique prefix")
+    session_ps["prune"].add_argument("--older-than", type=int, required=True, metavar="DAYS",
+                                     help="prune sessions last stored more than DAYS ago")
+    session_ps["prune"].add_argument("--remote", action="store_true",
+                                     help="also delete the selected refs from origin")
+    ps["log"].add_argument("-n", type=int, default=30, metavar="COUNT",
+                           help="maximum commits to show (default: 30)")
+    ps["show"].add_argument("commit", help="Sun commit, snapshot, or ref")
+    undo_target = ps["undo"].add_mutually_exclusive_group()
+    undo_target.add_argument("--op", nargs="?", const="", default=None, metavar="ID",
+                             help="operation ID (default: latest operation)")
+    undo_target.add_argument("--commit", nargs="?", const="HEAD", default=None, metavar="HASH",
+                             help="Sun commit (default with flag: current Sun commit)")
+    ps["undo"].add_argument("--dry-run", action="store_true",
+                            help="check whether the reversal applies without changing files")
+    ps["restore"].add_argument("commit", help="Sun commit, snapshot, or ref to restore")
     ps["viz"].add_argument("--html", action="store_true", help="export self-contained HTML")
     ps["viz"].add_argument("-o", "--output", default=None,
                             help="HTML output path (implies --html)")
-    ps["viz"].add_argument("-n", type=int, default=0)
-    ps["export"].add_argument("-o", "--output", default=None)
-    ps["blame"].add_argument("file"); ps["blame"].add_argument("line", type=int)
+    ps["viz"].add_argument("-n", type=int, default=0, metavar="COUNT",
+                           help="maximum commits to load (default: all)")
+    ps["export"].add_argument("-o", "--output", default=None,
+                              help="output path (default: stdout)")
+    ps["blame"].add_argument("file", help="path to inspect")
+    ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
         "init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge,
-        "log": cmd_log, "show": cmd_show, "undo": cmd_undo, "viz": cmd_viz,
-        "import": cmd_import, "sessions": cmd_sessions, "gc": cmd_gc,
-        "update": cmd_update, "export": cmd_export, "blame": cmd_blame,
+        "log": cmd_log, "show": cmd_show, "undo": cmd_undo, "restore": cmd_restore,
+        "viz": cmd_viz, "sessions": cmd_sessions, "update": cmd_update,
+        "export": cmd_export, "blame": cmd_blame,
     }
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir

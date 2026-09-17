@@ -5,7 +5,7 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sun
 
-AGENT = "emma/agent:claude/session1"  # session12345 truncated to 8 chars
+AGENT = "emma/agent:claude/session12345"
 
 
 def run(*argv, stdin=None):
@@ -82,10 +82,10 @@ class SunTest(unittest.TestCase):
                               check=True).stdout
 
     def head_subject(self):
-        return self.git("log", "-1", "--pretty=%s", sun.SHADOW_REF).strip()
+        return self.git("log", "-1", "--pretty=%s", sun.shadow_ref()).strip()
 
     def sun_head(self):
-        return self.git("rev-parse", sun.SHADOW_REF).strip()
+        return self.git("rev-parse", sun.shadow_ref()).strip()
 
     def plumbing_commit(self, parent, files, message="rewritten"):
         index = os.path.join(self.dir, ".git", "sun", "test-index")
@@ -155,15 +155,15 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "remote", "add", "origin", bare], check=True)
         run("init", "--no-claude-md")
         specs = self.git("config", "--get-all", "remote.origin.fetch")
-        self.assertIn("+refs/sun/log/*:refs/sun/log/*", specs)
-        self.assertIn("+refs/sun/ops/*:refs/sun/ops/*", specs)
+        self.assertIn("refs/sun/events/*:refs/sun/events/*", specs)
+        self.assertIn("refs/sun/ops/*:refs/sun/ops/*", specs)
         self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
         self.assertNotIn("refs/sun/sessions", specs)
         self.assertNotIn("refs/sun/sessions", read(".git/hooks/pre-push"))
         run("init", "--share-sessions", "--no-claude-md")
         self.assertIn("+refs/sun/sessions/*:refs/sun/sessions/*",
                       self.git("config", "--get-all", "remote.origin.fetch"))
-        self.assertIn("refs/sun/sessions/emma/*", read(".git/hooks/pre-push"))
+        self.assertIn('sun push "$1"', read(".git/hooks/pre-push"))
         shutil.rmtree(bare, ignore_errors=True)
 
     def test_init_claude_md_flag(self):
@@ -187,11 +187,11 @@ class SunTest(unittest.TestCase):
         self.assertEqual(len(read_json(".codex/hooks.json")["hooks"]["Stop"]), 1)
 
     def test_init_includes_its_instruction_file_in_the_initial_snapshot(self):
-        subprocess.run(["git", "update-ref", "-d", sun.SHADOW_REF], check=True)
+        subprocess.run(["git", "update-ref", "-d", sun.shadow_ref()], check=True)
         run("init", "--codex", "--share-sessions", "--instructions")
-        commits = self.git("rev-list", sun.SHADOW_REF).splitlines()
+        commits = self.git("rev-list", sun.shadow_ref()).splitlines()
         self.assertEqual(len(commits), 1)
-        self.assertIn(sun.CODEX_LINE, self.git("show", f"{sun.SHADOW_REF}:AGENTS.md"))
+        self.assertIn(sun.CODEX_LINE, self.git("show", f"{sun.shadow_ref()}:AGENTS.md"))
         self.assertEqual(sun.changed_files(), [])
 
     def test_init_installs_all_detected_harnesses(self):
@@ -251,7 +251,7 @@ class SunTest(unittest.TestCase):
         write("shadow.txt", "one\n")
         real_index = self.git("write-tree").strip()
         run("sync")
-        shadow = self.git("rev-parse", sun.SHADOW_REF).strip()
+        shadow = self.git("rev-parse", sun.shadow_ref()).strip()
         self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
         self.assertEqual(self.git("write-tree").strip(), real_index)
         self.assertNotEqual(shadow, initial)
@@ -261,9 +261,9 @@ class SunTest(unittest.TestCase):
     def test_shadow_history_keeps_per_call_commits_and_drives_viz(self):
         normal = self.git("rev-parse", "HEAD").strip()
         self.agent_turn("session12345", [("a.ts", "1\n"), ("b.ts", "2\n")])
-        commits = self.git("rev-list", sun.SHADOW_REF).splitlines()
+        commits = self.git("rev-list", sun.shadow_ref()).splitlines()
         self.assertEqual(len(commits), 2)  # initial snapshot + squashed turn
-        self.assertEqual(len(sun.refs("refs/sun/ops/")), 2)  # per-call commits survive
+        self.assertEqual(len(sun.refs("refs/sun/ops/")), 3)  # initial + per-call snapshots survive
         self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
         data = sun.viz_data()
         self.assertEqual([c["hash"] for c in data["commits"]], commits)
@@ -279,15 +279,15 @@ class SunTest(unittest.TestCase):
             specs = self.git("config", "--get-all", "remote.origin.fetch")
             self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
             hook_text = read(".git/hooks/pre-push")
-            self.assertIn('"refs/sun/heads/*:refs/sun/heads/*"', hook_text)
-            self.assertNotIn('"+refs/sun/heads/*:refs/sun/heads/*"', hook_text)
+            self.assertIn('sun push "$1"', hook_text)
+            self.assertNotIn('|| true', hook_text)
             subprocess.run(["git", "push", "--no-verify", "origin",
-                            f"{sun.SHADOW_REF}:{sun.SHADOW_REF}"], check=True,
+                            f"{sun.shadow_ref()}:{sun.shadow_ref()}"], check=True,
                            capture_output=True)
             subprocess.run(["git", "fetch", "-q", "origin",
                             "+refs/sun/heads/*:refs/sun/remotes/origin/*"], check=True)
-            self.assertEqual(self.git("rev-parse", sun.SHADOW_REMOTE_REF),
-                             self.git("rev-parse", sun.SHADOW_REF))
+            self.assertEqual(self.git("rev-parse", sun.remote_ref()),
+                             self.git("rev-parse", sun.shadow_ref()))
         finally:
             shutil.rmtree(bare, ignore_errors=True)
 
@@ -299,8 +299,8 @@ class SunTest(unittest.TestCase):
         os.remove("remote.txt")
         write("local.txt", "local\n")
         local = self.plumbing_commit(base, ["local.txt"], "local shadow edit")
-        subprocess.run(["git", "update-ref", sun.SHADOW_REF, local], check=True)
-        subprocess.run(["git", "update-ref", sun.SHADOW_REMOTE_REF, remote], check=True)
+        subprocess.run(["git", "update-ref", sun.shadow_ref(), local], check=True)
+        subprocess.run(["git", "update-ref", sun.remote_ref(), remote], check=True)
 
         # Normal Git has already resolved the source tree before Sun joins its DAG.
         write("remote.txt", "remote\n")
@@ -327,7 +327,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "sync")
         self.assertIn("+v1", ev["edits"][0]["patch"])
         self.assertTrue(ev["patch_id"])
-        sha = self.git("rev-parse", "refs/sun/log/emma").strip()  # mirrored
+        sha = self.git("rev-parse", f"refs/sun/events/{ev['id']}").strip()
         self.assertIn(ev["id"], self.git("cat-file", "blob", sha))
 
     def test_local_edit_commit_names_files_truncated(self):
@@ -342,7 +342,7 @@ class SunTest(unittest.TestCase):
         run("sync")
         os.rename("b.ts", "c.ts")
         run("sync")
-        ns = self.git("show", "--name-status", "--format=", sun.SHADOW_REF).split()
+        ns = self.git("show", "--name-status", "--format=", sun.shadow_ref()).split()
         self.assertIn("b.ts", ns)  # rename shows as R b.ts c.ts (or D+A), never A alone
         self.assertIn("c.ts", ns)
         self.assertEqual(sun.changed_files(), [])
@@ -371,10 +371,10 @@ class SunTest(unittest.TestCase):
         originals = sun.events()[-2:]
         hook("Stop", "session12345")
         self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (2 tool calls)")
-        self.assertEqual(self.git("rev-parse", f"{sun.SHADOW_REF}^").strip(), start)
+        self.assertEqual(self.git("rev-parse", f"{sun.shadow_ref()}^").strip(), start)
         calls = sun.events()[-2:]
         self.assertEqual([c["id"] for c in calls], [c["id"] for c in originals])
-        raw = sun.parse_events(read(os.path.join(".git", "sun", "events.jsonl")))
+        raw = sun.events()
         self.assertEqual([sum(e.get("id") == c["id"] for e in raw) for c in calls], [1, 1])
         self.assertEqual([c["commit"] for c in calls], [self.sun_head()] * 2)
         self.assertEqual([c["snapshot"] for c in calls], [c["commit"] for c in originals])
@@ -408,7 +408,7 @@ class SunTest(unittest.TestCase):
             f.write('{"turn":2}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
         hook("Stop", transcript_path=tp)
-        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.SHADOW_REF).splitlines(),
+        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.shadow_ref()).splitlines(),
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
         ref = "refs/sun/sessions/emma/session12345"  # neither turn's transcript is lost
@@ -481,7 +481,7 @@ class SunTest(unittest.TestCase):
             f.write('{"type": "user", "message": {"content": "two"}}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
         hook("Stop", transcript_path=tp)
-        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.SHADOW_REF).splitlines(),
+        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.shadow_ref()).splitlines(),
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
         self.assertEqual(sun.events()[-1]["turn"], "turn2")
@@ -512,8 +512,8 @@ class SunTest(unittest.TestCase):
                 with open(tp, "a") as f:
                     f.write(user % ("two", "two"))
         hook("Stop", sid, harness="codex", transcript_path=tp)
-        codex_agent = "emma/agent:codex/codex-qu"
-        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.SHADOW_REF).splitlines(),
+        codex_agent = "emma/agent:codex/codex-queued-sess"
+        self.assertEqual(self.git("log", "-2", "--pretty=%s", sun.shadow_ref()).splitlines(),
                          [f"sun: {codex_agent} turn 2 (1 tool calls)",
                           f"sun: {codex_agent} turn 1 (1 tool calls)"])
 
@@ -545,7 +545,7 @@ class SunTest(unittest.TestCase):
             f.write('{"type": "user", "message": {"content": "two"}}\n')
         self.tool_call("session12345", "b.ts", "2\n", 1)
         hook("Stop", transcript_path=tp)
-        self.assertEqual(self.git("log", "-3", "--pretty=%s", sun.SHADOW_REF).splitlines(),
+        self.assertEqual(self.git("log", "-3", "--pretty=%s", sun.shadow_ref()).splitlines(),
                          [f"sun: {AGENT} turn 2 (1 tool calls)",
                           "sun: emma/local edits local.txt",
                           f"sun: {AGENT} turn 1 (1 tool calls)"])
@@ -601,11 +601,11 @@ class SunTest(unittest.TestCase):
              tool_input={"command": patch}, tool_use_id="call-1")
         evs = sun.events()[-2:]
         self.assertEqual({e["actor"] for e in evs},
-                         {"emma/agent:codex/codex-se", "emma/local"})
+                         {"emma/agent:codex/codex-session-123", "emma/local"})
         agent_ev = next(e for e in evs if "agent:codex" in e["actor"])
         self.assertEqual(agent_ev["tool_calls"][0]["input"], {"file": "agent.ts"})
         hook("Stop", sid, harness="codex")
-        self.assertIn("agent:codex/codex-se turn 1", self.head_subject())
+        self.assertIn("agent:codex/codex-session-123 turn 1", self.head_subject())
 
     def test_local_overlay_two_events_one_commit_and_follows_squash(self):
         sid, inp = "session12345", {"file_path": os.path.abspath("agent.ts")}
@@ -634,7 +634,7 @@ class SunTest(unittest.TestCase):
         original = sun.events()[-3:]
         human = next(e for e in original if e["actor"] == "emma/local")
         hook("Stop", sid)
-        self.assertEqual(self.git("rev-parse", f"{sun.SHADOW_REF}^").strip(), start)
+        self.assertEqual(self.git("rev-parse", f"{sun.shadow_ref()}^").strip(), start)
         self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (2 tool calls)")
         updated = sun.events()[-3:]
         self.assertEqual([e["id"] for e in updated], [e["id"] for e in original])
@@ -719,13 +719,13 @@ class SunTest(unittest.TestCase):
 
     def test_sessions_export_layout_and_index(self):
         sun.store_chunks("sess-x", {"turn-0001.jsonl": '{"x":1}\n',
-                                    "subagents/sub-1/turn-0001.jsonl": '{"s":1}\n'})
+                                    "subagents/sub-1/turn-0001.jsonl": '{"s":1}\n'}, u="zoe")
         run("sessions", "export")
         base = os.path.join(".git/sun/sessions", sun.enc(sun.root()))
-        self.assertEqual(read(os.path.join(base, "sess-x.jsonl")), '{"x":1}\n')
-        self.assertTrue(os.path.exists(os.path.join(base, "sess-x/subagents/sub-1.jsonl")))
+        self.assertEqual(read(os.path.join(base, "zoe/sess-x.jsonl")), '{"x":1}\n')
+        self.assertTrue(os.path.exists(os.path.join(base, "zoe/sess-x/subagents/sub-1.jsonl")))
         idx = read_json(os.path.join(base, "sessions-index.json"))
-        self.assertEqual((idx[0]["user"], idx[0]["origin"]), ("emma", "local"))
+        self.assertEqual((idx[0]["user"], idx[0]["origin"]), ("zoe", "team"))
 
     def test_sessions_show_requires_a_unique_prefix(self):
         sun.store_chunks("shared-prefix-a", {"turn-0001.jsonl": "a\n"})
@@ -745,8 +745,9 @@ class SunTest(unittest.TestCase):
                       self.git("ls-tree", "-r", "--name-only", ref))
         run("sessions", "export")
         base = os.path.join(".git/sun/sessions", sun.enc(sun.root()))
-        self.assertIn("subagent", read(os.path.join(
-            base, "parent-session/subagents/child-1.jsonl")))
+        self.assertFalse(os.path.exists(os.path.join(base, "parent-session")))
+        entry = read_json(os.path.join(base, "sessions-index.json"))[0]
+        self.assertEqual(entry["subagents"]["child-1"], tp)
 
     def test_codex_stop_stores_turn_transcript(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
@@ -757,11 +758,11 @@ class SunTest(unittest.TestCase):
         self.assertEqual(hook("Stop", sid, harness="codex", transcript_path=tp), "")
         self.assertIn('"codex"', run("sessions", "show", sid))
 
-    def test_events_merge_teammates_log_ref(self):
-        ev = {"id": "zoe00001", "timestamp": "2099-01-01T00:00:00+0000", "type": "edit",
-              "actor": "zoe/local", "commit": "f" * 40, "edits": []}
+    def test_events_read_teammates_operation_ref(self):
+        ev = {"id": "0" * 32, "timestamp": "2099-01-01T00:00:00+0000", "type": "edit",
+              "actor": "zoe/local", "commit": self.sun_head(), "edits": []}
         sha = sun.blob(json.dumps(ev) + "\n")
-        self.git("update-ref", "refs/sun/log/zoe", sha)
+        self.git("update-ref", f"refs/sun/events/{ev['id']}", sha)
         self.assertIn("zoe/local", [e["actor"] for e in sun.events()])
 
     def test_sessions_prune_only_drops_own_old_refs_and_exports(self):
@@ -772,7 +773,7 @@ class SunTest(unittest.TestCase):
         sun.store_chunks("new-sess", {"turn-0001.jsonl": "y\n"})
         run("sessions", "export")
         old_copy = os.path.join(sun.session_export_dir(), "old-sess.jsonl")
-        self.assertTrue(os.path.exists(old_copy))
+        self.assertFalse(os.path.exists(old_copy))
         self.assertIn("pruned 1 local session refs",
                       run("sessions", "prune", "--older-than", "30"))
         self.assertEqual({r[0].split("/")[-1] for r in sun.refs("refs/sun/sessions/")},
@@ -852,7 +853,7 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
         normal = self.git("rev-parse", "HEAD").strip()
         self.assertEqual(self.sun_head(), shadow)
-        self.assertNotIn(normal, self.git("rev-list", sun.SHADOW_REF).splitlines())
+        self.assertNotIn(normal, self.git("rev-list", sun.shadow_ref()).splitlines())
 
     def test_show_matches_moved_sha_by_patch_id(self):
         write("a.txt", "v1\n")
@@ -993,7 +994,7 @@ class SunTest(unittest.TestCase):
         write("f.py", "zero\n" + base + "one\ntwo\n")
         moved = self.plumbing_commit(shifted, ["f.py"], "rewritten squash")
         self.assertEqual(sun.patch_id(original), sun.patch_id(moved))
-        subprocess.run(["git", "update-ref", sun.SHADOW_REF, moved, original], check=True)
+        subprocess.run(["git", "update-ref", sun.shadow_ref(), moved, original], check=True)
         out = run("blame", "f.py", "8")
         self.assertIn("agent: Adding one.", out)
         self.assertIn("[Write tool0]", out)
@@ -1013,7 +1014,7 @@ class SunTest(unittest.TestCase):
         write("f.py", base + "one\nx  =  2\n")  # same change reformatted: same patch-id
         moved = self.plumbing_commit(pre, ["f.py"], "reformatted squash")
         self.assertEqual(sun.patch_id(original), sun.patch_id(moved))
-        subprocess.run(["git", "update-ref", sun.SHADOW_REF, moved, original], check=True)
+        subprocess.run(["git", "update-ref", sun.shadow_ref(), moved, original], check=True)
         out = run("blame", "f.py", "8")
         self.assertIn("agent: Adding two.", out)
         self.assertIn("[Write tool1]", out)
@@ -1166,11 +1167,67 @@ class SunTest(unittest.TestCase):
 
     # ------------------------------------------------------------------- viz
 
+    def test_data_defaults_to_json_with_null_stdin(self):
+        with open(os.devnull) as stdin, mock.patch("sys.stdin", stdin):
+            for command in ("data",):
+                data = json.loads(run(command))
+                self.assertIn("commits", data)
+                self.assertIn("sessions", data)
+
+    def test_data_resolves_native_and_team_paths_without_own_copy(self):
+        tp = os.path.join(self.proj, "native.jsonl")
+        write(tp, "local transcript\n")
+        self.agent_turn("session12345", [("foo.ts", "x\n")], tpath=tp)
+        sun.store_chunks("session12345", {"turn-0001.jsonl": "stale copy\n"})
+        sun.store_chunks("session12345", {"turn-0001.jsonl": "team copy\n"}, u="zoe")
+        base = sun.session_export_dir()
+        write(os.path.join(base, "session12345.jsonl"), "legacy\n")
+        write(os.path.join(base, "session12345/subagents/child.jsonl"), "legacy\n")
+        data = json.loads(run("data"))
+        own = next(s for s in data["sessions"] if s["user"] == "emma")
+        team = next(s for s in data["sessions"] if s["user"] == "zoe")
+        self.assertEqual(own["path"], tp)
+        self.assertEqual(read(team["path"]), "team copy\n")
+        self.assertFalse(os.path.exists(os.path.join(base, "session12345.jsonl")))
+        self.assertFalse(os.path.exists(os.path.join(base, "session12345")))
+        self.assertEqual(data["commits"][0]["operations"][0]["session_path"], tp)
+        os.remove(tp)
+        own = next(s for s in json.loads(run("data"))["sessions"] if s["user"] == "emma")
+        self.assertIsNone(own["path"])  # never fall back to duplicating our shared ref
+
+    def test_data_discovers_native_sessions_without_sharing(self):
+        claude = os.path.join(self.proj, sun.enc(sun.root()), "claude-local.jsonl")
+        codex = os.path.join(self.codex, "rollout.jsonl")
+        write(claude, "{}\n")
+        write(codex, json.dumps({"type": "session_meta", "payload": {
+            "id": "codex-local", "cwd": sun.root()}}) + "\n")
+        paths = {s["id"]: s["path"] for s in json.loads(run("data"))["sessions"]}
+        self.assertEqual(paths, {"claude-local": claude, "codex-local": codex})
+        self.assertFalse(os.path.exists(sun.session_export_dir()))
+
+    def test_data_redirected_output_is_not_synced(self):
+        old = os.dup(1)
+        fd = os.open("data.json", os.O_CREAT | os.O_WRONLY, 0o600)
+        os.dup2(fd, 1)
+        os.close(fd)
+        try: json.loads(run("data"))
+        finally:
+            os.dup2(old, 1)
+            os.close(old)
+        self.assertTrue(all(d["file"] != "data.json" for e in sun.events()
+                            for d in e.get("edits", [])))
+
+    def test_viz_output_is_not_synced_back(self):
+        run("viz", "-o", "viz.html")
+        run("viz", "-o", "viz.html")
+        self.assertTrue(all(d["file"] != "viz.html" for e in sun.events()
+                            for d in e.get("edits", [])))
+
     def test_viz_writes_selfcontained_html(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         run("viz", "-o", "viz.html")
         html = read("viz.html")
-        self.assertIn(self.git("rev-parse", "--short", sun.SHADOW_REF).strip(), html)
+        self.assertIn(self.git("rev-parse", "--short", sun.shadow_ref()).strip(), html)
         self.assertIn(AGENT, html)
         self.assertIn("replay", html)
         self.assertIn("generated by", html)
@@ -1206,7 +1263,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(commit["git_author"]["name"], AGENT)
         self.assertEqual(commit["attribution"]["actors"][0], {
             "id": AGENT, "user": "emma", "kind": "agent", "harness": "claude",
-            "session": "session1"})
+            "session": "session12345"})
         operation = commit["operations"][0]
         self.assertEqual(operation["actor"], AGENT)
         self.assertEqual(operation["session_id"], "session12345")
@@ -1306,7 +1363,8 @@ class SunTest(unittest.TestCase):
         hook("UserPromptSubmit", transcript_path=tp)
         self.tool_call("session12345", "a.ts", "1\n")
         write(tp, json.dumps({"type": "user",
-                              "message": {"role": "user", "content": "add feature"}}) + "\n")
+                              "message": {"role": "user", "content": "add feature"}}) + "\n" +
+              transcript_line("a.ts", tid="tool0"))
         hook("Stop", transcript_path=tp)
         write("local.txt", "h\n")
         run("export", "-o", "dump.jsonl")
@@ -1347,7 +1405,7 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "add", "dump.jsonl"], check=True)
         write("other.txt", "x\n")
         run("export", "-o", "dump.jsonl")  # syncs other.txt; staged dump must not ride along
-        self.assertEqual(self.git("show", "--name-only", "--format=", sun.SHADOW_REF).split(),
+        self.assertEqual(self.git("show", "--name-only", "--format=", sun.shadow_ref()).split(),
                          ["other.txt"])
         self.assertIn("dump.jsonl", self.git("status", "--porcelain"))
 
@@ -1390,7 +1448,7 @@ class SunTest(unittest.TestCase):
     def test_codex_sessionstart_prints_codex_context_line(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
         out = hook("SessionStart", harness="codex")
-        self.assertIn("~/.codex/sessions", out)
+        self.assertIn("sun data", out)
 
 
 if __name__ == "__main__":

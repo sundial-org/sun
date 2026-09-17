@@ -1035,11 +1035,11 @@ def viz_tui(screen, data):
     try: curses.curs_set(0)
     except curses.error: pass
     screen.keypad(True)
-    # Explicit colors avoid low-contrast defaults in embedded terminals such as Codex.
+    # Preserve the terminal's real theme instead of mapping ANSI black to a palette color.
     if curses.has_colors():
         curses.start_color()
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
-        screen.bkgd(" ", curses.color_pair(1))
+        try: curses.use_default_colors()
+        except curses.error: pass
     commits, selected, visible = data["commits"], 0, len(data["commits"])
     detail_scroll, replaying = 0, False
     while True:

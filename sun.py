@@ -4,7 +4,7 @@
 Commits are attributed as <user>/<source>: <user>/local, or <user>/agent:<harness>/<session>.
 PreToolUse commits dirty state as local; PostToolUse commits the pre->post diff as the agent's;
 Commits form an independent DAG under refs/sun/heads/main and never touch normal Git history.
-Stop squashes each turn while original operation commits stay under refs/sun/ops. Raw
+Stop squashes each turn while hidden operation snapshots stay under refs/sun/ops. Raw
 transcripts are shared under refs/sun/sessions/<user>/<id> only when the user opts in.
 Events: .git/sun/events.jsonl (cache) mirrored to refs/sun/log/<user>, one writer each, merged
 by timestamp at read; refs/sun/* are the source of truth and travel via the refspec + pre-push
@@ -37,12 +37,11 @@ class Event(TypedDict, total=False):
     type: str
     actor: str
     commit: str
+    snapshot: str
     patch_id: Optional[str]
     turn: str
     tool_calls: List[ToolCall]
     edits: List[Edit]
-    squashes: List[str]
-    overlay_of: str
     target_op: str
     target_commit: str
     parents: List[str]
@@ -57,6 +56,7 @@ class TurnState(TypedDict, total=False):
     soffset: int
     seen: int
     stopped: bool
+    squashed: bool
 
 
 class ActiveCall(TypedDict):
@@ -219,7 +219,7 @@ def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bric
         try: out.append(json.loads(l))
         except ValueError: pass
     return out
-def events() -> List[Event]:  # own cache first (file order), then teammates' logs; stable-sorted
+def events() -> List[Event]:
     try: evs = parse_events(read_text(os.path.join(sun_dir(), "events.jsonl")))
     except OSError: evs = []
     for ref, sha in refs("refs/sun/log/"):
@@ -333,14 +333,14 @@ def squash_turn(sid, harness="claude"):
     # A different agent or an already-aggregated commit remains a hard boundary.
     t = state("turns.json", {}).get(session_key(sid, harness))
     tip = history_head()
-    if not t or quiet("git", "merge-base", "--is-ancestor", t["start"], tip).returncode: return
+    if not t or t.get("squashed") or \
+            quiet("git", "merge-base", "--is-ancestor", t["start"], tip).returncode: return
     start, actor = t["start"], agent(sid, harness)
     rng = git("rev-list", f"{start}..{tip}").split()
     ops = [e for e in events() if e.get("commit") in rng]
-    mine = [e for e in ops if e["actor"] == actor and "squashes" not in e]
+    mine = [e for e in ops if e["actor"] == actor]
     allowed = {actor, local()}
-    raw = [e for e in ops if e.get("type") == "edit" and "squashes" not in e
-           and e["actor"] in allowed]
+    raw = [e for e in ops if e.get("type") == "edit" and e["actor"] in allowed]
     if not rng or not mine or len(raw) != len(ops) or set(rng) - {e["commit"] for e in raw}:
         return
     # Rewriting the turn removes these commits from the main shadow lineage. Keep every
@@ -351,14 +351,16 @@ def squash_turn(sid, harness="claude"):
                            f"sun: {actor} turn {t['n']} ({len(mine)} tool calls)",
                            actor, [start])
     git("update-ref", SHADOW_REF, c, tip)
-    agent_edits = [{**ed, "attribution": {"method": "squash"}}
-                   for e in mine for ed in e["edits"]]
-    record(type="edit", actor=actor, turn=f"turn{t['n']}", commit=c, patch_id=patch_id(c),
-           squashes=[e["id"] for e in mine], tool_calls=[tc for e in mine for tc in e["tool_calls"]],
-           edits=agent_edits)
-    for e in ops:  # local operations inside the turn follow the squash
-        if e not in mine:
-            record(type=e["type"], actor=e["actor"], commit=c, edits=e["edits"], overlay_of=e["id"])
+    turn_pid = patch_id(c)
+    revisions = {e["id"]: {**e, "commit": c, "snapshot": e["commit"],
+                            "patch_id": turn_pid} for e in ops}
+    p = os.path.join(sun_dir(), "events.jsonl"); tmp = p + ".tmp"
+    write_text(tmp, "".join(json.dumps(revisions.get(e["id"], e)) + "\n"
+                            for e in parse_events(read_text(p))))
+    os.replace(tmp, p); mirror_log()
+    turns = state("turns.json", {})
+    turns[session_key(sid, harness)]["squashed"] = True
+    save_state("turns.json", turns)
 def prompt_line(l, harness="claude"):
     try: obj = json.loads(l)  # both harnesses write one JSON record per line
     except ValueError: return False
@@ -614,10 +616,8 @@ def stdout_file():  # file backing a redirected stdout (`sun export > dump.jsonl
 def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt paired with edits
     maybe_sync([rel_to_root(a.output)] if a.output else stdout_file())  # never re-ingest our dump
     rows, evs, merged = session_rows(), events(), {}
-    squashed = {i for e in evs for i in e.get("squashes", [])}
-    for e in evs:  # squashed calls and overlay re-records are subsumed by their turn events
-        if e.get("type") not in ("edit", "undo") or e["id"] in squashed or "overlay_of" in e \
-                or not e.get("edits"): continue
+    for e in evs:
+        if e.get("type") not in ("edit", "undo") or not e.get("edits"): continue
         key = (e["actor"], e["turn"]) if e.get("turn") else e["id"]  # unsquashed turns regroup
         m = merged.setdefault(key, {**e, "tool_calls": e.get("tool_calls", [])[:],
                                     "edits": e["edits"][:]})
@@ -801,15 +801,16 @@ def cmd_log(a):
     for line in git("log", *revisions, f"-{a.n}", "--pretty=%H\t%h\t%ad\t%s",
                     "--date=short").splitlines():
         H, h, date, subj = line.split("\t", 3)
-        tags = "".join(f"  [{e['actor']}" + (f" {e['turn']}" if e.get("turn") else "")
-                       + (f" pr#{e['pr']}" if e.get("pr") else "")
-                       + (" undo" if e["type"] == "undo" else "") + "]"
-                       for e in by_commit.get(H, []))
+        tags = "".join(dict.fromkeys(
+            f"  [{e['actor']}" + (f" {e['turn']}" if e.get("turn") else "")
+            + (f" pr#{e['pr']}" if e.get("pr") else "")
+            + (" undo" if e["type"] == "undo" else "") + "]"
+            for e in by_commit.get(H, [])))
         print(f"{h} {date} {subj}{tags or '  [untracked]'}")
 def cmd_show(a):
     maybe_sync(); H = resolve_history_rev(a.commit)
     print(git("show", "--stat", "--pretty=format:commit %h  %ad%n%s%n", "--date=short", H))
-    evs = [e for e in events() if e.get("commit") == H]
+    evs = [e for e in events() if H in (e.get("commit"), e.get("snapshot"))]
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
         pid = patch_id(H); evs = [e for e in events() if pid and e.get("patch_id") == pid]
     if not evs: print("no sun operations recorded for this commit")
@@ -848,16 +849,14 @@ def cmd_blame(a):
     evs = [e for e in all_ev if e.get("commit") == H]
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
         pid = patch_id(H); evs = [e for e in all_ev if pid and e.get("patch_id") == pid]
-    ev = next((e for e in evs if e.get("overlay_of") and touches(e)),  # overlay owns its lines
-              next((e for e in evs if touches(e)), evs[0] if evs else None))
-    sq = next((e for e in evs if e.get("squashes")), None)
-    if sq:  # re-blame the preserved per-call commits: exact call + actor by line position
-        by_id = {e["id"]: e for e in all_ev}
-        tip = next((by_id[i].get("commit") for i in reversed(sq["squashes"]) if i in by_id), None)
-        if sq.get("commit") != H:  # patch-id match: translate the line into the original squash
+    ev = next((e for e in evs if touches(e)), evs[0] if evs else None)
+    snapshots = [e for e in evs if e.get("snapshot") and e.get("snapshot") != e.get("commit")]
+    if snapshots:  # re-blame the preserved snapshots: exact call + actor by line position
+        tip, turn_commit = snapshots[-1]["snapshot"], snapshots[0]["commit"]
+        if turn_commit != H:  # patch-id match: translate the line into the original squash
             ws = lambda rev: ["".join(l.split()) for l in  # patch-id ignores all whitespace
                               quiet("git", "show", f"{rev}:{of}").stdout.splitlines()]
-            i, sm = int(orig) - 1, difflib.SequenceMatcher(None, ws(H), ws(sq["commit"]))
+            i, sm = int(orig) - 1, difflib.SequenceMatcher(None, ws(H), ws(turn_commit))
             orig = next((j1 + i - i1 + 1 for t, i1, i2, j1, j2 in sm.get_opcodes()
                          if t == "equal" and i1 <= i < i2), None)
         o = tip and orig and quiet("git", "-c", "core.quotepath=false", "blame", "--porcelain",
@@ -865,7 +864,8 @@ def cmd_blame(a):
         if o and not o.returncode and o.stdout:
             c = o.stdout.split(None, 1)[0]  # renamed within the turn: events use the old path
             of = next((l[9:] for l in o.stdout.splitlines() if l.startswith("filename ")), of)
-            ev = next((e for e in all_ev if e.get("commit") == c and touches(e)), ev)
+            ev = next((e for e in all_ev
+                       if c in (e.get("snapshot"), e.get("commit")) and touches(e)), ev)
     print(f"{f}:{a.line}  {H[:8]}  " + (f"{ev['actor']}"
           + (f" {ev['turn']}" if ev.get("turn") else "") + f"  op {ev['id']}" if ev else "untracked"))
     print("> " + next((l[1:] for l in out.splitlines() if l.startswith("\t")), ""))
@@ -937,19 +937,17 @@ def display_subject(subject, actors):
         prefix = f"sun: {actor['id']} "
         if subject.startswith(prefix): return subject[len(prefix):]
     return subject[5:] if subject.startswith("sun: ") else subject
-def viz_operation(ev, by_id):
+def viz_operation(ev):
     methods = sorted({(ed.get("attribution") or {}).get("method")
                       for ed in ev.get("edits") or []
                       if (ed.get("attribution") or {}).get("method")})
-    children = [viz_operation(by_id[i], {}) for i in ev.get("squashes") or [] if i in by_id]
     return {"id": ev.get("id"), "type": ev.get("type", "edit"),
             "actor": ev.get("actor", "unknown"),
             "actor_info": actor_info(ev.get("actor", "unknown")),
             "timestamp": ev.get("timestamp"), "turn": ev.get("turn"), "pr": ev.get("pr"),
             "target_op": ev.get("target_op"), "target_commit": ev.get("target_commit"),
-            "overlay_of": ev.get("overlay_of"), "attribution_methods": methods,
-            "tool_calls": ev.get("tool_calls") or [], "edits": ev.get("edits") or [],
-            "generated_operations": children}
+            "attribution_methods": methods, "tool_calls": ev.get("tool_calls") or [],
+            "edits": ev.get("edits") or []}
 def viz_data(n=0):
     limit = [f"-{n}"] if n else []
     scope = history_refs()
@@ -962,7 +960,6 @@ def viz_data(n=0):
     for ev in all_events:
         by_commit.setdefault(ev.get("commit"), []).append(ev)
         if ev.get("patch_id"): by_pid.setdefault(ev["patch_id"], []).append(ev)
-    by_id = {ev.get("id"): ev for ev in all_events if ev.get("id")}
     hash_pids = {}
     if by_pid and any(c["hash"] not in by_commit for c in commits):
         patches_log = git("log", *scope, *limit,
@@ -975,7 +972,7 @@ def viz_data(n=0):
         if not matched:
             pid = hash_pids.get(commit["hash"])
             matched, match = by_pid.get(pid, []), "patch_id" if pid in by_pid else None
-        operations = [viz_operation(ev, by_id) for ev in matched]
+        operations = [viz_operation(ev) for ev in matched]
         actor_ids = list(dict.fromkeys(op["actor"] for op in operations))
         commit["git_author"] = {"name": commit.pop("author_name"),
                                 "email": commit.pop("author_email")}
@@ -985,9 +982,7 @@ def viz_data(n=0):
                                  "actors": [actor_info(a) for a in actor_ids]}
         commit["operations"] = operations
         for op in operations:
-            effective = op["generated_operations"] or [op]
-            for generated in effective:
-                counts[generated["actor"]] = counts.get(generated["actor"], 0) + 1
+            counts[op["actor"]] = counts.get(op["actor"], 0) + 1
     actors = [{**actor_info(actor), "operations": count}
               for actor, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))]
     return {"commits": commits, "events": all_events, "actors": actors,
@@ -1011,10 +1006,6 @@ def operation_lines(op, prefix=""):
                    (f"  tool {edit['tool_call_id']}" if edit.get("tool_call_id") else ""))
         if edit.get("patch"):
             out.extend(prefix + "  " + line for line in edit["patch"].splitlines())
-    if op["generated_operations"]:
-        out.append(f"{prefix}generated operations")
-        for child in op["generated_operations"]:
-            out.extend(operation_lines(child, prefix + "  "))
     return out
 def commit_lines(commit):
     actors = commit["attribution"]["actors"]
@@ -1144,8 +1135,7 @@ function operation(e,p=''){let i=e.actor_info,o=`${p}operation ${e.id}  ${e.type
 if(e.turn)o+=`${p}turn          ${e.turn}\\n`;if(e.timestamp)o+=`${p}observed      ${e.timestamp}\\n`;
 if(e.attribution_methods.length)o+=`${p}attribution   ${e.attribution_methods.join(', ')}\\n`;
 for(const tc of e.tool_calls){const input=tc.input||{},target=input.file||(input.files||[]).join(', ');o+=`${p}tool          ${tc.tool||'?'} ${tc.id||''}${target?'  '+target:''}\\n`;}
-for(const ed of e.edits)o+=`${p}file          ${ed.file||'?'}${ed.tool_call_id?'  tool '+ed.tool_call_id:''}\\n`+(ed.patch||'').split('\\n').filter(Boolean).map(l=>p+'  '+l).join('\\n')+'\\n';
-if(e.generated_operations.length){o+=`${p}generated operations\\n`;for(const child of e.generated_operations)o+=operation(child,p+'  ');}return o;}
+for(const ed of e.edits)o+=`${p}file          ${ed.file||'?'}${ed.tool_call_id?'  tool '+ed.tool_call_id:''}\\n`+(ed.patch||'').split('\\n').filter(Boolean).map(l=>p+'  '+l).join('\\n')+'\\n';return o;}
 function detail(x){let actors=x.attribution.actors.map(a=>a.id).join(', ')||'untracked';
 let o=`commit        ${x.hash}\\nsubject       ${x.subject}\\ndate          ${x.date}\\ngit author    ${x.git_author.name} <${x.git_author.email}>\\ngit committer ${x.git_committer.name} <${x.git_committer.email}>\\nsun actors    ${actors}\\n`;
 if(x.attribution.matched_by=='patch_id')o+='matched via   patch-id (commit was rewritten)\\n';

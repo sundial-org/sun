@@ -347,16 +347,24 @@ class SunTest(unittest.TestCase):
 
     def test_stop_squashes_tool_calls_into_one_turn_commit(self):
         start = self.sun_head()
-        self.agent_turn("session12345", [("a.ts", "1\n"), ("b.ts", "2\n")])
+        hook("UserPromptSubmit", "session12345")
+        self.tool_call("session12345", "a.ts", "1\n", 0)
+        self.tool_call("session12345", "b.ts", "2\n", 1)
+        originals = sun.events()[-2:]
+        hook("Stop", "session12345")
         self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (2 tool calls)")
         self.assertEqual(self.git("rev-parse", f"{sun.SHADOW_REF}^").strip(), start)
-        turn, calls = sun.events()[-1], sun.events()[-3:-1]
-        self.assertEqual(turn["squashes"], [c["id"] for c in calls])
-        self.assertEqual([t["id"] for t in turn["tool_calls"]], ["tool0", "tool1"])
+        calls = sun.events()[-2:]
+        self.assertEqual([c["id"] for c in calls], [c["id"] for c in originals])
+        raw = sun.parse_events(read(os.path.join(".git", "sun", "events.jsonl")))
+        self.assertEqual([sum(e.get("id") == c["id"] for e in raw) for c in calls], [1, 1])
+        self.assertEqual([c["commit"] for c in calls], [self.sun_head()] * 2)
+        self.assertEqual([c["snapshot"] for c in calls], [c["commit"] for c in originals])
+        self.assertEqual([c["tool_calls"][0]["id"] for c in calls], ["tool0", "tool1"])
         self.assertIn(f"[{AGENT} turn1]", run("log").splitlines()[0])
-        for c in calls:  # per-call commits survive in the op log
-            self.assertIn(c["commit"], self.git("log", "--all", "--pretty=%H"))
-            self.assertIn("tool_call_id", run("show", c["commit"]))
+        for c in calls:  # hidden snapshots survive in the op log
+            self.assertIn(c["snapshot"], self.git("log", "--all", "--pretty=%H"))
+            self.assertIn("tool_call_id", run("show", c["snapshot"]))
 
     def test_stop_twice_does_not_squash_twice(self):
         self.agent_turn("session12345", [("a.ts", "1\n")])
@@ -593,7 +601,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(evs[0]["commit"], evs[1]["commit"])
         hook("Stop", sid)
         self.assertIn("turn 1 (1 tool calls)", self.head_subject())
-        ev = sun.events()[-1]  # overlay re-pointed at the turn commit
+        ev = sun.events()[-1]  # human operation re-pointed at the turn commit
         self.assertEqual((ev["actor"], ev["commit"]),
                          ("emma/local", self.sun_head()))
         self.assertIn("[emma/local]", run("log").splitlines()[0])
@@ -610,14 +618,15 @@ class SunTest(unittest.TestCase):
         hook("Stop", sid)
         self.assertEqual(self.git("rev-parse", f"{sun.SHADOW_REF}^").strip(), start)
         self.assertEqual(self.head_subject(), f"sun: {AGENT} turn 1 (2 tool calls)")
-        turn, overlay = sun.events()[-2:]
-        self.assertEqual(turn["squashes"],
-                         [e["id"] for e in original if e["actor"] == AGENT])
-        self.assertEqual((overlay["actor"], overlay["commit"], overlay["overlay_of"]),
-                         ("emma/local", self.sun_head(), human["id"]))
-        for e in original:
-            self.assertEqual(self.git("rev-parse", f"refs/sun/ops/{e['commit']}").strip(),
-                             e["commit"])
+        updated = sun.events()[-3:]
+        self.assertEqual([e["id"] for e in updated], [e["id"] for e in original])
+        self.assertEqual({e["commit"] for e in updated}, {self.sun_head()})
+        self.assertEqual(next(e for e in updated if e["actor"] == "emma/local")["id"],
+                         human["id"])
+        for before, after in zip(original, updated):
+            self.assertEqual(after["snapshot"], before["commit"])
+            self.assertEqual(self.git("rev-parse", f"refs/sun/ops/{after['snapshot']}").strip(),
+                             after["snapshot"])
         actors = {a["id"] for a in sun.viz_data()["commits"][0]["attribution"]["actors"]}
         self.assertEqual(actors, {AGENT, "emma/local"})
 
@@ -1132,7 +1141,7 @@ class SunTest(unittest.TestCase):
         try: run("viz")
         finally: sun.lock, sun.run_viz_tui = old_lock, old_tui
 
-    def test_viz_data_attributes_commit_and_generated_operations(self):
+    def test_viz_data_attributes_commit_and_operations(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         data = sun.viz_data()
         commit = data["commits"][0]
@@ -1140,12 +1149,11 @@ class SunTest(unittest.TestCase):
         self.assertEqual(commit["attribution"]["actors"][0], {
             "id": AGENT, "user": "emma", "kind": "agent", "harness": "claude",
             "session": "session1"})
-        turn = commit["operations"][0]
-        self.assertEqual(turn["attribution_methods"], ["squash"])
-        generated = turn["generated_operations"][0]
-        self.assertEqual(generated["actor"], AGENT)
-        self.assertEqual(generated["attribution_methods"], ["hook"])
-        self.assertEqual(generated["tool_calls"][0]["tool"], "Write")
+        operation = commit["operations"][0]
+        self.assertEqual(operation["actor"], AGENT)
+        self.assertEqual(operation["attribution_methods"], ["hook"])
+        self.assertEqual(operation["tool_calls"][0]["tool"], "Write")
+        self.assertNotIn("generated_operations", operation)
         self.assertEqual(data["actors"][0]["operations"], 1)
 
     def test_viz_uses_sun_commit_instead_of_normal_git_commit(self):

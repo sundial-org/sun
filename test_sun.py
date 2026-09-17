@@ -1221,12 +1221,21 @@ class SunTest(unittest.TestCase):
         outside = tempfile.mkdtemp()  # no git repo, no .git/sun
         os.chdir(outside)
         try:
-            self.assertIn("sun: Updated sun v0.1.0", run("update"))
+            with mock.patch("sun.installed_git_source", return_value=(None, None)):
+                self.assertIn("sun: Updated sun v0.1.0", run("update"))
         finally:
             sun.quiet = old
             os.chdir(self.dir)
             shutil.rmtree(outside, ignore_errors=True)
         self.assertEqual(calls, [("uv", "tool", "upgrade", "sun")])
+
+    def test_update_skips_uv_when_git_head_is_installed(self):
+        head = "a" * 40
+        with mock.patch("sun.installed_git_source", return_value=("https://repo", head)), \
+                mock.patch("sun.quiet", return_value=subprocess.CompletedProcess(
+                    (), 0, stdout=f"{head}\tHEAD\n", stderr="")) as quiet:
+            self.assertEqual(run("update"), "sun: already up to date\n")
+        quiet.assert_called_once_with("git", "ls-remote", "https://repo", "HEAD")
 
     # ---------------------------------------------------------------- export
 

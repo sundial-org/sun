@@ -5,7 +5,7 @@ Each Git branch has its own Sun history. Unpublished, non-interleaved agent call
 per turn while remaining individually inspectable and undoable. Fetch does not move your local
 Sun tip; use `sun merge` to combine shared history. Normal Git commits and the index stay intact.
 Raw transcripts are shared only when you explicitly enable session sharing."""
-import argparse, difflib, fcntl, glob, json, os, re, shutil, subprocess, sys
+import argparse, difflib, fcntl, glob, hashlib, json, os, re, shutil, subprocess, sys
 import time, uuid
 from typing import Any, Dict, List, Optional, TypedDict
 
@@ -265,22 +265,27 @@ def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bric
         try: out.append(json.loads(l))
         except ValueError: pass
     return out
-def events(include_unreachable=False) -> List[Event]:
-    entries = refs("refs/sun/events/")
+def ref_blobs(prefix):  # [(refname, blob bytes)] for a whole ref namespace, in one cat-file
+    entries = refs(prefix)
     if not entries: return []
     data = subprocess.run(["git", "cat-file", "--batch"],
                           input="".join(sha + "\n" for _, sha in entries).encode(),
                           capture_output=True, check=True).stdout
-    evs, pos = [], 0
-    while pos < len(data):
+    out, pos = [], 0
+    for ref, _ in entries:
         end = data.index(b"\n", pos)
         size = int(data[pos:end].split()[-1])
-        ev = json.loads(data[end + 1:end + 1 + size])
-        if not re.fullmatch(r"[0-9a-f]{32}", ev.get("id", "")) or \
-                entries[len(evs)][0] != f"refs/sun/events/{ev['id']}":
+        out.append((ref, data[end + 1:end + 1 + size]))
+        pos = end + size + 2
+    return out
+def events(include_unreachable=False) -> List[Event]:
+    evs = []
+    for ref, raw in ref_blobs("refs/sun/events/"):
+        ev = json.loads(raw)
+        if not re.fullmatch(r"[0-9a-f]{32}", ev.get("id", "")) or ref != f"refs/sun/events/{ev['id']}":
             sys.exit("sun: invalid operation ID in fetched history")
         evs.append(ev)
-        pos = end + size + 2
+    if not evs: return []
     scope = history_refs()
     order = {c: i for i, c in enumerate(git("rev-list", "--topo-order", "--reverse",
                                             *scope).split())} if scope else {}
@@ -891,7 +896,7 @@ def remove_hooks(harness):  # a restrictive re-init un-installs the excluded har
     jwrite(path, cfg)
 def refspecs(share_sessions=False):
     specs = ["refs/sun/events/*:refs/sun/events/*", "refs/sun/ops/*:refs/sun/ops/*",
-             "+refs/sun/heads/*:refs/sun/remotes/origin/*"]
+             "refs/sun/checks/*:refs/sun/checks/*", "+refs/sun/heads/*:refs/sun/remotes/origin/*"]
     return specs + (["+refs/sun/sessions/*:refs/sun/sessions/*"] if share_sessions else [])
 def install_push(share_sessions=False):
     if "origin" in git("remote", check=False).split():
@@ -925,6 +930,8 @@ def cmd_push(a):
     for ref, sha in refs("refs/sun/heads/"):
         git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), sha)
     git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
+    if refs("refs/sun/checks/"):  # after history and not atomic: a check must never block layer 1
+        quiet("git", "push", "--no-verify", "--", a.remote, "refs/sun/checks/*:refs/sun/checks/*")
 def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
     todo = []
     for h in harnesses:
@@ -1240,6 +1247,136 @@ def cmd_restore(a):
     record(type="restore", actor=local(), commit=c, target_commit=target,
            edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
     print(f"sun: restored {target[:8]} in {c[:8]}")
+# ---------------------------------------------------------------------------------------------
+# Layer 2: what someone concluded about the history, kept apart from the history itself.
+#   rule      a `name: text` line in the RULES file at the repository root
+#   check     one verdict on one rule, citing the Sun commit (and file) it read
+#   review    a check that cites another check; it replaces that check in coverage
+#   coverage  checks folded onto Sun commits when you ask; never stored
+# Sun runs no checker. A judge, a program and a person all submit the same shape.
+# Checks are blobs at refs/sun/checks/<id>. events() never reads them, so layer 1 cannot see them.
+def rules():  # {name: text}
+    p = os.path.join(root(), "RULES")
+    return dict(re.findall(r"(?m)^([\w.-]+):[ \t]+(\S.*?)\s*$", read_text(p))) if os.path.exists(p) else {}
+def check_id(c):  # the hash of the check's content, so the same check is the same ref on any machine
+    content = {k: v for k, v in c.items() if k not in ("id", "timestamp")}
+    return hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()[:32]
+def well_formed(c):  # the shape coverage relies on; checks arrive by fetch, so they are data, not trusted
+    if not isinstance(c, dict) or not isinstance(c.get("cites"), list): return False
+    strings = [c.get("rule"), c.get("verdict"), c.get("actor"), c.get("timestamp", "")]
+    for x in c["cites"]:
+        if not isinstance(x, dict) or not ("at" in x or "check" in x): return False
+        strings += [x[k] for k in ("at", "check") if k in x]
+    return all(isinstance(s, str) for s in strings)
+def checks():  # {id: check}; a blob that is malformed or does not hash to its ID is not a check
+    out = {}
+    for ref, raw in ref_blobs("refs/sun/checks/"):
+        try: c = json.loads(raw)
+        except (ValueError, RecursionError): continue
+        if well_formed(c) and c.get("id") == check_id(c) and ref == "refs/sun/checks/" + c["id"]:
+            out[c["id"]] = c
+    return out
+def cmd_check(a):
+    stored, names = checks(), rules()
+    usage = "usage: sun check RULE VERDICT [REV|CHECK] [-m NOTE]\n       sun check [--json] < checks.json"
+    if a.args and len(a.args) not in (2, 3): sys.exit(usage)
+    if not a.args and not a.raw: sys.exit(usage)
+    if a.args:  # you, at a terminal
+        if state("active.json", {}):  # otherwise an agent's shell could record a check as you
+            sys.exit("sun: an agent tool call is in flight; agents pipe JSON to `sun check` with an actor")
+        rule, verdict, rev = a.args if len(a.args) == 3 else a.args + ["HEAD"]
+        if rev == "HEAD": maybe_sync()  # judge what you see, not the last recorded state
+        reviewed = [i for i in stored if len(rev) >= 8 and i.startswith(rev)]
+        cite = {"check": reviewed[0]} if len(reviewed) == 1 else {"at": rev}
+        reqs = [{"rule": rule, "verdict": verdict, "cites": [cite], "note": a.m}]
+    else:  # a program: a JSON object or array on stdin, each with a declared actor
+        try: reqs = json.loads(a.raw)
+        except ValueError as err: sys.exit(f"sun: check input is JSON ({err})")
+        reqs = reqs if isinstance(reqs, list) else [reqs]
+        for r in reqs:
+            actor = r.get("actor") if isinstance(r, dict) else None
+            if not (isinstance(actor, str) and re.fullmatch(r"[\w.:@/-]{1,80}", actor)) or \
+                    ("/" + actor).endswith("/local"):  # only the terminal form is <user>/local
+                sys.exit("sun: a check on stdin declares an actor, like program:lean or agent:judge")
+    recorded = set()  # every commit and tool-call snapshot Sun has recorded, on any branch
+    for _, raw in ref_blobs("refs/sun/events/"):
+        e = json.loads(raw); recorded |= {e.get("commit"), e.get("snapshot")}
+    new = {}
+    for r in reqs:  # validate every check before writing any
+        cites = []
+        for x in r.get("cites") if isinstance(r.get("cites"), list) else []:
+            if isinstance(x, dict) and isinstance(x.get("check"), str) and x["check"] in stored:
+                reviewed_rule = stored[x["check"]]["rule"]  # a review is about the same rule
+                if r.get("rule", reviewed_rule) != reviewed_rule:
+                    sys.exit("sun: a review keeps the rule of the check it cites")
+                r["rule"] = reviewed_rule
+                cites.append({"check": x["check"]})
+            elif isinstance(x, dict) and isinstance(x.get("at"), str):
+                at = x["at"] if x["at"] in recorded else resolve_history_rev(x["at"])
+                if at not in recorded: sys.exit(f"sun: nothing recorded at {at[:8]} (run `sun sync` first?)")
+                path = x.get("file")
+                if path and quiet("git", "cat-file", "-e", f"{at}:{path}").returncode:
+                    sys.exit(f"sun: {path} is not in {at[:8]}")
+                cites.append({"at": at, **{k: x[k] for k in ("file", "lines") if x.get(k)}})
+            else: sys.exit('sun: a cite is {"at": SHA, "file": PATH, "lines": [A, B]} or {"check": ID}')
+        rule, verdict = r.get("rule"), r.get("verdict")
+        if not cites: sys.exit("sun: a check must cite the recorded state it read")
+        if not isinstance(rule, str) or rule not in names: sys.exit(f"sun: no rule {rule!r} in RULES")
+        if not (isinstance(verdict, str) and verdict.strip() and "\n" not in verdict):
+            sys.exit("sun: a verdict is a short word or phrase, like pass, fail or unsupported")
+        c = {"type": "check", "actor": f"{user()}/{r['actor']}" if r.get("actor") else local(),
+             "rule": rule, "verdict": verdict, "cites": cites,
+             **{k: r[k] for k in ("note", "meta") if r.get(k) is not None}}
+        c["id"] = check_id(c)
+        if len(json.dumps(c)) > 16 << 10:
+            sys.exit("sun: a check is at most 16 KiB; record long output as a file and cite it")
+        if c["id"] not in stored: new[c["id"]] = {**c, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+        r["id"] = c["id"]
+    if new:  # `create` fails if the ref exists, so a recorded check is never overwritten
+        git("update-ref", "--stdin", input="start\n" + "".join(
+            f"create refs/sun/checks/{i} {blob(json.dumps(c))}\n" for i, c in new.items()) + "prepare\ncommit\n")
+    done = [new.get(r["id"]) or stored[r["id"]] for r in reqs]  # a repeated check returns the original
+    if a.json: return print(json.dumps({"checks": done}))
+    for c in done: print(f"sun: check {c['id'][:8]} {c['rule']} {c['verdict']}")
+def cmd_coverage(a):
+    maybe_sync()
+    names, stored, where = rules(), checks(), {}
+    for e in events():  # after a turn is squashed, a tool call's old commit is its `snapshot`
+        where[e["commit"]] = e["commit"]
+        if e.get("snapshot"): where[e["snapshot"]] = e["commit"]
+    # The Sun commits each check is about. A review lands wherever the check it cites landed,
+    # so pass landings along the review links until nothing changes.
+    lands = {i: {where[x["at"]] for x in c["cites"] if x.get("at") in where} for i, c in stored.items()}
+    changed = True
+    while changed:
+        changed = False
+        for i, c in stored.items():
+            for x in c["cites"]:
+                extra = lands.get(x.get("check"), set()) - lands[i]
+                if extra: lands[i] |= extra; changed = True
+    found = {}  # (commit, rule) -> checks, by time recorded
+    for c in sorted(stored.values(), key=lambda c: (c.get("timestamp", ""), c["id"])):
+        for H in lands[c["id"]]: found.setdefault((H, c["rule"]), []).append(c)
+    commits = []
+    for line in git("log", *history_refs(), *([f"-{a.n}"] if a.n > 0 else []),
+                    "--pretty=%H\t%h\t%ad\t%s", "--date=short").splitlines():
+        H, short, date, subject = line.split("\t", 3)
+        rows = []
+        for name in sorted(names):
+            here = found.get((H, name), [])
+            replaced = {x["check"] for c in here for x in c["cites"] if "check" in x}
+            counted = [c for c in here if c["id"] not in replaced]
+            verdicts = {c["verdict"] for c in counted}
+            status = "unchecked" if not counted else "mixed" if len(verdicts) > 1 else counted[0]["verdict"]
+            eyes = any(c["actor"].endswith("/local") for c in counted)  # a person's check is one that counts
+            rows.append({"rule": name, "status": status, "eyes": eyes, "checks": here})
+        commits.append({"commit": H, "short": short, "date": date, "subject": subject, "rules": rows})
+    if a.json: return print(json.dumps({"rules": names, "commits": commits}))
+    for commit in commits:
+        print(f"{commit['short']} {commit['date']} {commit['subject']}")
+        for row in commit["rules"]:
+            by = "; ".join(f"{c['verdict']} by {c['actor']} {c['id'][:8]}" for c in row["checks"])
+            print(f"  {row['rule']:<24} {row['status']:<14} {'' if row['eyes'] else 'needs eyes':<11} {by}".rstrip())
 def actor_info(actor):
     """Split a stable actor id into fields the visualizations can present."""
     actor = actor or "unknown"
@@ -1501,6 +1638,8 @@ def main(argv=None):
         ("sessions", "manage explicitly shared agent transcripts"),
         ("merge", "merge shared Sun history using Git's three-way merge"),
         ("push", "publish Sun history and attribution atomically"),
+        ("check", "record a verdict on a rule, citing the recorded state it read"),
+        ("coverage", "show which commits were checked against each rule, and by whom"),
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
@@ -1563,6 +1702,13 @@ def main(argv=None):
                            help="maximum commits to load (default: all)")
     ps["export"].add_argument("-o", "--output", default=None,
                               help="output path (default: stdout)")
+    ps["check"].add_argument("args", nargs="*", metavar="RULE VERDICT [REV|CHECK]",
+                             help="your own check or review; without arguments, read JSON checks from stdin")
+    ps["check"].add_argument("-m", metavar="NOTE", help="why, in a sentence")
+    ps["check"].add_argument("--json", action="store_true", help="print the stored checks as JSON")
+    ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
+                                help="maximum commits (default: 30; 0 for all)")
+    ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
@@ -1570,10 +1716,12 @@ def main(argv=None):
         "init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge, "push": cmd_push,
         "log": cmd_log, "show": cmd_show, "undo": cmd_undo, "restore": cmd_restore,
         "viz": cmd_viz, "data": cmd_viz, "sessions": cmd_sessions, "update": cmd_update,
-        "export": cmd_export, "blame": cmd_blame,
+        "export": cmd_export, "blame": cmd_blame, "check": cmd_check, "coverage": cmd_coverage,
     }
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
+        if a.cmd == "check" and not a.args:  # read stdin before taking the lock, so a slow producer blocks nobody
+            a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(root())
         sun_dir()
         if a.cmd in ("viz", "data"):

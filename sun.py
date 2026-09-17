@@ -1110,8 +1110,9 @@ def write_viz_html(data, out):
     write_text(out, VIZ.replace("__DATA__", encoded))
     print(f"sun: wrote {out}")
 def cmd_viz(a):
-    maybe_sync()
-    data = viz_data(a.n)
+    with lock():
+        maybe_sync()
+        data = viz_data(a.n)
     if getattr(a, "html", False) or a.output:
         return write_viz_html(data, a.output or os.path.join(sun_dir(), "viz.html"))
     run_viz_tui(data)
@@ -1196,8 +1197,11 @@ def main(argv=None):
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
         os.chdir(root())
         sun_dir()
-        with lock():
+        if a.cmd == "viz":
             commands[a.cmd](a)
+        else:
+            with lock():
+                commands[a.cmd](a)
     else:
         commands[a.cmd](a)
 if __name__ == "__main__":

@@ -786,7 +786,19 @@ def cmd_merge(a):
     print(f"sun: merged shared shadow history in {commit[:8]}")
 def cmd_import(a):
     print("sun: " + do_import(configured_harnesses()))
+def installed_git_source():
+    from importlib.metadata import distribution
+    try:
+        source = json.loads(distribution("sun").read_text("direct_url.json") or "{}")
+        return source.get("url"), (source.get("vcs_info") or {}).get("commit_id")
+    except (LookupError, TypeError, ValueError):
+        return None, None
 def cmd_update(a):  # uv re-resolves the git source to the latest commit
+    url, installed = installed_git_source()
+    if url and installed:
+        head = quiet("git", "ls-remote", url, "HEAD")
+        if not head.returncode and (head.stdout.split() or [None])[0] == installed:
+            return print("sun: already up to date")
     try: p = quiet("uv", "tool", "upgrade", "sun")
     except OSError: p = None
     if not p or p.returncode:

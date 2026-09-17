@@ -27,17 +27,22 @@ Sun stores the shared history under `refs/sun/heads/main`. Normal `git pull` fet
 `sun log`, `sun show`, `sun blame`, and `sun viz` read this history. A repository must be
 initialized with Sun on each machine because Git does not clone local hook or refspec settings.
 
-## 1 · Analyze your past sessions
+## Use the history
 
-| command | what you learn |
+| command | what it does |
 | --- | --- |
-| `sun log` | git log annotated with the actor and turn behind each commit |
-| `sun show <commit>` | a commit's events and patches, even after a squash-merge (patch-id) |
-| `sun merge` | join divergent Sun histories after resolving the normal worktree |
+| `sun sync` | record currently uncommitted files as a human edit |
+| `sun log [-n COUNT]` | list Sun commits with actors and turns |
+| `sun show <commit>` | show a commit's operations and patches, including hidden operation snapshots |
 | `sun viz` | interactive terminal history with commit and operation attribution |
 | `sun viz --html [-o path]` | optional self-contained HTML export |
-| `sun sessions [id] [--grep re] [--file p]` | search every session that ran here |
-| `sun undo [--op ID] [--commit H]` | reverse any single operation or commit |
+| `sun blame <file> <line>` | show the operation and stored conversation behind a line |
+| `sun undo [--op ID \| --commit HASH]` | cleanly reverse an operation or commit as a new operation |
+| `sun undo --dry-run` | check whether the latest reversal can apply without changing anything |
+| `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
+| `sun merge` | join divergent Sun histories after resolving the normal worktree |
+| `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
+| `sun update` | update a Sun installation made from this repository with uv |
 
 `sun viz` stays in the terminal. Use `j`/`k` to move through commits, `J`/`K` to scroll
 details, left/right to move the replay boundary, `r` to replay from the beginning, and `q` to
@@ -47,12 +52,31 @@ tool call, attribution method, files, and patches. A `sync` attribution means a 
 discovered an uncaptured dirty edit later. It does not mean an agent hook observed the edit
 when it happened.
 
-## 2 · Optional raw session sharing
+Undo can target any stored operation or ordinary single-parent Sun commit, not only the latest
+one. It stops without changing files if the reverse patch no longer applies cleanly. Restore is
+the safer way to return the whole worktree to an earlier point: it preserves the existing log and
+adds a restoration commit. Neither command rewrites or deletes history.
+
+## Optional raw session sharing
 
 Pass `--share-sessions` to store raw transcripts under `refs/sun/sessions/*` and share them
 with everyone who can read the git remote. This is off by default because transcripts may
 contain prompts, tool output, file contents, environment data, and secrets. Shared sessions
 stay outside normal branches and PR diffs, but collaborators can inspect them with git.
+
+| command | what it does |
+| --- | --- |
+| `sun sessions list [--grep REGEX] [--contains TEXT]` | list or search transcripts already stored in Sun refs |
+| `sun sessions show <id>` | print one transcript by full ID or unique prefix |
+| `sun sessions import` | copy new or changed native harness transcripts into Sun refs when sharing is enabled |
+| `sun sessions export` | materialize stored transcript refs under `.git/sun/sessions/` for local tools |
+| `sun sessions prune --older-than DAYS` | delete your old local transcript refs and materialized copies |
+| `sun sessions prune --older-than DAYS --remote` | also delete those refs from `origin` |
+
+Import does not reconstruct edit attribution or modify the operation history. It only stores
+transcript copies for later search, blame, and export. Prune only selects refs owned by the current
+Git user. Teammates' refs are left alone. Git may remove the now-unreferenced transcript objects
+during a later internal garbage collection.
 
 ## Demos & tests
 

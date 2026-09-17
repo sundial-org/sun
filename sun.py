@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Record human and agent edits in an independent Git-backed operation history.
 
-Sun does not change normal Git commits. Agent tool calls are grouped into one commit per turn
-while remaining individually inspectable and undoable. Raw transcripts are shared only when
-you explicitly enable session sharing."""
-import argparse, difflib, fcntl, glob, hashlib, json, os, re, shutil, subprocess, sys
-import time, uuid, zlib
+Each Git branch has its own Sun history. Unpublished, non-interleaved agent calls are grouped
+per turn while remaining individually inspectable and undoable. Fetch does not move your local
+Sun tip; use `sun merge` to combine shared history. Normal Git commits and the index stay intact.
+Raw transcripts are shared only when you explicitly enable session sharing."""
+import argparse, difflib, fcntl, glob, json, os, re, shutil, subprocess, sys
+import time, uuid
 from typing import Any, Dict, List, Optional, TypedDict
 
 
@@ -42,6 +43,8 @@ class Event(TypedDict, total=False):
     target_commit: str
     parents: List[str]
     pr: int
+    branch: str
+    sequence: int
 
 
 class TurnState(TypedDict, total=False):
@@ -53,23 +56,30 @@ class TurnState(TypedDict, total=False):
     seen: int
     stopped: bool
     squashed: bool
+    branch: str
 
 
-class ActiveCall(TypedDict):
+class ActiveCall(TypedDict, total=False):
     files: List[str]
+    id: str
+    branch: str
+    pre: str
+    turn: int
+    all_files: bool
+    overlap: List[str]
+    ambiguous_actor: bool
+    actor: str
 
 
-EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"}
-SHADOW_REF = "refs/sun/heads/main"
-SHADOW_REMOTE_REF = "refs/sun/remotes/origin/main"
-HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
-CODEX_HOOK_EVENTS = HOOK_EVENTS + ("SubagentStart", "SubagentStop")
-CLAUDE_LINE = ("Past sessions for this repo, yours and other team members', are in "
-               ".git/sun/sessions/ (same layout as ~/.claude/projects/, with a "
-               "sessions-index.json). Look there instead of ~/.claude/projects/.")
-CODEX_LINE = ("Past sessions for this repo, yours and other team members', are in "
-              ".git/sun/sessions/ (with a sessions-index.json). Look there instead of "
-              "~/.codex/sessions/, or use `sun sessions` to search them.")
+READ_TOOLS = {"Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch", "view_image"}
+HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse",
+               "PostToolUseFailure", "Stop", "SessionEnd")
+CODEX_HOOK_EVENTS = tuple(e for e in HOOK_EVENTS if e != "PostToolUseFailure") + (
+    "SubagentStart", "SubagentStop", "Interrupt")
+CLAUDE_LINE = CODEX_LINE = (
+    "Use `sun data` for attributed history and session paths. Your sessions stay in their "
+    "native harness directories; only collaborators' shared sessions are cached in "
+    ".git/sun/sessions/. Read the returned session path instead of guessing a location.")
 def projects():
     return os.environ.get("SUN_PROJECTS", os.path.expanduser("~/.claude/projects"))
 
@@ -94,7 +104,7 @@ def quiet(*args, **kwargs):
 
 
 def patches(pre, post, files):
-    return {f: git("diff", pre, post, "--", f) for f in files}
+    return {f: git("--literal-pathspecs", "diff", "--binary", pre, post, "--", f) for f in files}
 
 
 def changed_files():
@@ -105,28 +115,20 @@ def changed_files():
     else: git("read-tree", "--empty", env=env)
     quiet("git", "update-index", "--refresh", env=env)
     tracked = (git("-c", "core.quotepath=false", "-c", "diff.renames=false",
-                   "diff-index", "--name-only", tip, "--", env=env,
-                   check=False).splitlines() if tip else [])
+                   "diff-index", "--name-only", "-z", tip, "--", env=env).split("\0") if tip else [])
     untracked = git("-c", "core.quotepath=false", "ls-files", "--others",
-                    "--exclude-standard", env=env, check=False).splitlines()
-    return list(dict.fromkeys(tracked + untracked))
-def commit_files(files, message, author, reconcile=True):
-    return commit_shadow(files, message, author, reconcile)
+                    "--exclude-standard", "-z", env=env).split("\0")
+    return list(dict.fromkeys(f for f in tracked + untracked if f))
 def patch_id(commit):
     output = git("patch-id", "--stable", check=False,
                  input=git("show", "--format=", commit, check=False))
     return (output.split() or [None])[0]
 
 
-def blob(data):  # loose object via hashlib+zlib: no subprocess per chunk (sha1 repos)
-    b = data.encode() if isinstance(data, str) else data
-    hdr = b"blob %d\x00" % len(b); sha = hashlib.sha1(hdr + b).hexdigest()
-    p = os.path.join(root(), ".git", "objects", sha[:2], sha[2:])
-    if not os.path.exists(p):
-        os.makedirs(os.path.dirname(p), exist_ok=True)
-        with open(p, "wb") as f:
-            f.write(zlib.compress(hdr + b))
-    return sha
+def blob(data):
+    return subprocess.run(["git", "hash-object", "-w", "--stdin"],
+                          input=data.encode() if isinstance(data, str) else data,
+                          capture_output=True, check=True).stdout.decode().strip()
 
 
 def refs(prefix):  # [(refname, sha)]
@@ -134,21 +136,26 @@ def refs(prefix):  # [(refname, sha)]
     return [line.split("\t") for line in output.splitlines()]
 
 
-def sun_dir(must=True):  # .git/sun is a per-machine cache; refs/sun/* are the source of truth
-    d = os.path.join(root(), ".git", "sun")
+def sun_dir(must=True):  # per-worktree hook state; shared history lives in Git refs
+    key = (os.getcwd(), "sun-dir")
+    if key not in _r: _r[key] = os.path.join(git("rev-parse", "--absolute-git-dir").strip(), "sun")
+    d = _r[key]
     if must and not os.path.isdir(d): sys.exit("sun: not initialized here (run `sun init`)")
     return d
 def jread(path, default):
     try:
         with open(path) as f:
             return json.load(f)
-    except (OSError, ValueError):
+    except FileNotFoundError:
         return default
+    except (OSError, ValueError) as exc:
+        sys.exit(f"sun: cannot read {path}: {exc}")
 
 
 def jwrite(path, obj):
-    with open(path, "w") as f:
+    with open(path + ".tmp", "w") as f:
         json.dump(obj, f, indent=1)
+    os.replace(path + ".tmp", path)
 
 
 def read_text(path, errors=None):
@@ -171,23 +178,73 @@ def save_state(name, obj):
 
 def ref_oid(ref):
     return git("rev-parse", "-q", "--verify", ref, check=False).strip()
+def shadow_ref():
+    branch = git("symbolic-ref", "-q", "--short", "HEAD", check=False).strip()
+    if not branch: sys.exit("sun: detached HEAD is not supported; switch to a branch first")
+    return "refs/sun/heads/" + branch
+def remote_ref():
+    return shadow_ref().replace("refs/sun/heads/", "refs/sun/remotes/origin/")
+def check_format():
+    if state("config.json", {}).get("format") != 2 and (refs("refs/sun/log/") or
+            os.path.exists(os.path.join(sun_dir(), "events.jsonl"))):
+        sys.exit("sun: legacy event-log format; this build requires a separate history migration. "
+                 "Existing history has not been changed")
+def ensure_branch():
+    """Follow the checked-out Git branch, without mistaking checkout changes for edits."""
+    check_format()
+    ref, normal = shadow_ref(), ref_oid("HEAD")
+    previous = state("branch.json", {})
+    anchors = state("branches.json", {})
+    tip = history_head(False)
+    if not tip:
+        source = previous.get("ref") if previous.get("git") == normal else None
+        tip = ref_oid(source) if source else ""
+        if tip: git("update-ref", ref, tip)
+        else:
+            # A freshly cloned branch starts at its Git checkout, not the possibly newer
+            # remote Sun tree. Import the remote lineage only when the trees agree.
+            remote = ref_oid(remote_ref())
+            tree = ref_oid(f"{normal}^{{tree}}") if normal else git("mktree", input="").strip()
+            if remote and ref_oid(f"{remote}^{{tree}}") == tree:
+                git("update-ref", ref, remote)
+            else:
+                c = make_shadow_commit(tree, "sun: initial state", local())
+                record(type="init", actor=local(), commit=c, edits=[])
+    switched = previous.get("ref") not in (None, ref)
+    old = previous.get("git") if switched else anchors.get(ref)
+    committed = not switched and old != normal and git(
+        "reflog", "-1", "--format=%gs", "HEAD", check=False).startswith("commit")
+    # A user's ordinary commit does not erase the dirty diff Sun still needs to record.
+    if committed: old = normal
+    if old and normal and old != normal:
+        if not switched and quiet("git", "merge-base", "--is-ancestor", old, normal).returncode:
+            sys.exit("sun: Git history was rewritten; automatic Sun reconciliation is unsupported")
+        tip = history_head()
+        result = quiet("git", "merge-tree", "--write-tree", f"--merge-base={old}", tip, normal)
+        if result.returncode:
+            sys.exit("sun: Git checkout conflicts with recorded Sun edits; reconcile before recording")
+        tree = result.stdout.splitlines()[0]
+        if tree != ref_oid(f"{tip}^{{tree}}"):
+            remote = ref_oid(remote_ref())
+            shared = quiet("git", "merge-tree", "--write-tree", "--allow-unrelated-histories",
+                           tip, remote) if remote else None
+            merged = shared and not shared.returncode and shared.stdout.splitlines()[0] == tree
+            parents = [tip, remote] if merged and remote != tip else [tip]
+            kind = "merge" if len(parents) == 2 else "checkout"
+            c = make_shadow_commit(tree, f"sun: Git {kind} baseline", local(), parents)
+            record(type=kind, actor=local(), commit=c, edits=[])
+    anchors[ref] = normal
+    save_state("branches.json", anchors)
+    save_state("branch.json", {"ref": ref, "git": normal})
 def history_head(required=True):
-    oid = ref_oid(SHADOW_REF)
+    oid = ref_oid(shadow_ref())
     if required and not oid: sys.exit("sun: shadow history has no commits (run `sun init`)")
     return oid
 def history_refs():
-    return [r for r in (SHADOW_REF, SHADOW_REMOTE_REF) if ref_oid(r)]
+    return [r for r in (shadow_ref(), remote_ref()) if ref_oid(r)]
 def resolve_history_rev(rev):
-    if rev == "HEAD": rev = SHADOW_REF
+    if rev == "HEAD": rev = shadow_ref()
     return git("rev-parse", rev).strip()
-def fast_forward_shadow():
-    """Adopt a fetched shared tip when doing so cannot discard local Sun commits."""
-    local, remote = ref_oid(SHADOW_REF), ref_oid(SHADOW_REMOTE_REF)
-    if not remote or local == remote: return
-    if not local or not quiet("git", "merge-base", "--is-ancestor", local, remote).returncode:
-        git("update-ref", SHADOW_REF, remote, local or "0" * 40)
-    elif quiet("git", "merge-base", "--is-ancestor", remote, local).returncode:
-        sys.exit("sun: local and remote shadow histories diverged; run `sun merge`")
 def shadow_index():
     return os.path.join(sun_dir(), "shadow-index")
 def make_shadow_commit(tree, message, author, parents=()):
@@ -196,18 +253,17 @@ def make_shadow_commit(tree, message, author, parents=()):
     args = ["-c", "commit.gpgsign=false", "commit-tree", tree]
     for parent in parents: args += ["-p", parent]
     return git(*args, "-m", message, env=ident).strip()
-def commit_shadow(files, message, author, reconcile=True):
+def commit_files(files, message, author):
     """Snapshot files into an independent commit graph without touching HEAD or the real index."""
-    if reconcile: fast_forward_shadow()
     parent, ix = history_head(False), shadow_index()
     if os.path.exists(ix): os.remove(ix)
     env = {**os.environ, "GIT_INDEX_FILE": ix}
     if parent: git("read-tree", parent, env=env)
     else: git("read-tree", "--empty", env=env)
-    git("add", "-A", "--", *files, env=env, check=False)
+    git("--literal-pathspecs", "add", "-A", "--", *files, env=env)
     tree = git("write-tree", env=env).strip()
     commit = make_shadow_commit(tree, message, author, [parent] if parent else [])
-    git("update-ref", SHADOW_REF, commit, parent or "0" * 40)
+    # record() publishes this commit and its attribution in one Git ref transaction.
     return commit
 def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bricking every command
     out: List[Event] = []
@@ -215,27 +271,53 @@ def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bric
         try: out.append(json.loads(l))
         except ValueError: pass
     return out
-def events() -> List[Event]:
-    try: evs = parse_events(read_text(os.path.join(sun_dir(), "events.jsonl")))
-    except OSError: evs = []
-    for ref, sha in refs("refs/sun/log/"):
-        if ref.split("/")[-1] != user():
-            evs += parse_events(git("cat-file", "blob", sha, check=False))
-    return sorted(evs, key=lambda e: e.get("timestamp", ""))
+def events(include_unreachable=False) -> List[Event]:
+    entries = refs("refs/sun/events/")
+    if not entries: return []
+    data = subprocess.run(["git", "cat-file", "--batch"],
+                          input="".join(sha + "\n" for _, sha in entries).encode(),
+                          capture_output=True, check=True).stdout
+    evs, pos = [], 0
+    while pos < len(data):
+        end = data.index(b"\n", pos)
+        size = int(data[pos:end].split()[-1])
+        ev = json.loads(data[end + 1:end + 1 + size])
+        if not re.fullmatch(r"[0-9a-f]{32}", ev.get("id", "")) or \
+                entries[len(evs)][0] != f"refs/sun/events/{ev['id']}":
+            sys.exit("sun: invalid operation ID in fetched history")
+        evs.append(ev)
+        pos = end + size + 2
+    scope = history_refs()
+    order = {c: i for i, c in enumerate(git("rev-list", "--topo-order", "--reverse",
+                                            *scope).split())} if scope else {}
+    # Git ancestry orders causes before effects. Concurrent branches have no total time order.
+    return sorted((e for e in evs if e.get("commit") in order or
+                   include_unreachable and e.get("branch") == shadow_ref()),
+                  key=lambda e: (order.get(e["commit"], len(order)), e.get("sequence", 0), e["id"]))
 def lock():
-    lk = open(os.path.join(sun_dir(False), "lock"), "a")
+    common = git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()
+    lk = open(os.path.join(common, "sun.lock"), "a")
     fcntl.flock(lk, fcntl.LOCK_EX)
     return lk  # closing the file releases the lock
-def mirror_log():  # one writer per user: refs/sun/log/<user> mirrors the local cache
-    p = os.path.join(sun_dir(), "events.jsonl")
-    if os.path.exists(p): git("update-ref", f"refs/sun/log/{user()}", blob(read_text(p)))
-def record(mirror: bool = True, **ev: Any) -> Event:
-    ev = {"id": uuid.uuid4().hex[:8], "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"), **ev}
-    with open(os.path.join(sun_dir(), "events.jsonl"), "a") as f:
-        f.write(json.dumps(ev) + "\n")
-    if mirror:
-        mirror_log()
-    return ev
+def publish(commit, evs, before=None):
+    if before is None:
+        parents = git("rev-list", "--parents", "-n1", commit).split()[1:]
+        before = parents[0] if parents else ""
+    updates = [f"update {shadow_ref()} {commit} {before or '0' * len(commit)}"]
+    for ev in evs:
+        ref = f"refs/sun/events/{ev['id']}"
+        updates.append(f"update {ref} {blob(json.dumps(ev))} {ref_oid(ref) or '0' * len(commit)}")
+        snapshot = ev.get("snapshot", commit)
+        updates.append(f"update refs/sun/ops/{snapshot} {snapshot}")
+    git("update-ref", "--stdin", input="start\n" + "\n".join(dict.fromkeys(updates)) +
+        "\nprepare\ncommit\n")
+def record_batch(commit, entries):
+    evs = [{"id": uuid.uuid4().hex, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "sequence": i, "commit": commit, "branch": shadow_ref(), **e} for i, e in enumerate(entries)]
+    publish(commit, evs)
+    return evs
+def record(**ev: Any) -> Event:
+    return record_batch(ev["commit"], [ev])[0]
 def store_chunks(sid, files, u=None):  # {path: text} -> refs/sun/sessions/<u>/<sid> tree
     if not files: return
     ref, ix = f"refs/sun/sessions/{u or user()}/{sid}", os.path.join(sun_dir(), "tmpindex")
@@ -245,19 +327,23 @@ def store_chunks(sid, files, u=None):  # {path: text} -> refs/sun/sessions/<u>/<
         git("read-tree", ref, env=env)
     git("update-index", "--index-info", env=env,
         input="".join(f"100644 blob {blob(c)}\t{p}\n" for p, c in files.items()))
-    git("update-ref", ref, git("commit-tree", git("write-tree", env=env).strip(), "-m", sid).strip())
+    parent = ref_oid(ref)
+    args = ["commit-tree", git("write-tree", env=env).strip(), "-m", sid]
+    if parent: args += ["-p", parent]
+    commit = git(*args).strip()
+    git("update-ref", ref, commit, parent or "0" * len(commit))
 _u = {}
 def user():  # the git user on whose machine the change happened; owns every event
     _u or _u.setdefault("u", (git("config", "user.name", check=False).strip()
                               or os.environ.get("USER", "unknown")).replace(" ", "-").lower())
     return _u["u"]
 local = lambda u=None: f"{u or user()}/local"
-agent = lambda sid, harness="claude", u=None: f"{u or user()}/agent:{harness}/{sid[:8]}"
+agent = lambda sid, harness="claude", u=None: f"{u or user()}/agent:{harness}/{sid}"
 session_key = lambda sid, harness="claude": sid if harness == "claude" else f"{harness}/{sid}"
 call_key = lambda sid, payload, harness="claude": \
     f"{session_key(sid, harness)}/{payload.get('tool_use_id') or ''}"
 tool_file = lambda inp: inp.get("file_path") or inp.get("notebook_path")
-rel_to_root = lambda path: os.path.relpath(os.path.realpath(path), root())
+rel_to_root = lambda path: os.path.relpath(os.path.abspath(path), root())
 def patch_files(text):
     if not isinstance(text, str): return []
     # Tool wrappers may carry the patch inside a JSON or JavaScript string.
@@ -279,82 +365,112 @@ def relative_tool_files(tool, inp):
     return [rel_to_root(f) for f in tool_files(tool, inp)]
 edits_msg = lambda actor, files: (f"sun: {actor} edits " + ", ".join(files[:3])
                                   + (f" +{len(files) - 3} more" if len(files) > 3 else ""))
-def sync(exclude=(), reconcile=True, method="sync"):  # commit unclaimed changes as local
-    if reconcile: fast_forward_shadow()
-    exclude = set(exclude) | {f for s in state("active.json", {}).values() for f in s["files"]}
+def sync(exclude=(), method="sync"):  # commit unclaimed changes as local
+    if state("merge.json", {}): sys.exit("sun: finish or abort the Sun merge before recording")
+    active = state("active.json", {})
+    if any(s.get("all_files") for s in active.values()): return
+    exclude = set(exclude) | {f for s in active.values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
     if not files: return None
-    pre, actor = history_head(), local()
-    c = commit_files(files, edits_msg(actor, files), actor, reconcile)
+    pre, actor = history_head(), "unknown" if method == "uncertain" else local()
+    c = commit_files(files, edits_msg(actor, files), actor)
     p = patches(pre, c, files)
     return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
                   edits=[{"file": f, "patch": p[f],
                           "attribution": {"method": method}} for f in files])
-def maybe_sync(exclude=()):  # skipped while an agent tool call is in flight
-    state("active.json", {}) or sync(exclude)
+def maybe_sync(exclude=()):
+    sync(exclude)  # sync itself excludes in-flight files and unknown-scope shell calls
 def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
-    # PostToolUse: the pre->post diff is the agent's tool call
-    st = (active.pop(call_key(sid, payload, harness), None)  # or an id-less claim
-          or active.pop(call_key(sid, {}, harness), None) or {"files": []})
-    save_state("active.json", active)
-    others = {f for s in active.values() for f in s["files"]}
-    files = [f for f in changed_files() if f not in others]
-    if not files: return
+    key = call_key(sid, payload, harness)
+    if key not in active: key = call_key(sid, {}, harness)
+    st = active.get(key)
+    if not st: return  # duplicate completion, or no observed pre-call boundary
+    others = {f for k, s in active.items() if k != key for f in s["files"]}
+    def release():
+        active.pop(key, None)
+        save_state("active.json", active)
+    if st.get("branch") != shadow_ref():
+        print("sun: branch changed during tool call; attribution unavailable", file=sys.stderr)
+        release()
+        return
+    # Retrying after a crash between the ref transaction and claim cleanup is harmless.
+    if st.get("id") and ref_oid(f"refs/sun/events/{st['id']}"):
+        release()
+        return
+    files = [f for f in changed_files() if f not in others or f in st.get("overlap", [])]
+    if not files:
+        release()
+        return
     tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
     paths = relative_tool_files(tool, inp)
     call_input = ({"file": paths[0]} if len(paths) == 1 else
                   {"files": paths} if paths else inp)
     call = {"id": payload.get("tool_use_id"), "tool": tool, "input": call_input}
-    claimed = set(st["files"]) | set(paths)
+    claimed = set(st["files"])
     # Edit/Write only touch their own file -> the rest of the diff is a concurrent local
     # overlay; for other tools (Bash, ...) the whole diff is the agent's
-    a_files = [f for f in files if f in claimed] if tool in EDIT_TOOLS and claimed else files
+    a_files = ([f for f in files if f in claimed] if claimed else
+               files if st.get("all_files") else [])
+    if not st.get("all_files") and any(s.get("all_files") for k, s in active.items() if k != key):
+        files = a_files
+    if not files:
+        release()
+        return
     h_files = [f for f in files if f not in a_files]
-    actor, pre = agent(sid, harness), history_head()
-    turn = state("turns.json", {}).get(session_key(sid, harness), {}).get("n", 0)
+    actor, pre = st["actor"], history_head()
+    turn = st.get("turn", 0)
     c = commit_files(files, f"sun: {actor} {tool}" if a_files else edits_msg(local(), files),
                      actor if a_files else local())
     p = patches(pre, c, files)
+    entries = []
     if a_files:
-        git("update-ref", f"refs/sun/ops/{c}", c)  # survives the turn squash + git gc
-        record(type="edit", actor=actor, session_id=sid, turn=f"turn{turn}", commit=c,
-               patch_id=patch_id(c),
-               tool_calls=[call], edits=[{"file": f, "patch": p[f], "tool_call_id": call["id"],
-                                          "attribution": {"method": "hook"}} for f in a_files])
+        overlap = st.get("overlap", [])
+        uncertain = a_files if payload.get("hook_event_name") == "PostToolUseFailure" or "*" in overlap \
+            else [f for f in a_files if f in overlap]
+        unknown_actor = st.get("ambiguous_actor") or payload.get("hook_event_name") == "PostToolUseFailure"
+        for owner, group, method in ((actor, [f for f in a_files if f not in uncertain], "hook"),
+                                      ("unknown" if unknown_actor else actor, uncertain, "uncertain")):
+            if group:
+                entries.append(dict(type="edit", actor=owner, session_id=sid, turn=f"turn{turn}",
+                       patch_id=patch_id(c), tool_calls=[call], edits=[
+                           {"file": f, "patch": p[f], "tool_call_id": call["id"],
+                            "attribution": {"method": method}} for f in group]))
     if h_files:
-        record(type="edit", actor=local(), commit=c,
+        entries.append(dict(type="edit", actor=local(),
                edits=[{"file": f, "patch": p[f],
-                       "attribution": {"method": "hook"}} for f in h_files])
+                       "attribution": {"method": "hook"}} for f in h_files]))
+    if entries: entries[0]["id"] = st["id"]
+    record_batch(c, entries)
+    release()
 def squash_turn(sid, harness="claude"):
     # Stop: squash the turn's agent calls and intervening local edits into one turn commit.
     # A different agent or an already-aggregated commit remains a hard boundary.
     t = state("turns.json", {}).get(session_key(sid, harness))
     tip = history_head()
-    if not t or t.get("squashed") or \
+    if not t or t.get("branch") != shadow_ref() or t.get("squashed") or \
             quiet("git", "merge-base", "--is-ancestor", t["start"], tip).returncode: return
     start, actor = t["start"], agent(sid, harness)
     rng = git("rev-list", f"{start}..{tip}").split()
+    published = [sha for _, sha in refs("refs/sun/published/")] + [ref_oid(remote_ref())]
+    if any(p and not quiet("git", "merge-base", "--is-ancestor", c, p).returncode
+           for p in published for c in rng): return
     ops = [e for e in events() if e.get("commit") in rng]
     mine = [e for e in ops if e["actor"] == actor]
     allowed = {actor, local()}
-    raw = [e for e in ops if e.get("type") == "edit" and e["actor"] in allowed]
+    raw = [e for e in ops if e.get("type") == "edit" and e["actor"] in allowed
+           and not e.get("snapshot")]
     if not rng or not mine or len(raw) != len(ops) or set(rng) - {e["commit"] for e in raw}:
         return
     # Rewriting the turn removes these commits from the main shadow lineage. Keep every
     # operation snapshot, including intervening human edits, reachable and shareable.
-    for H in rng: git("update-ref", f"refs/sun/ops/{H}", H)
     # commit-tree + update-ref never touch the worktree/index: edits after the last call stay dirty
     c = make_shadow_commit(git("rev-parse", f"{tip}^{{tree}}").strip(),
                            f"sun: {actor} turn {t['n']} ({len(mine)} tool calls)",
                            actor, [start])
-    git("update-ref", SHADOW_REF, c, tip)
     turn_pid = patch_id(c)
-    revisions = {e["id"]: {**e, "commit": c, "snapshot": e["commit"],
-                            "patch_id": turn_pid} for e in ops}
-    p = os.path.join(sun_dir(), "events.jsonl"); tmp = p + ".tmp"
-    write_text(tmp, "".join(json.dumps(revisions.get(e["id"], e)) + "\n"
-                            for e in parse_events(read_text(p))))
-    os.replace(tmp, p); mirror_log()
+    revisions = [{**e, "commit": c, "snapshot": e["commit"], "sequence": i,
+                  "patch_id": turn_pid} for i, e in enumerate(ops)]
+    publish(c, revisions, tip)
     turns = state("turns.json", {})
     turns[session_key(sid, harness)]["squashed"] = True
     save_state("turns.json", turns)
@@ -406,6 +522,7 @@ def prompt_boundary(sid, payload, harness="claude"):
             sync(method="hook")
             t.update(n=t["n"] + 1, start=history_head(), toffset=boundary)
             t.pop("stopped", None)
+            t.pop("squashed", None)
     t.update(soffset=end, seen=1 if boundaries else seen + len(prompts))
     turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)
@@ -430,17 +547,34 @@ def cmd_hook(a):
     try: payload.get("cwd") and os.chdir(payload["cwd"])
     except OSError: return
     p = quiet("git", "rev-parse", "--show-toplevel")
-    if p.returncode or not os.path.isdir(os.path.join(p.stdout.strip(), ".git", "sun")):
+    if p.returncode or not os.path.isdir(sun_dir(False)):
         return  # not a sun repo; hooks must never break the harness
     os.chdir(p.stdout.strip())
     with lock():  # serialize concurrent hooks (parallel sessions/subagents)
+        ensure_branch()
         handle_hook(a, payload)
 
 
 def handle_hook(a, payload):
     event, sid, harness = (payload.get("hook_event_name", ""),
                            payload.get("session_id", "?"), a.harness)
+    tp = payload.get("transcript_path")
+    sub, subpath = payload.get("agent_id"), payload.get("agent_transcript_path")
+    if tp or (sub and subpath):
+        paths = state("session-paths.json", {})
+        entry = paths.setdefault(session_key(sid, harness),
+                                 {"id": sid, "harness": harness, "path": None, "subagents": {}})
+        if tp: entry["path"] = os.path.abspath(tp)
+        if sub and subpath: entry["subagents"][sub] = os.path.abspath(subpath)
+        save_state("session-paths.json", paths)
     active: Dict[str, ActiveCall] = state("active.json", {})
+    if event in ("SessionStart", "UserPromptSubmit", "Stop", "SessionEnd", "Interrupt"):
+        prefix = session_key(sid, harness) + "/"
+        stale = [key for key in active if key.startswith(prefix)]
+        for key in stale: active.pop(key)
+        if stale:
+            save_state("active.json", active)
+            sync(method="uncertain")
     if event == "UserPromptSubmit" and not state("turns.json", {}).get(
             session_key(sid, harness), {}).get("stopped"):  # Stop never fired:
         squash_turn(sid, harness)  # squash the turn + store its transcript slice
@@ -450,25 +584,45 @@ def handle_hook(a, payload):
         sync(method="hook")  # everything dirty before an agent tool runs is local
     if event == "SessionStart":  # stdout lands in the agent's context
         if not cfg_share_sessions(): return
-        native = "~/.claude/projects" if harness == "claude" else "~/.codex/sessions"
-        print(f"sun: past sessions for this repo (yours + teammates') are in "
-              f".git/sun/sessions/, not {native}; {export_sessions()} sessions")
+        export_sessions()
+        print("sun: " + CLAUDE_LINE)
     elif event == "SubagentStart":
         if not cfg_share_sessions(): return
-        print("sun: past sessions for this repo are in .git/sun/sessions/; "
-              "use `sun sessions` to search them")
+        print("sun: " + CLAUDE_LINE)
     elif event == "UserPromptSubmit":
         turns, tp = state("turns.json", {}), payload.get("transcript_path", "")
         key = session_key(sid, harness)
         turns[key] = {"n": turns.get(key, {}).get("n", 0) + 1, "start": history_head(),
-                      "transcript": tp,
+                      "transcript": tp, "branch": shadow_ref(),
                       "toffset": os.path.getsize(tp) if os.path.exists(tp) else 0}
         save_state("turns.json", turns)
     elif event == "PreToolUse":  # claim the file BEFORE the write exists
         tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
-        active[call_key(sid, payload, harness)] = {"files": relative_tool_files(tool, inp)}
+        key = call_key(sid, payload, harness)
+        if key in active: return
+        files = relative_tool_files(tool, inp) if tool not in READ_TOOLS else []
+        broad = not files and tool not in READ_TOOLS
+        overlap, ambiguous_actor = set(), False
+        for other_key, other in active.items():
+            shared = set(files) & set(other["files"])
+            if broad: shared.update(other["files"])
+            if other.get("all_files"): shared.update(files)
+            other["overlap"] = sorted(set(other.get("overlap", [])) | shared)
+            overlap.update(shared)
+            if broad and other.get("all_files"):
+                other["overlap"] = ["*"]
+                overlap.add("*")
+            if (shared or broad and other.get("all_files")) and not other_key.startswith(
+                    session_key(sid, harness) + "/"):
+                other["ambiguous_actor"] = ambiguous_actor = True
+        active[key] = {"files": files, "all_files": broad, "overlap": sorted(overlap),
+                       "ambiguous_actor": ambiguous_actor,
+                       "id": uuid.uuid4().hex,
+                       "actor": agent(sid, harness),
+                       "branch": shadow_ref(), "pre": history_head(),
+                       "turn": state("turns.json", {}).get(session_key(sid, harness), {}).get("n", 0)}
         save_state("active.json", active)
-    elif event == "PostToolUse":
+    elif event in ("PostToolUse", "PostToolUseFailure"):
         finish_call(sid, active, payload, harness)
     elif event == "Stop":  # a queued prompt may end in a text-only turn: no PreToolUse
         prompt_boundary(sid, payload, harness)
@@ -511,31 +665,23 @@ def transcript_sources(harness="claude"):
         source = str(meta.get("source") or "").lower()
         yield path, sid, sid if "subagent" in source else None
 def scan_claude_transcript(path):
-    chunks, cur = [], []
+    chunks, cur, seen = [], [], False
     for line in read_text(path, errors="replace").splitlines(keepends=True):
-        if cur and "tool_result" not in line \
-                and ('"type":"user"' in line or '"type": "user"' in line):
-            chunks.append("".join(cur)); cur = []
+        if prompt_line(line):
+            if seen: chunks.append("".join(cur)); cur = []
+            seen = True
         cur.append(line)
     if cur: chunks.append("".join(cur))
     return chunks
 def scan_codex_transcript(path):
     lines = read_text(path, errors="replace").splitlines(keepends=True)
-    parsed = []
-    for line in lines:
-        try: parsed.append(json.loads(line))
-        except ValueError: parsed.append({})
-    task_boundaries = any(o.get("type") == "event_msg" and
-                          (o.get("payload") or {}).get("type") == "task_started" for o in parsed)
-    chunks, cur = [], []
-    for line, obj in zip(lines, parsed):
-        payload = obj.get("payload") or {}
-        boundary = (obj.get("type") == "event_msg" and payload.get("type") == "task_started")
-        if not task_boundaries:
-            boundary = ((obj.get("type") == "response_item" and
-                         payload.get("type") == "message" and payload.get("role") == "user") or
-                        (obj.get("type") == "event_msg" and payload.get("type") == "user_message"))
-        if boundary and cur: chunks.append("".join(cur)); cur = []
+    kinds = [prompt_line(line, "codex") for line in lines]
+    boundary = 3 if 3 in kinds else 1 if 1 in kinds else 2
+    chunks, cur, seen = [], [], False
+    for line, kind in zip(lines, kinds):
+        if kind == boundary:
+            if seen: chunks.append("".join(cur)); cur = []
+            seen = True
         cur.append(line)
     if cur: chunks.append("".join(cur))
     return chunks
@@ -565,18 +711,60 @@ def session_text(ref, sub=None):
                    if n.startswith(pre) and n.count("/") == pre.count("/"))
     return "".join(git("cat-file", "blob", f"{ref}:{n}") for n in names)
 def session_export_dir(): return os.path.join(sun_dir(), "sessions", enc(root()))
-def export_sessions():  # mirror session refs to .git/sun/sessions/ in ~/.claude/projects layout
-    base, idx = session_export_dir(), []
-    os.makedirs(base, exist_ok=True)
+def session_data():
+    base, owner = session_export_dir(), user()
+    local_paths = state("session-paths.json", {})
+    for harness in ("claude", "codex"):
+        for path, sid, sub in transcript_sources(harness):
+            entry = local_paths.setdefault(session_key(sid, harness),
+                         {"id": sid, "harness": harness, "path": None, "subagents": {}})
+            if sub: entry["subagents"][sub] = os.path.abspath(path)
+            else: entry["path"] = os.path.abspath(path)
+    # Older installs already recorded native paths in their turn state.
+    for key, turn in state("turns.json", {}).items():
+        harness, sid = key.split("/", 1) if "/" in key else ("claude", key)
+        if turn.get("transcript") and key not in local_paths:
+            local_paths[key] = {"id": sid, "harness": harness,
+                               "path": os.path.abspath(turn["transcript"]), "subagents": {}}
+    idx = [{**entry, "user": owner, "origin": "local", "ref": None}
+           for entry in local_paths.values()]
+    for entry in idx:
+        if entry["path"] and not os.path.isfile(entry["path"]): entry["path"] = None
+        entry["subagents"] = {s: p for s, p in entry["subagents"].items() if os.path.isfile(p)}
     for sid, u, ref in session_rows():
-        fp = os.path.join(base, sid + ".jsonl")
+        if u == owner:
+            # Remove the old materialized copy, never the native transcript.
+            legacy = os.path.join(base, sid)
+            if os.path.isfile(legacy + ".jsonl"): os.remove(legacy + ".jsonl")
+            shutil.rmtree(os.path.join(legacy, "subagents"), ignore_errors=True)
+            try: os.rmdir(legacy)
+            except OSError: pass
+            matches = [entry for entry in idx if entry["id"] == sid]
+            if not matches:
+                matches = [{"id": sid, "harness": None, "user": u, "origin": "local",
+                            "path": None, "subagents": {}}]
+                idx.extend(matches)
+            for entry in matches: entry["ref"] = ref
+            continue
+        dest = os.path.join(base, u)
+        os.makedirs(dest, exist_ok=True)
+        fp = os.path.join(dest, sid + ".jsonl")
         write_text(fp, session_text(ref))
-        for s in sorted({n.split("/")[1] for n in git("ls-tree", "-r", "--name-only", ref)
-                        .splitlines() if n.startswith("subagents/")}):
-            os.makedirs(os.path.join(base, sid, "subagents"), exist_ok=True)
-            write_text(os.path.join(base, sid, "subagents", s + ".jsonl"), session_text(ref, s))
-        idx.append({"id": sid, "user": u, "path": fp, "origin": "local" if u == user() else "team"})
-    jwrite(os.path.join(base, "sessions-index.json"), idx)
+        subs = {}
+        for sub in sorted({n.split("/")[1] for n in git("ls-tree", "-r", "--name-only", ref)
+                           .splitlines() if n.startswith("subagents/")}):
+            subdir = os.path.join(dest, sid, "subagents")
+            os.makedirs(subdir, exist_ok=True)
+            subs[sub] = os.path.join(subdir, sub + ".jsonl")
+            write_text(subs[sub], session_text(ref, sub))
+        idx.append({"id": sid, "user": u, "harness": None, "path": fp,
+                    "subagents": subs, "origin": "team", "ref": ref})
+    return idx
+
+def export_sessions():
+    idx = session_data()
+    os.makedirs(session_export_dir(), exist_ok=True)
+    jwrite(os.path.join(session_export_dir(), "sessions-index.json"), idx)
     return len(idx)
 def cmd_sessions(a):
     if a.session_cmd == "import":
@@ -594,7 +782,7 @@ def cmd_sessions(a):
         if a.remote and old:
             if "origin" not in git("remote", check=False).split():
                 sys.exit("sun: cannot prune remote sessions without an origin remote")
-            git("push", "origin", "--delete", *old)
+            git("push", "--no-verify", "origin", "--delete", *old)
         for ref in old:
             git("update-ref", "-d", ref)
             sid = ref[len(prefix):]
@@ -642,22 +830,19 @@ def stdout_file():  # file backing a redirected stdout (`sun export > dump.jsonl
     except OSError: return []
 def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt paired with edits
     maybe_sync([rel_to_root(a.output)] if a.output else stdout_file())  # never re-ingest our dump
-    rows, evs, merged = session_rows(), events(), {}
+    evs, merged = events(), {}
     for e in evs:
         if e.get("type") not in ("edit", "undo", "restore") or not e.get("edits"): continue
-        key = (e["actor"], e["turn"]) if e.get("turn") else e["id"]  # unsquashed turns regroup
+        key = (e["actor"], e.get("session_id"), e["turn"]) if e.get("turn") else e["id"]
         m = merged.setdefault(key, {**e, "tool_calls": e.get("tool_calls", [])[:],
                                     "edits": e["edits"][:]})
         if m["id"] != e["id"]: m["tool_calls"] += e.get("tool_calls", []); m["edits"] += e["edits"]
     out = open(a.output, "w") if a.output else sys.stdout
     for e in merged.values():
         sid, prompt = e.get("session_id"), None
-        owner = e["actor"].split("/", 1)[0]
-        hit = sid and next(((s, r) for s, u, r in rows if u == owner and s == sid), None)
-        if hit:
-            n = int(e.get("turn", "turn0")[4:])
-            prompt = n and chunk_prompt(git("cat-file", "blob",
-                                            f"{hit[1]}:turn-{n:04d}.jsonl", check=False)) or None
+        tid = next((tc.get("id") for tc in e["tool_calls"] if tc.get("id")), None)
+        hit = sid and operation_transcript(e, tid)
+        if hit: prompt = chunk_prompt(hit[1])
         out.write(json.dumps({"timestamp": e["timestamp"], "actor": e["actor"], "session": sid,
                               "turn": e.get("turn"), "prompt": prompt,
                               "tool_calls": e["tool_calls"],
@@ -711,99 +896,174 @@ def remove_hooks(harness):  # a restrictive re-init un-installs the excluded har
         if not cfg["hooks"][event]: del cfg["hooks"][event]
     jwrite(path, cfg)
 def refspecs(share_sessions=False):
-    specs = ["+refs/sun/log/*:refs/sun/log/*", "+refs/sun/ops/*:refs/sun/ops/*",
+    specs = ["refs/sun/events/*:refs/sun/events/*", "refs/sun/ops/*:refs/sun/ops/*",
              "+refs/sun/heads/*:refs/sun/remotes/origin/*"]
     return specs + (["+refs/sun/sessions/*:refs/sun/sessions/*"] if share_sessions else [])
 def install_push(share_sessions=False):
     if "origin" in git("remote", check=False).split():
         for old in ("+refs/sun/*:refs/sun/*", "+refs/sun/sessions/*:refs/sun/sessions/*",
-                    "+refs/sun/heads/*:refs/sun/heads/*"):
+                    "+refs/sun/heads/*:refs/sun/heads/*", "+refs/sun/log/*:refs/sun/log/*",
+                    "+refs/sun/ops/*:refs/sun/ops/*"):
             git("config", "--fixed-value", "--unset-all", "remote.origin.fetch", old, check=False)
         current = git("config", "--get-all", "remote.origin.fetch", check=False).splitlines()
         for spec in refspecs(share_sessions):
             if spec not in current: git("config", "--add", "remote.origin.fetch", spec)
-    hp = os.path.join(root(), ".git", "hooks", "pre-push")
+    hp = git("rev-parse", "--git-path", "hooks/pre-push").strip()
+    os.makedirs(os.path.dirname(hp), exist_ok=True)
     old = read_text(hp) if os.path.exists(hp) else ""
     legacy = ('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
               'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
     managed = old == legacy or any(old.startswith(f'#!/bin/sh\n{marker}\n') for marker in (
         '# sun: mirror shared refs', '# sun: mirror shared refs, fail-soft'))
     if not old or managed:
-        lines = ['#!/bin/sh', '# sun: mirror shared refs',
-                 f'git push --no-verify "$1" "+refs/sun/log/{user()}:refs/sun/log/{user()}" >/dev/null 2>&1 || true',
-                 'git push --no-verify "$1" "+refs/sun/ops/*:refs/sun/ops/*" >/dev/null 2>&1 || true']
-        lines.insert(2, 'git push --no-verify "$1" "refs/sun/heads/*:refs/sun/heads/*" || { echo "sun: shadow history push rejected; fetch and reconcile before pushing" >&2; exit 1; }')
-        if share_sessions:
-            lines.append(f'git push --no-verify "$1" "+refs/sun/sessions/{user()}/*:refs/sun/sessions/{user()}/*" >/dev/null 2>&1 || true')
+        lines = ['#!/bin/sh', '# sun: mirror shared refs', 'exec sun push "$1"']
         write_text(hp, "\n".join(lines) + "\n")
         os.chmod(hp, 0o755)
+    else:
+        print("sun: existing pre-push hook preserved; run `sun push` to publish Sun history")
+def cmd_push(a):
+    # The common Git lock prevents Stop from rewriting anything while publication runs.
+    specs = ["refs/sun/heads/*:refs/sun/heads/*", "refs/sun/events/*:refs/sun/events/*",
+             "refs/sun/ops/*:refs/sun/ops/*"]
+    if cfg_share_sessions() and refs(f"refs/sun/sessions/{user()}/"):
+        specs.append(f"refs/sun/sessions/{user()}/*:refs/sun/sessions/{user()}/*")
+    # Mark first: even an interrupted push with an unknown outcome must not be squashed.
+    for ref, sha in refs("refs/sun/heads/"):
+        git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), sha)
+    git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
 def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
     todo = []
     for h in harnesses:
         name, line = ("CLAUDE.md", CLAUDE_LINE) if h == "claude" else ("AGENTS.md", CODEX_LINE)
         p = os.path.join(root(), name)
         cur = read_text(p) if os.path.exists(p) else ""
-        if line not in cur: todo.append((p, cur, line, name))
+        old = re.compile(r"^Past sessions for this repo, yours and other team members', are in "
+                         r"\.git/sun/sessions/ .*Look there instead of .*\.$", re.M)
+        cleaned = old.sub(line, cur)
+        if cleaned != cur:
+            todo.append((p, cleaned, None, name))
+        elif line not in cur: todo.append((p, cur, line, name))
     if not todo: return
     if choice is None and sys.stdin.isatty():
         choice = input(f"sun: add one line to {'/'.join(t[3] for t in todo)} so agents find "
                        "team sessions? [Y/n] ").strip().lower() != "n"
     if choice:
         for p, cur, line, _ in todo:
-            write_text(p, ("\n" if cur and not cur.endswith("\n") else "") + line + "\n", "a")
+            if line is None: write_text(p, cur)
+            else: write_text(p, ("\n" if cur and not cur.endswith("\n") else "") + line + "\n", "a")
     else:
         print(f"sun: run `sun init{flags} --instructions` later to enable team session sharing")
 def cmd_init(a):
     if quiet("git", "rev-parse", "--git-dir").returncode: sh("git", "init", "-q")
-    os.makedirs(os.path.join(root(), ".git", "sun"), exist_ok=True)
+    os.makedirs(sun_dir(False), exist_ok=True)
+    with lock():
+        init_locked(a)
+def init_locked(a):
+    check_format()
     explicit = [h for h, f in (("claude", a.claude), ("codex", a.codex)) if f]
     harnesses = explicit or detect_harnesses()
     cfg = state("config.json", {}); cfg.pop("harness", None)
+    cfg["format"] = 2
     cfg["harnesses"] = harnesses
     cfg.pop("shadow_history", None)
     save_state("config.json", cfg)
     share_sessions = configure_session_sharing(a.share_sessions)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
-        git("fetch", "-q", "origin", *refspecs(share_sessions), check=False)
-    fast_forward_shadow()
-    p, sha = os.path.join(sun_dir(), "events.jsonl"), git(  # rebuild cache from our own ref
-        "rev-parse", "-q", "--verify", f"refs/sun/log/{user()}", check=False).strip()
-    if sha and not os.path.exists(p): write_text(p, git("cat-file", "blob", sha))
+        git("fetch", "-q", "origin", *refspecs(share_sessions))
     installed = ", ".join(install_hooks(h) for h in harnesses); install_push(share_sessions)
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
     if share_sessions:
         agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
-    if not history_head(False) or changed_files():
+    if not history_head(False):
         c = commit_files(["."], "sun: initial state", local())
-        record(type="init", actor=local(), commit=c, edits=[])
+        remote, tree = ref_oid(remote_ref()), ref_oid(f"{c}^{{tree}}")
+        matches = [line.split()[0] for line in git("log", remote, "--format=%H %T").splitlines()
+                   if line.split()[1] == tree] if remote else []
+        if matches: git("update-ref", shadow_ref(), matches[0])
+        else: record(type="init", actor=local(), commit=c, edits=[])
+    ensure_branch()
+    sync()
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
     if "codex" in harnesses:
         print("sun: Codex requires separate hook approval; open `/hooks`, review "
               "`.codex/hooks.json`, and trust the Sun hooks before testing")
     print("run `sun viz` to explore your attributed history")
 def cmd_sync(a):
-    ev = sync(); print(f"sun: committed local edits as op {ev['id']}" if ev else "sun: nothing to sync")
+    if a.recover: save_state("active.json", {})
+    ev = sync(method="uncertain" if a.recover else "sync")
+    print(f"sun: recorded edits as op {ev['id']}" if ev else "sun: nothing to sync")
 def cmd_merge(a):
+    if state("active.json", {}): sys.exit("sun: wait for active tool calls before merging")
+    pending = state("merge.json", {})
+    if a.abort:
+        if not pending: sys.exit("sun: no Sun merge in progress")
+        if pending["branch"] != shadow_ref(): sys.exit("sun: return to the branch with the pending merge")
+        patch = git("diff", "--binary", pending["tree"], pending["local"])
+        apply_checked(patch, False, "sun: merge files have changed; preserve your resolution before aborting")
+        save_state("merge.json", {})
+        return print("sun: merge aborted")
+    if a.continue_merge:
+        if not pending or pending["branch"] != shadow_ref(): sys.exit("sun: no Sun merge on this branch")
+        if history_head() != pending["local"]:
+            parents = git("rev-list", "--parents", "-n1", history_head()).split()[1:]
+            if parents == [pending["local"], pending["remote"]]:
+                save_state("merge.json", {})
+                return print("sun: merge already completed")
+            sys.exit("sun: history changed during merge")
+        # The real Git index remains untouched. Only these Sun conflict paths are resolved.
+        ix = shadow_index()
+        env = {**os.environ, "GIT_INDEX_FILE": ix}
+        git("read-tree", pending["tree"], env=env)
+        if pending["files"]:
+            git("--literal-pathspecs", "add", "-A", "--", *pending["files"], env=env)
+        tree = git("write-tree", env=env).strip()
+        if quiet("git", "diff", "--check", pending["tree"], tree).returncode:
+            sys.exit("sun: resolve conflict markers before continuing")
+        c = make_shadow_commit(tree, "sun: resolve shared shadow history", local(),
+                               [pending["local"], pending["remote"]])
+        p = patches(pending["tree"], c, pending["files"])
+        record(type="merge", actor=local(), commit=c, edits=[
+            {"file": f, "patch": p[f], "attribution": {"method": "resolution"}}
+            for f in pending["files"] if p[f]])
+        save_state("merge.json", {})
+        return print(f"sun: merged shared shadow history in {c[:8]}")
+    if pending: sys.exit("sun: finish `sun merge --continue` or `sun merge --abort` first")
     if "origin" in git("remote", check=False).split():
-        git("fetch", "-q", "origin",
-            "+refs/sun/heads/*:refs/sun/remotes/origin/*", check=False)
-    remote = ref_oid(SHADOW_REMOTE_REF)
+        git("fetch", "-q", "origin", *refspecs(cfg_share_sessions()))
+    remote = ref_oid(remote_ref())
     if not remote: sys.exit("sun: no shared shadow history found on origin")
-    sync(reconcile=False)  # the current worktree is the user's merge resolution
     local_tip = history_head()
     if local_tip == remote or not quiet(
             "git", "merge-base", "--is-ancestor", remote, local_tip).returncode:
         return print("sun: shadow history is already up to date")
-    if not quiet("git", "merge-base", "--is-ancestor", local_tip, remote).returncode:
-        git("update-ref", SHADOW_REF, remote, local_tip)
-        return print(f"sun: fast-forwarded shadow history to {remote[:8]}")
-    tree = git("rev-parse", f"{local_tip}^{{tree}}").strip()
-    actor = local()
-    commit = make_shadow_commit(tree, "sun: merge shared shadow history", actor,
-                                [local_tip, remote])
-    git("update-ref", SHADOW_REF, commit, local_tip)
-    record(type="merge", actor=actor, commit=commit, parents=[local_tip, remote], edits=[])
+    result = quiet("git", "merge-tree", "--write-tree", "--allow-unrelated-histories", local_tip, remote)
+    if result.returncode not in (0, 1): sys.exit(f"sun: merge failed: {result.stderr}")
+    tree = result.stdout.splitlines()[0]
+    # Do not attribute remote content already brought in by normal Git to this user.
+    dirty = changed_files()
+    matching = []
+    for f in dirty:
+        p = git("--literal-pathspecs", "diff", "--binary", local_tip, tree, "--", f)
+        if p and not quiet("git", "apply", "-R", "--check", input=p).returncode: matching.append(f)
+    if set(dirty) - set(matching):
+        sys.exit("sun: run `sun sync` for pending local edits before merging")
+    files = [f for f in git("diff", "--name-only", "-z", local_tip, tree).split("\0") if f]
+    remaining = [f for f in files if f not in matching]
+    patch = git("--literal-pathspecs", "diff", "--binary", local_tip, tree, "--", *remaining) if remaining else ""
+    save_state("merge.json", {"branch": shadow_ref(), "local": local_tip,
+                              "remote": remote, "tree": tree, "files": files})
+    if patch:
+        try: apply_checked(patch, False, "sun: merge would overwrite working edits; sync them first")
+        except SystemExit:
+            save_state("merge.json", {})
+            raise
+    if result.returncode:
+        sys.exit("sun: merge conflicts written to worktree; resolve, then `sun merge --continue`\n" +
+                 result.stdout)
+    commit = make_shadow_commit(tree, "sun: merge shared shadow history", local(), [local_tip, remote])
+    record(type="merge", actor=local(), commit=commit, parents=[local_tip, remote], edits=[])
+    save_state("merge.json", {})
     print(f"sun: merged shared shadow history in {commit[:8]}")
 def installed_git_source():
     from importlib.metadata import distribution
@@ -841,9 +1101,9 @@ def cmd_log(a):
 def cmd_show(a):
     maybe_sync(); H = resolve_history_rev(a.commit)
     print(git("show", "--stat", "--pretty=format:commit %h  %ad%n%s%n", "--date=short", H))
-    evs = [e for e in events() if H in (e.get("commit"), e.get("snapshot"))]
+    evs = [e for e in events(True) if H in (e.get("commit"), e.get("snapshot"))]
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
-        pid = patch_id(H); evs = [e for e in events() if pid and e.get("patch_id") == pid]
+        pid = patch_id(H); evs = [e for e in events(True) if pid and e.get("patch_id") == pid]
     if not evs: print("no sun operations recorded for this commit")
     for e in evs: print(json.dumps(e, indent=2))
 def blame_context(chunk, tid):  # first user prompt + last agent text before tool call `tid`
@@ -854,6 +1114,8 @@ def blame_context(chunk, tid):  # first user prompt + last agent text before too
         if p.get("type") in ("function_call", "custom_tool_call") and \
                 tid in (p.get("call_id"), p.get("id")):
             tool = p.get("name")
+        item = p.get("item") or {}
+        if item.get("id") == tid and item.get("type") == "FileChange": tool = "apply_patch"
         if p.get("type") == "user_message" and not prompt: prompt = p.get("message")
         c, role = m.get("content"), m.get("role")
         for b in [{"type": "text", "text": c}] if isinstance(c, str) else \
@@ -866,17 +1128,36 @@ def blame_context(chunk, tid):  # first user prompt + last agent text before too
                 ctx = b.get("text")
         if tool: break
     return prompt, ctx, tool
+def operation_transcript(ev, tid):
+    if not tid: return None
+    info = actor_info(ev.get("actor"))
+    sid = ev.get("session_id")
+    if info["user"] == user():
+        entry = state("session-paths.json", {}).get(session_key(sid, info["harness"]), {})
+        paths = [entry.get("path")] + list(entry.get("subagents", {}).values())
+        if not any(paths):
+            paths = [p for p, s, _ in transcript_sources(info["harness"]) if s == sid]
+        for path in paths:
+            if path and os.path.isfile(path):
+                for chunk in scan_transcript(path, info["harness"]):
+                    if tid in chunk: return path, chunk
+    for stored, owner, ref in session_rows():
+        if stored == sid and owner == info["user"]:
+            for name in git("ls-tree", "-r", "--name-only", ref).splitlines():
+                chunk = git("cat-file", "blob", f"{ref}:{name}")
+                if tid in chunk: return name, chunk
+    return None
 def cmd_blame(a):
     maybe_sync()
     d, b = os.path.split(a.file)  # blame a symlink itself: resolve only its directory
     f = os.path.relpath(os.path.join(os.path.realpath(d or "."), b), root())
-    out = git("-c", "core.quotepath=false", "blame", "--porcelain",
+    out = git("--literal-pathspecs", "-c", "core.quotepath=false", "blame", "--porcelain",
               "-L", f"{a.line},{a.line}", history_head(), "--", f)
     H, orig = out.split()[:2]  # originating commit + the line's number in it
     if H == "0" * 40: sys.exit(f"sun: {f}:{a.line} is uncommitted")
     of = next((l[9:] for l in out.splitlines() if l.startswith("filename ")), f)  # pre-rename path
     touches = lambda e: any(ed.get("file") == of for ed in e.get("edits") or [])
-    all_ev = events()
+    all_ev = events(True)
     evs = [e for e in all_ev if e.get("commit") == H]
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
         pid = patch_id(H); evs = [e for e in all_ev if pid and e.get("patch_id") == pid]
@@ -890,7 +1171,7 @@ def cmd_blame(a):
             i, sm = int(orig) - 1, difflib.SequenceMatcher(None, ws(H), ws(turn_commit))
             orig = next((j1 + i - i1 + 1 for t, i1, i2, j1, j2 in sm.get_opcodes()
                          if t == "equal" and i1 <= i < i2), None)
-        o = tip and orig and quiet("git", "-c", "core.quotepath=false", "blame", "--porcelain",
+        o = tip and orig and quiet("git", "--literal-pathspecs", "-c", "core.quotepath=false", "blame", "--porcelain",
                                    "-L", f"{orig},{orig}", tip, "--", of)
         if o and not o.returncode and o.stdout:
             c = o.stdout.split(None, 1)[0]  # renamed within the turn: events use the old path
@@ -909,14 +1190,9 @@ def cmd_blame(a):
     tid = next((ed["tool_call_id"] for ed in ev.get("edits") or []
                 if ed.get("file") == of and ed.get("tool_call_id")), None) \
         or next((tc["id"] for tc in mine + tcs if tc.get("id")), None)
-    hit = next(((stored, ref) for stored, ru, ref in session_rows()
-                if ru == u and stored == sid), None)
-    if not (tid and hit): return print("no transcript stored for this edit")
-    sid, ref = hit
-    for n in sorted(git("ls-tree", "-r", "--name-only", ref).splitlines()):
-        chunk = git("cat-file", "blob", f"{ref}:{n}")
-        if tid in chunk: break
-    else: return print(f"tool call {tid} not found in session {sid}")
+    hit = operation_transcript(ev, tid)
+    if not hit: return print("no transcript stored for this edit")
+    n, chunk = hit
     prompt, ctx, tool = blame_context(chunk, tid)
     print(f"session {sid} ({n}):")
     if prompt: print(f"user: {prompt.strip()}")
@@ -927,6 +1203,7 @@ def apply_checked(patch, reverse, failure, dry_run=False):
     if quiet("git", *args, "--check", input=patch).returncode: sys.exit(failure)
     if not dry_run: git(*args, input=patch)
 def cmd_undo(a):
+    if state("active.json", {}): sys.exit("sun: wait for active tool calls before undoing")
     actor = local()
     if a.commit is not None:
         H = resolve_history_rev(a.commit)
@@ -960,6 +1237,7 @@ def cmd_undo(a):
            edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
     print(f"sun: undid op {target['id']} in {c[:8]}")
 def cmd_restore(a):
+    if state("active.json", {}): sys.exit("sun: wait for active tool calls before restoring")
     target = resolve_history_rev(a.commit)
     maybe_sync(); pre = history_head()
     patch = git("diff", "--binary", pre, target)
@@ -1010,6 +1288,7 @@ def viz_data(n=0):
     cols = ["hash", "short", "parents", "refs", "date", "subject", "author_name",
             "author_email", "committer_name", "committer_email"]
     commits = [dict(zip(cols, l.split("\x1f"))) for l in log.splitlines()]
+    sessions = session_data()
     all_events, by_commit, by_pid = events(), {}, {}
     for ev in all_events:
         by_commit.setdefault(ev.get("commit"), []).append(ev)
@@ -1027,6 +1306,12 @@ def viz_data(n=0):
             pid = hash_pids.get(commit["hash"])
             matched, match = by_pid.get(pid, []), "patch_id" if pid in by_pid else None
         operations = [viz_operation(ev) for ev in matched]
+        for op in operations:
+            info = op["actor_info"]
+            candidates = [s for s in sessions if s["id"] == op["session_id"]
+                          and s["user"] == info["user"]
+                          and s["harness"] in (None, info["harness"])]
+            op["session_path"] = candidates[0]["path"] if len(candidates) == 1 else None
         actor_ids = list(dict.fromkeys(op["actor"] for op in operations))
         commit["git_author"] = {"name": commit.pop("author_name"),
                                 "email": commit.pop("author_email")}
@@ -1039,7 +1324,7 @@ def viz_data(n=0):
             counts[op["actor"]] = counts.get(op["actor"], 0) + 1
     actors = [{**actor_info(actor), "operations": count}
               for actor, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))]
-    return {"commits": commits, "events": all_events, "actors": actors,
+    return {"commits": commits, "events": all_events, "actors": actors, "sessions": sessions,
             "summary": {"commits": len(commits), "operations": sum(counts.values())}}
 def operation_lines(op, prefix=""):
     info = op["actor_info"]
@@ -1048,6 +1333,8 @@ def operation_lines(op, prefix=""):
     if op.get("session_id"): out.append(f"{prefix}session       {op['session_id']}")
     if op.get("turn"): out.append(f"{prefix}turn          {op['turn']}")
     if op.get("timestamp"): out.append(f"{prefix}timestamp     {op['timestamp']}")
+    if "uncertain" in op.get("attribution_methods", []):
+        out.append(f"{prefix}attribution   uncertain: overlapping or interrupted writes")
     if op.get("target_op"): out.append(f"{prefix}undoes        operation {op['target_op']}")
     if op.get("target_commit"):
         verb = "restores" if op["type"] == "restore" else "undoes"
@@ -1154,7 +1441,7 @@ def viz_tui(screen, data):
             visible, selected, detail_scroll, replaying = 1, len(commits) - 1, 0, True
 def run_viz_tui(data):
     if not sys.stdin.isatty() or not sys.stdout.isatty():
-        sys.exit("sun: `sun viz` needs an interactive terminal; use `sun viz --html` to export")
+        sys.exit("sun: `sun viz` needs an interactive terminal; use `sun data` for JSON")
     import curses
     curses.wrapper(viz_tui, data)
 def write_viz_html(data, out):
@@ -1163,10 +1450,12 @@ def write_viz_html(data, out):
     print(f"sun: wrote {out}")
 def cmd_viz(a):
     with lock():
-        maybe_sync()
+        ensure_branch()
+        maybe_sync([rel_to_root(a.output)] if a.output else stdout_file())
         data = viz_data(a.n)
     if getattr(a, "html", False) or a.output:
         return write_viz_html(data, a.output or os.path.join(sun_dir(), "viz.html"))
+    if a.cmd == "data": return print(json.dumps(data))
     run_viz_tui(data)
 VIZ = """<!doctype html><meta charset="utf-8"><title>sun viz</title>
 <style>body{margin:0;font:12px/1.5 ui-monospace,Menlo,monospace;background:#fff;color:#000}
@@ -1202,6 +1491,7 @@ t=setInterval(()=>{s.value=+s.value+Math.max(1,Math.ceil(cs.length/150));cut();i
 s.oninput=cut;cut();if(rows.length)rows[0].click();</script>
 """
 def main(argv=None):
+    _u.clear()
     ap = argparse.ArgumentParser(
         prog="sun", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Start with `sun init`, then use `sun viz` to explore recorded work.")
@@ -1211,12 +1501,14 @@ def main(argv=None):
         ("sync", "snapshot pending human edits into Sun history"),
         ("log", "list Sun commits with attributed actors and turns"),
         ("show", "show a Sun commit and its recorded operations"),
-        ("viz", "browse Sun commits and operations interactively"),
+        ("viz", "browse attributed history in an interactive terminal"),
+        ("data", "emit attributed history and session paths as JSON"),
         ("blame", "show who changed a line and its stored conversation, when available"),
         ("undo", "reverse an operation or Sun commit and record the undo"),
         ("restore", "restore files to a Sun commit and record the restoration"),
         ("sessions", "manage explicitly shared agent transcripts"),
-        ("merge", "reconcile divergent Sun histories after resolving the worktree"),
+        ("merge", "merge shared Sun history using Git's three-way merge"),
+        ("push", "publish Sun history and attribution atomically"),
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
@@ -1235,12 +1527,18 @@ def main(argv=None):
     ps["init"].add_argument("--no-instructions", "--no-claude-md", dest="instructions",
                             action="store_false", help="do not edit agent instruction files")
     ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
+    ps["push"].add_argument("remote", nargs="?", default="origin")
+    ps["sync"].add_argument("--recover", action="store_true",
+                            help="after stopping agents, release abandoned calls and record uncertain edits")
+    merge_action = ps["merge"].add_mutually_exclusive_group()
+    merge_action.add_argument("--continue", dest="continue_merge", action="store_true")
+    merge_action.add_argument("--abort", action="store_true")
     session_sub = ps["sessions"].add_subparsers(
         dest="session_cmd", required=True, title="session commands", metavar="ACTION")
     session_ps = {c: session_sub.add_parser(c, help=h) for c, h in [
         ("list", "list stored transcripts"), ("show", "print one stored transcript"),
         ("import", "store new or changed native transcripts in Sun refs"),
-        ("export", "materialize stored transcripts under .git/sun/sessions"),
+        ("export", "index native paths and cache collaborators' shared transcripts"),
         ("prune", "delete your old stored transcript refs")]}
     session_ps["list"].add_argument("--grep", metavar="REGEX",
                                     help="show transcripts matching a regular expression")
@@ -1262,7 +1560,11 @@ def main(argv=None):
     ps["undo"].add_argument("--dry-run", action="store_true",
                             help="check whether the reversal applies without changing files")
     ps["restore"].add_argument("commit", help="Sun commit, snapshot, or ref to restore")
-    ps["viz"].add_argument("--html", action="store_true", help="export self-contained HTML")
+    viz_format = ps["viz"].add_mutually_exclusive_group()
+    viz_format.add_argument("--html", action="store_true", help="export self-contained HTML")
+    viz_format.add_argument("--tui", action="store_true", help="open interactive terminal history")
+    ps["data"].add_argument("-n", type=int, default=0, metavar="COUNT")
+    ps["data"].set_defaults(output=None)
     ps["viz"].add_argument("-o", "--output", default=None,
                             help="HTML output path (implies --html)")
     ps["viz"].add_argument("-n", type=int, default=0, metavar="COUNT",
@@ -1273,19 +1575,20 @@ def main(argv=None):
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
-        "init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge,
+        "init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge, "push": cmd_push,
         "log": cmd_log, "show": cmd_show, "undo": cmd_undo, "restore": cmd_restore,
-        "viz": cmd_viz, "sessions": cmd_sessions, "update": cmd_update,
+        "viz": cmd_viz, "data": cmd_viz, "sessions": cmd_sessions, "update": cmd_update,
         "export": cmd_export, "blame": cmd_blame,
     }
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
         os.chdir(root())
         sun_dir()
-        if a.cmd == "viz":
+        if a.cmd in ("viz", "data"):
             commands[a.cmd](a)
         else:
             with lock():
+                ensure_branch()
                 commands[a.cmd](a)
     else:
         commands[a.cmd](a)

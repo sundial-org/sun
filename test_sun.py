@@ -1116,6 +1116,21 @@ class SunTest(unittest.TestCase):
         self.assertEqual(len(seen), 1)
         self.assertEqual(seen[0]["summary"]["commits"], 1)
 
+    def test_viz_releases_lock_before_tui(self):
+        held, old_lock, old_tui = [False], sun.lock, sun.run_viz_tui
+
+        @contextlib.contextmanager
+        def tracked_lock():
+            with old_lock() as lk:
+                held[0] = True
+                try: yield lk
+                finally: held[0] = False
+
+        sun.lock = tracked_lock
+        sun.run_viz_tui = lambda data: self.assertFalse(held[0])
+        try: run("viz")
+        finally: sun.lock, sun.run_viz_tui = old_lock, old_tui
+
     def test_viz_data_attributes_commit_and_generated_operations(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         data = sun.viz_data()

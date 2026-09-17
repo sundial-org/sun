@@ -100,15 +100,15 @@ class ReliabilityTest(unittest.TestCase):
         hook("PostToolUse", tool_name="Write", tool_input={"file_path": "a.txt"})
         self.assertEqual(sun.events()[-1]["actor"], "emma/agent:claude/session12345")
 
-    def test_legacy_format_is_not_silently_overwritten(self):
-        cfg = sun.state("config.json", {})
-        cfg.pop("format")
-        sun.save_state("config.json", cfg)
+    def test_old_logs_do_not_block_recording(self):
         self.git("update-ref", "refs/sun/log/emma", sun.blob("old data\n"))
+        write(os.path.join(sun.sun_dir(), "events.jsonl"), "old data\n")
         before = self.sun_head()
-        with self.assertRaisesRegex(SystemExit, "legacy event-log format"):
-            run("init", "--no-instructions")
+        run("init", "--no-instructions")
         self.assertEqual(self.sun_head(), before)
+        write("new.txt", "new edit\n")
+        run("sync")
+        self.assertEqual(sun.events()[-1]["edits"][0]["file"], "new.txt")
         self.assertEqual(self.git("cat-file", "blob", "refs/sun/log/emma"), "old data\n")
 
     def test_overlapping_writes_are_explicitly_uncertain(self):

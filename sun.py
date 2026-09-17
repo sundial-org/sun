@@ -184,14 +184,8 @@ def shadow_ref():
     return "refs/sun/heads/" + branch
 def remote_ref():
     return shadow_ref().replace("refs/sun/heads/", "refs/sun/remotes/origin/")
-def check_format():
-    if state("config.json", {}).get("format") != 2 and (refs("refs/sun/log/") or
-            os.path.exists(os.path.join(sun_dir(), "events.jsonl"))):
-        sys.exit("sun: legacy event-log format; this build requires a separate history migration. "
-                 "Existing history has not been changed")
 def ensure_branch():
     """Follow the checked-out Git branch, without mistaking checkout changes for edits."""
-    check_format()
     ref, normal = shadow_ref(), ref_oid("HEAD")
     previous = state("branch.json", {})
     anchors = state("branches.json", {})
@@ -959,11 +953,9 @@ def cmd_init(a):
     with lock():
         init_locked(a)
 def init_locked(a):
-    check_format()
     explicit = [h for h, f in (("claude", a.claude), ("codex", a.codex)) if f]
     harnesses = explicit or detect_harnesses()
     cfg = state("config.json", {}); cfg.pop("harness", None)
-    cfg["format"] = 2
     cfg["harnesses"] = harnesses
     cfg.pop("shadow_history", None)
     save_state("config.json", cfg)

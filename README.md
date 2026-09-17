@@ -40,8 +40,6 @@ interleaved turns may also remain separate commits. A server must support atomic
 `sun log`, `sun show`, `sun blame`, and `sun viz` read this history. A repository must be
 initialized with Sun on each machine because Git does not clone local hook or refspec settings.
 Git must support `merge-tree --write-tree --merge-base` for three-way shadow merges.
-This revision uses a new event-ref format. Legacy per-user JSONL histories are rejected
-without modifying them; there is no automatic migration or compatibility layer.
 
 Operations have full unique IDs and separate refs under `refs/sun/events/`, so two computers
 using the same Git identity cannot overwrite each other's event logs. Operation metadata and

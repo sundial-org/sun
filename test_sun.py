@@ -338,6 +338,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(self.head_subject(), f"sun: {AGENT} Write")
         ev = sun.events()[-1]
         self.assertEqual((ev["actor"], ev["turn"]), (AGENT, "turn1"))
+        self.assertEqual(ev["session_id"], "session12345")
         self.assertEqual(ev["edits"][0]["tool_call_id"], "tool0")
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
         self.assertEqual(ev["tool_calls"], [{"id": "tool0", "tool": "Write",
@@ -1151,6 +1152,7 @@ class SunTest(unittest.TestCase):
             "session": "session1"})
         operation = commit["operations"][0]
         self.assertEqual(operation["actor"], AGENT)
+        self.assertEqual(operation["session_id"], "session12345")
         self.assertEqual(operation["attribution_methods"], ["hook"])
         self.assertEqual(operation["tool_calls"][0]["tool"], "Write")
         self.assertNotIn("generated_operations", operation)
@@ -1194,6 +1196,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("sun viz", rendered)
         self.assertIn("Claude Code", rendered)
         self.assertIn("edited by", rendered)
+        self.assertIn("session       session12345", rendered)
         self.assertIn("timestamp", rendered)
         self.assertNotIn(AGENT, rendered)
         self.assertNotIn("source        agent", rendered)

@@ -1,5 +1,6 @@
 """Unit tests for sun. Run with: python3 -m unittest test_sun -v"""
 import contextlib, io, json, os, shutil, subprocess, sys, tempfile, time, unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sun
@@ -1167,8 +1168,9 @@ class SunTest(unittest.TestCase):
     def test_viz_tui_renders_commit_and_operation_attribution(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         class Screen:
-            def __init__(self): self.writes = []
+            def __init__(self): self.writes, self.background = [], None
             def keypad(self, enabled): pass
+            def bkgd(self, char, attr): self.background = char, attr
             def erase(self): pass
             def getmaxyx(self): return 30, 140
             def addnstr(self, y, x, text, width, attr=0): self.writes.append(text[:width])
@@ -1176,8 +1178,12 @@ class SunTest(unittest.TestCase):
             def timeout(self, milliseconds): pass
             def getch(self): return ord("q")
         screen = Screen()
-        sun.viz_tui(screen, sun.viz_data())
+        with mock.patch("curses.has_colors", return_value=True), \
+                mock.patch("curses.start_color"), mock.patch("curses.init_pair"), \
+                mock.patch("curses.color_pair", return_value=42):
+            sun.viz_tui(screen, sun.viz_data())
         rendered = "\n".join(screen.writes)
+        self.assertEqual(screen.background, (" ", 42))
         self.assertIn("sun viz", rendered)
         self.assertIn("Claude Code", rendered)
         self.assertIn("edited by", rendered)

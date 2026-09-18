@@ -173,6 +173,18 @@ class ChecksTest(unittest.TestCase):
                 run("push")
             finally:
                 os.chdir(self.dir)
+            with tempfile.TemporaryDirectory() as behind:  # a clone whose Sun history has diverged
+                self.git("clone", remote, behind)
+                os.chdir(behind)
+                try:
+                    subprocess.run(["git", "config", "user.name", "carol"], check=True)
+                    write("c.txt", "c\n")  # the clone's own initial state differs from the shared tip
+                    run("init", "--no-instructions")
+                    stranded, = self.check(rule="tidy", verdict="pass", actor="program:t", cites=[{"at": turn}])
+                    with self.assertRaises(SystemExit): run("push")  # history is rejected, non-fast-forward
+                finally:
+                    os.chdir(self.dir)
+            self.assertIn(stranded["id"], self.git("--git-dir", remote, "for-each-ref", "refs/sun/checks/"))
             time.sleep(1.1)
             self.check(**twin)  # the same check, recorded on two machines: one ID, two timestamps
             write("later.txt", "later\n"); run("sync")
@@ -180,6 +192,7 @@ class ChecksTest(unittest.TestCase):
             self.assertEqual(self.git("--git-dir", remote, "rev-parse", sun.shadow_ref()).strip(), self.sun_head())
             self.git("fetch", "origin", *sun.refspecs())  # this clone ran init before origin existed
             self.assertEqual(self.row(turn)["status"], "fail")
+            self.assertIn(stranded["id"], [c["id"] for c in self.row(turn, "tidy")["checks"]])
 
     def test_a_slow_producer_does_not_hold_the_lock(self):
         req = json.dumps({"rule": "honest", "verdict": "pass", "actor": "program:t",

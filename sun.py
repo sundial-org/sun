@@ -929,9 +929,9 @@ def cmd_push(a):
     # Mark first: even an interrupted push with an unknown outcome must not be squashed.
     for ref, sha in refs("refs/sun/heads/"):
         git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), sha)
-    git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
-    if refs("refs/sun/checks/"):  # after history and not atomic: a check must never block layer 1
+    if refs("refs/sun/checks/"):  # separately, and fail-soft: checks and history never block each other
         quiet("git", "push", "--no-verify", "--", a.remote, "refs/sun/checks/*:refs/sun/checks/*")
+    git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
 def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
     todo = []
     for h in harnesses:

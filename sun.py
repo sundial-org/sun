@@ -951,7 +951,10 @@ def git_checkpoint(event):
     ref = f"refs/sun/checkpoints/{normal}/{tip}"
     updates = [f"create {ref} {tip}"] if not ref_oid(ref) else []
     if cfg_share_sessions():
+        sessions = {e.get("session_id") for e in events(scope=[tip])
+                    if e["actor"].startswith(user() + "/agent:")}
         for source, sha in refs(f"refs/sun/sessions/{user()}/"):
+            if source.rsplit("/", 1)[-1] not in sessions: continue
             pin = source.replace("refs/sun/sessions/", f"refs/sun/session-checkpoints/{tip}/")
             if not ref_oid(pin): updates.append(f"create {pin} {sha}")
     if updates:
@@ -983,6 +986,7 @@ def cmd_push(a):
     selected = events(scope=[tip])
     reachable = set(git("rev-list", tip).split())
     snapshots = {e.get("snapshot", e["commit"]) for e in selected}
+    # ponytail: one refspec per operation; batch transport if very large histories hit ARG_MAX.
     specs = [f"{normal}:{normal_ref}", f"{tip}:{ref}"]
     specs += [f"refs/sun/events/{e['id']}:refs/sun/events/{e['id']}" for e in selected]
     specs += [f"refs/sun/ops/{sha}:refs/sun/ops/{sha}" for sha in sorted(snapshots)]

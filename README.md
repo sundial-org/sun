@@ -44,7 +44,9 @@ and its checkpoint in **one atomic push**, without force. The default is origin/
 Only checkpoint-reachable operations and snapshots travel; later edits and unrelated branches
 remain local. A failed Git or Sun ref update publishes neither. If you opt into raw session
 sharing, only your session snapshots pinned at that checkpoint are sent, not later transcript
-turns. Plain `git push` publishes Git only; no pre-push hook secretly publishes Sun first.
+turns. Only sessions referenced by the checkpoint's history are pinned. An opted-in raw
+session can still contain earlier conversation from other branches: it is not redacted.
+Plain `git push` publishes Git only; no pre-push hook secretly publishes Sun first.
 
 Partial commits have no publishable checkpoint. Finish committing the intended work, then push
 that later clean commit. New edits after an established checkpoint do not prevent publishing it.

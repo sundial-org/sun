@@ -2,8 +2,9 @@
 """Record human and agent edits in an independent Git-backed operation history.
 
 Each Git branch has its own Sun history. Unpublished, non-interleaved agent calls are grouped
-per turn while remaining individually inspectable and undoable. Fetch does not move your local
-Sun tip; use `sun merge` to combine shared history. Normal Git commits and the index stay intact.
+per turn while remaining individually inspectable and undoable. Recording stays local. Resolve file
+conflicts with normal Git; Sun records completed merges. `sun push` atomically publishes a Git branch
+and its clean-commit Sun checkpoint. Later local work stays private.
 Raw transcripts are shared only when you explicitly enable session sharing."""
 import argparse, difflib, fcntl, glob, json, os, re, shutil, subprocess, sys
 import time, uuid
@@ -182,17 +183,18 @@ def shadow_ref():
     branch = git("symbolic-ref", "-q", "--short", "HEAD", check=False).strip()
     if not branch: sys.exit("sun: detached HEAD is not supported; switch to a branch first")
     return "refs/sun/heads/" + branch
-def remote_ref():
-    return shadow_ref().replace("refs/sun/heads/", "refs/sun/remotes/origin/")
+def remote_ref(remote="origin"):
+    return shadow_ref().replace("refs/sun/heads/", f"refs/sun/remotes/{remote}/")
 def ensure_branch():
-    """Follow the checked-out Git branch, without mistaking checkout changes for edits."""
+    """Select a timeline; Git ancestry never determines how Sun combines file contents."""
     ref, normal = shadow_ref(), ref_oid("HEAD")
     previous = state("branch.json", {})
-    anchors = state("branches.json", {})
     tip = history_head(False)
     if not tip:
-        source = previous.get("ref") if previous.get("git") == normal else None
-        tip = ref_oid(source) if source else ""
+        source = previous.get("ref")
+        # A normal commit may have happened since Sun last ran, before `git switch -c`.
+        at_source = source and normal == ref_oid(source.replace("refs/sun/heads/", "refs/heads/"))
+        tip = ref_oid(source) if source and (previous.get("git") == normal or at_source) else ""
         if tip: git("update-ref", ref, tip)
         else:
             # A freshly cloned branch starts at its Git checkout, not the possibly newer
@@ -204,38 +206,16 @@ def ensure_branch():
             else:
                 c = make_shadow_commit(tree, "sun: initial state", local())
                 record(type="init", actor=local(), commit=c, edits=[])
-    switched = previous.get("ref") not in (None, ref)
-    old = previous.get("git") if switched else anchors.get(ref)
-    committed = not switched and old != normal and git(
-        "reflog", "-1", "--format=%gs", "HEAD", check=False).startswith("commit")
-    # A user's ordinary commit does not erase the dirty diff Sun still needs to record.
-    if committed: old = normal
-    if old and normal and old != normal:
-        if not switched and quiet("git", "merge-base", "--is-ancestor", old, normal).returncode:
-            sys.exit("sun: Git history was rewritten; automatic Sun reconciliation is unsupported")
-        tip = history_head()
-        result = quiet("git", "merge-tree", "--write-tree", f"--merge-base={old}", tip, normal)
-        if result.returncode:
-            sys.exit("sun: Git checkout conflicts with recorded Sun edits; reconcile before recording")
-        tree = result.stdout.splitlines()[0]
-        if tree != ref_oid(f"{tip}^{{tree}}"):
-            remote = ref_oid(remote_ref())
-            shared = quiet("git", "merge-tree", "--write-tree", "--allow-unrelated-histories",
-                           tip, remote) if remote else None
-            merged = shared and not shared.returncode and shared.stdout.splitlines()[0] == tree
-            parents = [tip, remote] if merged and remote != tip else [tip]
-            kind = "merge" if len(parents) == 2 else "checkout"
-            c = make_shadow_commit(tree, f"sun: Git {kind} baseline", local(), parents)
-            record(type=kind, actor=local(), commit=c, edits=[])
-    anchors[ref] = normal
-    save_state("branches.json", anchors)
-    save_state("branch.json", {"ref": ref, "git": normal})
+    # A changed checkout is evidence of a new state, not evidence that this user authored it.
+    observe = previous.get("observe", False) or bool(previous and (
+        previous.get("ref") != ref or previous.get("git") != normal))
+    save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
 def history_head(required=True):
     oid = ref_oid(shadow_ref())
     if required and not oid: sys.exit("sun: shadow history has no commits (run `sun init`)")
     return oid
 def history_refs():
-    return [r for r in (shadow_ref(), remote_ref()) if ref_oid(r)]
+    return [shadow_ref()] if history_head(False) else []
 def resolve_history_rev(rev):
     if rev == "HEAD": rev = shadow_ref()
     return git("rev-parse", rev).strip()
@@ -265,7 +245,7 @@ def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bric
         try: out.append(json.loads(l))
         except ValueError: pass
     return out
-def events(include_unreachable=False) -> List[Event]:
+def events(include_unreachable=False, scope=None) -> List[Event]:
     entries = refs("refs/sun/events/")
     if not entries: return []
     data = subprocess.run(["git", "cat-file", "--batch"],
@@ -281,7 +261,7 @@ def events(include_unreachable=False) -> List[Event]:
             sys.exit("sun: invalid operation ID in fetched history")
         evs.append(ev)
         pos = end + size + 2
-    scope = history_refs()
+    scope = history_refs() if scope is None else scope
     order = {c: i for i, c in enumerate(git("rev-list", "--topo-order", "--reverse",
                                             *scope).split())} if scope else {}
     # Git ancestry orders causes before effects. Concurrent branches have no total time order.
@@ -359,19 +339,27 @@ def relative_tool_files(tool, inp):
     return [rel_to_root(f) for f in tool_files(tool, inp)]
 edits_msg = lambda actor, files: (f"sun: {actor} edits " + ", ".join(files[:3])
                                   + (f" +{len(files) - 3} more" if len(files) > 3 else ""))
-def sync(exclude=(), method="sync"):  # commit unclaimed changes as local
-    if state("merge.json", {}): sys.exit("sun: finish or abort the Sun merge before recording")
+def sync(exclude=(), method="sync"):  # record unclaimed file changes, without touching Git's index
     active = state("active.json", {})
     if any(s.get("all_files") for s in active.values()): return
     exclude = set(exclude) | {f for s in active.values() for f in s["files"]}
     files = [f for f in changed_files() if f not in exclude]
-    if not files: return None
-    pre, actor = history_head(), "unknown" if method == "uncertain" else local()
-    c = commit_files(files, edits_msg(actor, files), actor)
+    branch = state("branch.json", {})
+    if method in ("sync", "hook") and branch.get("observe"): method = "observed"
+    if not files:
+        if not active and branch.get("observe"):
+            save_state("branch.json", {**branch, "observe": False})
+        return None
+    pre, actor = history_head(), "unknown" if method in ("uncertain", "observed") else local()
+    c = commit_files(files, "sun: observed repository state" if method == "observed"
+                     else edits_msg(actor, files), actor)
     p = patches(pre, c, files)
-    return record(type="edit", actor=actor, commit=c, patch_id=patch_id(c),
+    ev = record(type="observe" if method == "observed" else "edit", actor=actor, commit=c, patch_id=patch_id(c),
                   edits=[{"file": f, "patch": p[f],
                           "attribution": {"method": method}} for f in files])
+    if not active and branch.get("observe"):
+        save_state("branch.json", {**branch, "observe": False})
+    return ev
 def maybe_sync(exclude=()):
     sync(exclude)  # sync itself excludes in-flight files and unknown-scope shell calls
 def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
@@ -446,6 +434,8 @@ def squash_turn(sid, harness="claude"):
     start, actor = t["start"], agent(sid, harness)
     rng = git("rev-list", f"{start}..{tip}").split()
     published = [sha for _, sha in refs("refs/sun/published/")] + [ref_oid(remote_ref())]
+    published += [sha for ref, sha in refs("refs/sun/heads/") if ref != shadow_ref()]
+    published += [sha for _, sha in refs("refs/sun/checkpoints/")]
     if any(p and not quiet("git", "merge-base", "--is-ancestor", c, p).returncode
            for p in published for c in rng): return
     ops = [e for e in events() if e.get("commit") in rng]
@@ -889,11 +879,13 @@ def remove_hooks(harness):  # a restrictive re-init un-installs the excluded har
         cfg["hooks"][event] = [g for g in cfg["hooks"][event] if g.get("hooks")]
         if not cfg["hooks"][event]: del cfg["hooks"][event]
     jwrite(path, cfg)
-def refspecs(share_sessions=False):
+def refspecs(share_sessions=False, remote="origin"):
     specs = ["refs/sun/events/*:refs/sun/events/*", "refs/sun/ops/*:refs/sun/ops/*",
-             "+refs/sun/heads/*:refs/sun/remotes/origin/*"]
-    return specs + (["+refs/sun/sessions/*:refs/sun/sessions/*"] if share_sessions else [])
-def install_push(share_sessions=False):
+             "refs/sun/checkpoints/*:refs/sun/checkpoints/*",
+             f"+refs/sun/heads/*:refs/sun/remotes/{remote}/*"]
+    return specs + (["+refs/sun/sessions/*:refs/sun/sessions/*",
+                     "refs/sun/session-checkpoints/*:refs/sun/session-checkpoints/*"] if share_sessions else [])
+def install_git_hooks(share_sessions=False):
     if "origin" in git("remote", check=False).split():
         for old in ("+refs/sun/*:refs/sun/*", "+refs/sun/sessions/*:refs/sun/sessions/*",
                     "+refs/sun/heads/*:refs/sun/heads/*", "+refs/sun/log/*:refs/sun/log/*",
@@ -903,28 +895,104 @@ def install_push(share_sessions=False):
         for spec in refspecs(share_sessions):
             if spec not in current: git("config", "--add", "remote.origin.fetch", spec)
     hp = git("rev-parse", "--git-path", "hooks/pre-push").strip()
-    os.makedirs(os.path.dirname(hp), exist_ok=True)
     old = read_text(hp) if os.path.exists(hp) else ""
-    legacy = ('#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
-              'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
-    managed = old == legacy or any(old.startswith(f'#!/bin/sh\n{marker}\n') for marker in (
-        '# sun: mirror shared refs', '# sun: mirror shared refs, fail-soft'))
-    if not old or managed:
-        lines = ['#!/bin/sh', '# sun: mirror shared refs', 'exec sun push "$1"']
-        write_text(hp, "\n".join(lines) + "\n")
-        os.chmod(hp, 0o755)
+    managed = (
+        '#!/bin/sh\n# sun: mirror shared refs\nexec sun push "$1"\n',
+        '#!/bin/sh\n# sun: mirror shared refs, fail-soft\nexec sun push "$1"\n',
+        '#!/bin/sh\n# sun: mirror op log + sessions, fail-soft\n'
+        'git push --no-verify "$1" "+refs/sun/*:refs/sun/*" >/dev/null 2>&1 || true\n')
+    if old in managed: os.remove(hp)  # remove only our exact old publisher, never a user's hook
+    for hook, event in (("post-commit", "commit"), ("post-merge", "merge")):
+        path = git("rev-parse", "--git-path", "hooks/" + hook).strip()
+        script = "#!/bin/sh\n# sun: clean Git checkpoint\nsun git-hook " + event + "\n"
+        if os.path.exists(path) and read_text(path) != script:
+            print(f"sun: existing {hook} preserved; add `sun git-hook {event}` to record checkpoints")
+            continue
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        write_text(path, script)
+        os.chmod(path, 0o755)
+
+def checkpoint_tips(commit):
+    return [sha for ref, sha in refs(f"refs/sun/checkpoints/{commit}/")
+            if ref == f"refs/sun/checkpoints/{commit}/{sha}"]
+
+def git_checkpoint(event):
+    """Pin a clean commit boundary; repeated Git hook deliveries are harmless."""
+    normal, tip = ref_oid("HEAD"), history_head()
+    if not normal or git("status", "--porcelain", "--untracked-files=all") or state("active.json", {}):
+        print("sun: no publishable checkpoint: commit with a clean worktree and no active agent calls",
+              file=sys.stderr)
+        return
+    tree = ref_oid(f"{normal}^{{tree}}")
+    if tip in checkpoint_tips(normal) and ref_oid(f"{tip}^{{tree}}") == tree:
+        return
+    parents = git("rev-list", "--parents", "-n1", normal).split()[1:]
+    is_merge = event == "merge" or len(parents) > 1
+    if is_merge:
+        sources = {sha for p in parents for sha in checkpoint_tips(p)} if len(parents) > 1 else set()
+        if event == "merge": sources.update(checkpoint_tips(normal))  # fast-forward source
+        sources = sorted(sha for sha in sources if quiet(
+            "git", "merge-base", "--is-ancestor", sha, tip).returncode)
+        if sources:
+            sources = git("merge-base", "--independent", *sources).split()
+        files = [f for f in git("diff", "--name-only", "-z", tip, tree).split("\0") if f]
+        c = make_shadow_commit(tree, "sun: observed Git merge", local(), [tip, *sources])
+        p = patches(tip, c, files)
+        record(type="merge", actor=local(), commit=c, git_commit=normal, parents=[tip, *sources],
+               edits=[{"file": f, "patch": p[f], "attribution": {"method": "observed"}} for f in files])
     else:
-        print("sun: existing pre-push hook preserved; run `sun push` to publish Sun history")
+        maybe_sync()
+    tip = history_head()
+    # Hooks observe, never alter the index/worktree. A concurrent edit invalidates the boundary.
+    if git("status", "--porcelain", "--untracked-files=all") or ref_oid("HEAD") != normal or \
+            ref_oid(f"{tip}^{{tree}}") != tree:
+        print("sun: checkout changed while recording; no publishable checkpoint", file=sys.stderr)
+        return
+    ref = f"refs/sun/checkpoints/{normal}/{tip}"
+    updates = [f"create {ref} {tip}"] if not ref_oid(ref) else []
+    if cfg_share_sessions():
+        for source, sha in refs(f"refs/sun/sessions/{user()}/"):
+            pin = source.replace("refs/sun/sessions/", f"refs/sun/session-checkpoints/{tip}/")
+            if not ref_oid(pin): updates.append(f"create {pin} {sha}")
+    if updates:
+        git("update-ref", "--stdin", input="start\n" + "\n".join(updates) + "\nprepare\ncommit\n")
+
+def cmd_git_hook(a):
+    git_checkpoint(a.event)
+
 def cmd_push(a):
-    # The common Git lock prevents Stop from rewriting anything while publication runs.
-    specs = ["refs/sun/heads/*:refs/sun/heads/*", "refs/sun/events/*:refs/sun/events/*",
-             "refs/sun/ops/*:refs/sun/ops/*"]
-    if cfg_share_sessions() and refs(f"refs/sun/sessions/{user()}/"):
-        specs.append(f"refs/sun/sessions/{user()}/*:refs/sun/sessions/{user()}/*")
-    # Mark first: even an interrupted push with an unknown outcome must not be squashed.
-    for ref, sha in refs("refs/sun/heads/"):
-        git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), sha)
-    git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
+    """Publish pinned Git and Sun refs in one transaction, never the live worktree."""
+    branch = a.branch or git("symbolic-ref", "--short", "HEAD").strip()
+    if quiet("git", "check-ref-format", "refs/heads/" + branch).returncode:
+        sys.exit("sun: push requires a local branch name, not a revision or refspec")
+    normal_ref, ref = "refs/heads/" + branch, "refs/sun/heads/" + branch
+    normal, local_tip = ref_oid(normal_ref), ref_oid(ref)
+    if not normal or not local_tip: sys.exit("sun: branch has no Git and Sun history")
+    eligible = set(checkpoint_tips(normal))
+    tip = next((c for c in git("rev-list", "--topo-order", local_tip).split() if c in eligible), None)
+    if not tip:
+        sys.exit("sun: no clean checkpoint for this Git commit; finish the intended changes and commit "
+                 "with a clean worktree after agent calls finish (rerun sun init if Git hooks are missing)")
+    if ref_oid(f"{tip}^{{tree}}") != ref_oid(f"{normal}^{{tree}}"):
+        sys.exit("sun: checkpoint does not match the Git commit")
+    # Fetch metadata only; never manufacture a Sun merge just because a collaborator pushed.
+    git("fetch", "-q", a.remote, *refspecs(cfg_share_sessions(), a.remote))
+    remote_tip = ref_oid(f"refs/sun/remotes/{a.remote}/{branch}")
+    if remote_tip and quiet("git", "merge-base", "--is-ancestor", remote_tip, tip).returncode:
+        sys.exit("sun: shared history diverged; fetch and merge the Git branch, then retry sun push")
+    selected = events(scope=[tip])
+    reachable = set(git("rev-list", tip).split())
+    snapshots = {e.get("snapshot", e["commit"]) for e in selected}
+    specs = [f"{normal}:{normal_ref}", f"{tip}:{ref}"]
+    specs += [f"refs/sun/events/{e['id']}:refs/sun/events/{e['id']}" for e in selected]
+    specs += [f"refs/sun/ops/{sha}:refs/sun/ops/{sha}" for sha in sorted(snapshots)]
+    specs += [f"{r}:{r}" for r, sha in refs("refs/sun/checkpoints/") if sha in reachable]
+    if cfg_share_sessions():
+        prefix = f"refs/sun/session-checkpoints/{tip}/"
+        for pin, sha in refs(prefix + user() + "/"):
+            specs += [f"{pin}:{pin}", f"{sha}:refs/sun/sessions/{pin[len(prefix):]}"]
+    git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), tip)
+    git("push", "--atomic", "--", a.remote, *specs)
 def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
     todo = []
     for h in harnesses:
@@ -962,7 +1030,7 @@ def init_locked(a):
     share_sessions = configure_session_sharing(a.share_sessions)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
         git("fetch", "-q", "origin", *refspecs(share_sessions))
-    installed = ", ".join(install_hooks(h) for h in harnesses); install_push(share_sessions)
+    installed = ", ".join(install_hooks(h) for h in harnesses); install_git_hooks(share_sessions)
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
     if share_sessions:
@@ -976,6 +1044,7 @@ def init_locked(a):
         else: record(type="init", actor=local(), commit=c, edits=[])
     ensure_branch()
     sync()
+    git_checkpoint("commit")
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
     if "codex" in harnesses:
         print("sun: Codex requires separate hook approval; open `/hooks`, review "
@@ -985,78 +1054,6 @@ def cmd_sync(a):
     if a.recover: save_state("active.json", {})
     ev = sync(method="uncertain" if a.recover else "sync")
     print(f"sun: recorded edits as op {ev['id']}" if ev else "sun: nothing to sync")
-def cmd_merge(a):
-    if state("active.json", {}): sys.exit("sun: wait for active tool calls before merging")
-    pending = state("merge.json", {})
-    if a.abort:
-        if not pending: sys.exit("sun: no Sun merge in progress")
-        if pending["branch"] != shadow_ref(): sys.exit("sun: return to the branch with the pending merge")
-        patch = git("diff", "--binary", pending["tree"], pending["local"])
-        apply_checked(patch, False, "sun: merge files have changed; preserve your resolution before aborting")
-        save_state("merge.json", {})
-        return print("sun: merge aborted")
-    if a.continue_merge:
-        if not pending or pending["branch"] != shadow_ref(): sys.exit("sun: no Sun merge on this branch")
-        if history_head() != pending["local"]:
-            parents = git("rev-list", "--parents", "-n1", history_head()).split()[1:]
-            if parents == [pending["local"], pending["remote"]]:
-                save_state("merge.json", {})
-                return print("sun: merge already completed")
-            sys.exit("sun: history changed during merge")
-        # The real Git index remains untouched. Only these Sun conflict paths are resolved.
-        ix = shadow_index()
-        env = {**os.environ, "GIT_INDEX_FILE": ix}
-        git("read-tree", pending["tree"], env=env)
-        if pending["files"]:
-            git("--literal-pathspecs", "add", "-A", "--", *pending["files"], env=env)
-        tree = git("write-tree", env=env).strip()
-        if quiet("git", "diff", "--check", pending["tree"], tree).returncode:
-            sys.exit("sun: resolve conflict markers before continuing")
-        c = make_shadow_commit(tree, "sun: resolve shared shadow history", local(),
-                               [pending["local"], pending["remote"]])
-        p = patches(pending["tree"], c, pending["files"])
-        record(type="merge", actor=local(), commit=c, edits=[
-            {"file": f, "patch": p[f], "attribution": {"method": "resolution"}}
-            for f in pending["files"] if p[f]])
-        save_state("merge.json", {})
-        return print(f"sun: merged shared shadow history in {c[:8]}")
-    if pending: sys.exit("sun: finish `sun merge --continue` or `sun merge --abort` first")
-    if "origin" in git("remote", check=False).split():
-        git("fetch", "-q", "origin", *refspecs(cfg_share_sessions()))
-    remote = ref_oid(remote_ref())
-    if not remote: sys.exit("sun: no shared shadow history found on origin")
-    local_tip = history_head()
-    if local_tip == remote or not quiet(
-            "git", "merge-base", "--is-ancestor", remote, local_tip).returncode:
-        return print("sun: shadow history is already up to date")
-    result = quiet("git", "merge-tree", "--write-tree", "--allow-unrelated-histories", local_tip, remote)
-    if result.returncode not in (0, 1): sys.exit(f"sun: merge failed: {result.stderr}")
-    tree = result.stdout.splitlines()[0]
-    # Do not attribute remote content already brought in by normal Git to this user.
-    dirty = changed_files()
-    matching = []
-    for f in dirty:
-        p = git("--literal-pathspecs", "diff", "--binary", local_tip, tree, "--", f)
-        if p and not quiet("git", "apply", "-R", "--check", input=p).returncode: matching.append(f)
-    if set(dirty) - set(matching):
-        sys.exit("sun: run `sun sync` for pending local edits before merging")
-    files = [f for f in git("diff", "--name-only", "-z", local_tip, tree).split("\0") if f]
-    remaining = [f for f in files if f not in matching]
-    patch = git("--literal-pathspecs", "diff", "--binary", local_tip, tree, "--", *remaining) if remaining else ""
-    save_state("merge.json", {"branch": shadow_ref(), "local": local_tip,
-                              "remote": remote, "tree": tree, "files": files})
-    if patch:
-        try: apply_checked(patch, False, "sun: merge would overwrite working edits; sync them first")
-        except SystemExit:
-            save_state("merge.json", {})
-            raise
-    if result.returncode:
-        sys.exit("sun: merge conflicts written to worktree; resolve, then `sun merge --continue`\n" +
-                 result.stdout)
-    commit = make_shadow_commit(tree, "sun: merge shared shadow history", local(), [local_tip, remote])
-    record(type="merge", actor=local(), commit=commit, parents=[local_tip, remote], edits=[])
-    save_state("merge.json", {})
-    print(f"sun: merged shared shadow history in {commit[:8]}")
 def installed_git_source():
     from importlib.metadata import distribution
     try:
@@ -1081,7 +1078,7 @@ def cmd_log(a):
     by_commit = {}
     for ev in events(): by_commit.setdefault(ev.get("commit"), []).append(ev)
     revisions = history_refs()
-    for line in git("log", *revisions, f"-{a.n}", "--pretty=%H\t%h\t%ad\t%s",
+    for line in git("log", "--topo-order", *revisions, f"-{a.n}", "--pretty=%H\t%h\t%ad\t%s",
                     "--date=short").splitlines():
         H, h, date, subj = line.split("\t", 3)
         tags = "".join(dict.fromkeys(
@@ -1174,6 +1171,8 @@ def cmd_blame(a):
           + (f" {ev['turn']}" if ev.get("turn") else "") + f"  op {ev['id']}" if ev else "untracked"))
     print("> " + next((l[1:] for l in out.splitlines() if l.startswith("\t")), ""))
     if not ev: return print("no sun operations recorded for this commit")
+    if ev["actor"] == "unknown":
+        return print("observed change; author unknown: no conversation\n" + json.dumps(ev, indent=2))
     if "/agent:" not in ev["actor"]:
         return print(f"human edit ({ev['actor']}): no conversation\n" + json.dumps(ev, indent=2))
     u, sid, tcs = ev["actor"].split("/", 1)[0], ev.get("session_id"), ev.get("tool_calls") or []
@@ -1248,7 +1247,7 @@ def actor_info(actor):
         harness, _, session = source[6:].partition("/")
         return {"id": actor, "user": owner, "kind": "agent", "harness": harness,
                 "session": session}
-    return {"id": actor, "user": owner, "kind": "human", "harness": None,
+    return {"id": actor, "user": owner, "kind": "unknown" if actor == "unknown" else "human", "harness": None,
             "session": None}
 def actor_label(info):
     if info["kind"] == "agent":
@@ -1275,7 +1274,7 @@ def viz_operation(ev):
 def viz_data(n=0):
     limit = [f"-{n}"] if n else []
     scope = history_refs()
-    log = git("log", *scope, *limit, "--date=iso",
+    log = git("log", "--topo-order", *scope, *limit, "--date=iso",
               "--pretty=%H\x1f%h\x1f%P\x1f%D\x1f%ad\x1f%s\x1f%an\x1f%ae\x1f%cn\x1f%ce")
     cols = ["hash", "short", "parents", "refs", "date", "subject", "author_name",
             "author_email", "committer_name", "committer_email"]
@@ -1327,6 +1326,8 @@ def operation_lines(op, prefix=""):
     if op.get("timestamp"): out.append(f"{prefix}timestamp     {op['timestamp']}")
     if "uncertain" in op.get("attribution_methods", []):
         out.append(f"{prefix}attribution   uncertain: overlapping or interrupted writes")
+    if "observed" in op.get("attribution_methods", []):
+        out.append(f"{prefix}attribution   observed repository state; author unknown")
     if op.get("target_op"): out.append(f"{prefix}undoes        operation {op['target_op']}")
     if op.get("target_commit"):
         verb = "restores" if op["type"] == "restore" else "undoes"
@@ -1490,7 +1491,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True, title="commands", metavar="COMMAND")
     ps = {c: sub.add_parser(c, help=h) for c, h in [
         ("init", "initialize Sun and install agent hooks"),
-        ("sync", "snapshot pending human edits into Sun history"),
+        ("sync", "record file changes since the last Sun snapshot"),
         ("log", "list Sun commits with attributed actors and turns"),
         ("show", "show a Sun commit and its recorded operations"),
         ("viz", "browse attributed history in an interactive terminal"),
@@ -1499,12 +1500,13 @@ def main(argv=None):
         ("undo", "reverse an operation or Sun commit and record the undo"),
         ("restore", "restore files to a Sun commit and record the restoration"),
         ("sessions", "manage explicitly shared agent transcripts"),
-        ("merge", "merge shared Sun history using Git's three-way merge"),
-        ("push", "publish Sun history and attribution atomically"),
+        ("push", "atomically push a Git branch and its clean Sun checkpoint"),
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
-    sub._choices_actions = [choice for choice in sub._choices_actions if choice.dest != "hook"]
+    ps["git-hook"] = sub.add_parser("git-hook", help=argparse.SUPPRESS)
+    ps["git-hook"].add_argument("event", choices=("commit", "merge"))
+    sub._choices_actions = [choice for choice in sub._choices_actions if choice.dest not in ("hook", "git-hook")]
     ps["init"].add_argument("--claude", action="store_true",
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
@@ -1520,11 +1522,9 @@ def main(argv=None):
                             action="store_false", help="do not edit agent instruction files")
     ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
     ps["push"].add_argument("remote", nargs="?", default="origin")
+    ps["push"].add_argument("branch", nargs="?", help="local branch (default: checked-out branch)")
     ps["sync"].add_argument("--recover", action="store_true",
                             help="after stopping agents, release abandoned calls and record uncertain edits")
-    merge_action = ps["merge"].add_mutually_exclusive_group()
-    merge_action.add_argument("--continue", dest="continue_merge", action="store_true")
-    merge_action.add_argument("--abort", action="store_true")
     session_sub = ps["sessions"].add_subparsers(
         dest="session_cmd", required=True, title="session commands", metavar="ACTION")
     session_ps = {c: session_sub.add_parser(c, help=h) for c, h in [
@@ -1567,7 +1567,7 @@ def main(argv=None):
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
-        "init": cmd_init, "hook": cmd_hook, "sync": cmd_sync, "merge": cmd_merge, "push": cmd_push,
+        "init": cmd_init, "hook": cmd_hook, "git-hook": cmd_git_hook, "sync": cmd_sync, "push": cmd_push,
         "log": cmd_log, "show": cmd_show, "undo": cmd_undo, "restore": cmd_restore,
         "viz": cmd_viz, "data": cmd_viz, "sessions": cmd_sessions, "update": cmd_update,
         "export": cmd_export, "blame": cmd_blame,

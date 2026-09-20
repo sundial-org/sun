@@ -28,38 +28,36 @@ on that branch. Git commits do not rewrite Sun history. Git checkout/reset chang
 as repository state, with unknown authorship rather than assigning imported edits to you.
 Detached HEAD is unsupported. Do not switch branches during a tool call.
 
-`sun sync` and agent hooks only record locally. Fetching brings in shared refs but does not join
-histories or change files. Merge through normal Git and resolve conflicts once, in Git. Sun's
-post-merge/post-commit hooks record a completed merge and link the available input checkpoints.
-There is no separate `sun merge` command or Sun conflict-resolution workflow.
+`sun sync` and agent hooks record locally. Normal Git commits and merges do not invoke Sun,
+create checkpoints, or publish Sun history. There are no Sun post-commit, post-merge, or pre-push
+hooks. A later sync observes the resulting files without changing the Git index or history.
 
-After a Git commit with a clean index and working tree (including untracked, non-ignored files),
-Sun pins a checkpoint under `refs/sun/checkpoints/<git-commit>/<sun-commit>`. The checkpoint is
-bookkeeping, not a copy of each Git commit in the operation log. Multiple histories can describe
-the same Git state without overwriting one another. Checkpoints prevent later turn squashing
-from rewriting their operations.
+`sun push [remote] [branch]` publishes **already recorded Sun history only**, independently of
+Git commits. The default is origin/current branch. It does not run sync, require a clean worktree,
+or push a normal Git branch. Use `git push` separately for normal Git history. Uncommitted edits
+that Sun has recorded are publishable; edits not yet recorded are not included.
 
-Use `sun push [remote] [branch]` instead of `git push` to publish both the selected Git branch
-and its checkpoint in **one atomic push**, without force. The default is origin/current branch.
-Only checkpoint-reachable operations and snapshots travel; later edits and unrelated branches
-remain local. A failed Git or Sun ref update publishes neither. If you opt into raw session
-sharing, only your session snapshots pinned at that checkpoint are sent, not later transcript
-turns. Only sessions referenced by the checkpoint's history are pinned. An opted-in raw
-session can still contain earlier conversation from other branches: it is not redacted.
-Plain `git push` publishes Git only; no pre-push hook secretly publishes Sun first.
+Fetching does not join histories. When publishing, Sun combines the selected branch's local
+and fetched Sun ancestry, preserving original operation IDs and keeping the local snapshot.
+This is a history join, not a file merge: it neither applies remote files nor resolves conflicts.
+Resolve file conflicts through normal Git once, then run `sun sync` to observe the result.
+A `merge` operation in Sun describes this history join, not a mirrored Git merge commit.
+There is no separate `sun merge` conflict-resolution workflow.
 
-Partial commits have no publishable checkpoint. Finish committing the intended work, then push
-that later clean commit. New edits after an established checkpoint do not prevent publishing it.
-Checkpoint recording also refuses active agent calls: complete those calls before making the
-clean Git commit. If hooks were missing, run `sun init`; it can checkpoint a currently clean
-checkout. Existing non-Sun Git hooks are preserved and initialization explains how to chain Sun.
+Git feature-branch merges do not automatically link the feature's Sun ancestry into the target
+branch. Each branch retains its own recorded history; Sun observes the target's resulting files.
+Automatic cross-branch provenance is deliberately deferred rather than inferred from Git commits.
 
-Published history includes preceding attempts and undone edits, not merely the final diff.
-Sun is not a secret-redaction tool. Atomic pushes require server support; failures are reported,
-never retried as non-atomic pushes. Fetch and merge a collaborator's Git changes before retrying
-a divergent push. Squash/rebase integrations without input checkpoints are not reconstructed;
-use ordinary merges/fast-forwards for full provenance. Published or checkpointed calls are never squashed;
-interleaved turns may also remain separate commits.
+Only the selected Sun history's reachable operations and snapshots travel in one atomic push,
+without force. Unrelated Sun branches stay local. If sharing raw sessions is enabled, your latest
+stored versions of sessions referenced by that history also travel. Raw sessions are not redacted
+or bounded by a Git commit: they may include later conversation or other branches.
+
+Published operations and operations inherited by another local Sun branch are not squashed.
+Interleaved turns may also remain separate commits. Atomic pushes require server support and
+are never retried non-atomically. A concurrent push rejection can be retried: Sun fetches and
+joins the additional history without changing your files. Recorded attempts and undone edits
+remain part of published history; Sun is not a secret-redaction tool.
 `sun log`, `sun show`, `sun blame`, and `sun viz` read this history. A repository must be
 initialized with Sun on each machine because Git does not clone local hook or refspec settings.
 
@@ -91,7 +89,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun undo [--op ID \| --commit HASH]` | cleanly reverse an operation or commit as a new operation |
 | `sun undo --dry-run` | check whether the latest reversal can apply without changing anything |
 | `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
-| `sun push [remote] [branch]` | atomically publish a Git branch and its clean Sun checkpoint |
+| `sun push [remote] [branch]` | publish the selected Sun history, separately from normal Git |
 | `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
 | `sun update` | update a Sun installation made from this repository with uv |
 

@@ -1,5 +1,5 @@
 """Unit tests for sun. Run with: python3 -m unittest test_sun -v"""
-import contextlib, io, json, os, shutil, subprocess, sys, tempfile, time, unittest
+import contextlib, io, json, os, shlex, shutil, subprocess, sys, tempfile, time, unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -51,11 +51,20 @@ def transcript_line(file_path, tool="Edit", tid="tool0", ts=None):
 
 class SunTest(unittest.TestCase):
     def setUp(self):
+        self.old_env = os.environ.copy()
+        for k in list(os.environ):
+            if k.startswith("GIT_"): os.environ.pop(k)
+        os.environ.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
         self.dir = tempfile.mkdtemp()
         self.proj = tempfile.mkdtemp()  # stands in for ~/.claude/projects
         self.codex = tempfile.mkdtemp()  # stands in for ~/.codex/sessions
         os.environ["SUN_PROJECTS"] = self.proj
         os.environ["SUN_CODEX_SESSIONS"] = self.codex
+        launcher = os.path.join(self.proj, "bin", "sun")
+        write(launcher, "#!/bin/sh\nexec " + shlex.quote(sys.executable) + " " +
+              shlex.quote(sun.__file__) + ' "$@"\n')
+        os.chmod(launcher, 0o755)
+        os.environ["PATH"] = os.path.dirname(launcher) + os.pathsep + os.environ.get("PATH", "")
         self.old_cwd = os.getcwd()
         os.chdir(self.dir)
         for k in ("GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
@@ -72,7 +81,8 @@ class SunTest(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.old_cwd)
-        os.environ.pop("GIT_COMMITTER_DATE", None)
+        os.environ.clear()
+        os.environ.update(self.old_env)
         shutil.rmtree(self.dir, ignore_errors=True)
         shutil.rmtree(self.proj, ignore_errors=True)
         shutil.rmtree(self.codex, ignore_errors=True)
@@ -126,7 +136,9 @@ class SunTest(unittest.TestCase):
         self.assertEqual(sun.events()[0]["actor"], "emma/local")
         self.assertFalse(sun.cfg_share_sessions())
         self.assertFalse(os.path.exists(".git/sun/viz.html"))
-        self.assertTrue(os.path.exists(".git/hooks/pre-push"))
+        self.assertFalse(os.path.exists(".git/hooks/pre-push"))
+        self.assertFalse(os.path.exists(".git/hooks/post-commit"))
+        self.assertFalse(os.path.exists(".git/hooks/post-merge"))
 
     def test_help_lists_public_workflows_without_internal_hook(self):
         out = io.StringIO()
@@ -159,11 +171,12 @@ class SunTest(unittest.TestCase):
         self.assertIn("refs/sun/ops/*:refs/sun/ops/*", specs)
         self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
         self.assertNotIn("refs/sun/sessions", specs)
-        self.assertNotIn("refs/sun/sessions", read(".git/hooks/pre-push"))
+        self.assertFalse(os.path.exists(".git/hooks/pre-push"))
+        self.assertNotIn("refs/sun/checkpoints/", specs)
         run("init", "--share-sessions", "--no-claude-md")
         self.assertIn("+refs/sun/sessions/*:refs/sun/sessions/*",
                       self.git("config", "--get-all", "remote.origin.fetch"))
-        self.assertIn('sun push "$1"', read(".git/hooks/pre-push"))
+        self.assertFalse(os.path.exists(".git/hooks/post-commit"))
         shutil.rmtree(bare, ignore_errors=True)
 
     def test_init_claude_md_flag(self):
@@ -278,9 +291,7 @@ class SunTest(unittest.TestCase):
             run("init", "--no-claude-md")
             specs = self.git("config", "--get-all", "remote.origin.fetch")
             self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
-            hook_text = read(".git/hooks/pre-push")
-            self.assertIn('sun push "$1"', hook_text)
-            self.assertNotIn('|| true', hook_text)
+            self.assertFalse(os.path.exists(".git/hooks/pre-push"))
             subprocess.run(["git", "push", "--no-verify", "origin",
                             f"{sun.shadow_ref()}:{sun.shadow_ref()}"], check=True,
                            capture_output=True)
@@ -291,29 +302,34 @@ class SunTest(unittest.TestCase):
         finally:
             shutil.rmtree(bare, ignore_errors=True)
 
-    def test_merge_joins_divergent_shadow_history_using_worktree(self):
-        normal = self.git("rev-parse", "HEAD").strip()
-        base = self.sun_head()
-        write("remote.txt", "remote\n")
-        remote = self.plumbing_commit(base, ["remote.txt"], "remote shadow edit")
-        os.remove("remote.txt")
-        write("local.txt", "local\n")
-        local = self.plumbing_commit(base, ["local.txt"], "local shadow edit")
-        subprocess.run(["git", "update-ref", sun.shadow_ref(), local], check=True)
-        subprocess.run(["git", "update-ref", sun.remote_ref(), remote], check=True)
+    def test_no_second_sun_merge_workflow(self):
+        with self.assertRaises(SystemExit):
+            run("merge")
 
-        # Normal Git has already resolved the source tree before Sun joins its DAG.
-        write("remote.txt", "remote\n")
-        out = run("merge")
-        merged = self.sun_head()
-        parents = self.git("rev-list", "--parents", "-n1", merged).split()[1:]
-        self.assertIn("merged shared shadow history", out)
-        self.assertEqual(len(parents), 2)
-        self.assertEqual(parents[1], remote)
-        self.assertEqual(self.git("show", f"{merged}:local.txt"), "local\n")
-        self.assertEqual(self.git("show", f"{merged}:remote.txt"), "remote\n")
-        self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
-        self.assertEqual(sun.events()[-1]["type"], "merge")
+    def test_init_preserves_user_git_hooks(self):
+        script = "#!/bin/sh\nprintf custom\n"
+        for name in ("pre-push", "post-commit", "post-merge"):
+            write(".git/hooks/" + name, script)
+        run("init", "--no-instructions")
+        for name in ("pre-push", "post-commit", "post-merge"):
+            self.assertEqual(read(".git/hooks/" + name), script)
+
+    def test_init_removes_only_its_old_pre_push_publisher(self):
+        write(".git/hooks/pre-push",
+              '#!/bin/sh\n# sun: mirror shared refs\nexec sun push "$1"\n')
+        run("init", "--no-instructions")
+        self.assertFalse(os.path.exists(".git/hooks/pre-push"))
+
+    def test_init_removes_its_checkpoint_hooks_without_migrating_history(self):
+        before = self.sun_head()
+        for name, event in (("post-commit", "commit"), ("post-merge", "merge")):
+            write(".git/hooks/" + name,
+                  "#!/bin/sh\n# sun: clean Git checkpoint\nsun git-hook " + event + "\n")
+        run("init", "--no-instructions")
+        self.assertEqual(self.sun_head(), before)
+        for name in ("post-commit", "post-merge"):
+            self.assertFalse(os.path.exists(".git/hooks/" + name))
+        self.assertFalse(sun.refs("refs/sun/checkpoints/"))
 
     # ------------------------------------------------------- local edit sync
 
@@ -813,7 +829,7 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "commit", "-q", "-m", "no transcript"], check=True)
         with self.assertRaisesRegex(SystemExit, "session sharing is disabled"):
             run("sessions", "import")
-        self.assertIn("[emma/local]", run("log").splitlines()[0])
+        self.assertIn("[unknown]", run("log").splitlines()[0])
 
     def test_codex_import_stores_sessions_without_attributing_old_commits(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
@@ -1090,13 +1106,13 @@ class SunTest(unittest.TestCase):
         self.assertIn("emma/local", out)
         self.assertIn("human edit", out)
 
-    def test_blame_snapshots_normal_commit_as_local_content(self):
+    def test_blame_snapshots_unobserved_git_commit_without_guessing_author(self):
         write("x.txt", "1\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
         out = run("blame", "x.txt", "1")
-        self.assertIn("emma/local", out)
-        self.assertIn("human edit", out)
+        self.assertIn("unknown", out)
+        self.assertNotIn("human edit", out)
 
     # ------------------------------------------------------------------ undo
 

@@ -24,22 +24,42 @@ and trust new project hooks through `/hooks` before it runs them.
 
 Each Git branch has a corresponding Sun branch under `refs/sun/heads/<branch>`.
 Creating a branch at the current checkout inherits its Sun history; subsequent edits stay
-on that branch. Switching branches does not count the checkout itself as a human edit.
-Detached HEAD and non-fast-forward Git rewrites require manual reconciliation and stop
-recording with an error instead of inventing attribution. Do not switch branches during a tool call.
+on that branch. Git commits do not rewrite Sun history. Git checkout/reset changes are observed
+as repository state, with unknown authorship rather than assigning imported edits to you.
+Detached HEAD is unsupported. Do not switch branches during a tool call.
 
-Normal `git fetch` fetches shared tips into `refs/sun/remotes/origin/<branch>` without moving
-local Sun tips. `sun merge` combines the current branch's local and remote histories with
-Git's three-way merge. Clean changes are applied to the worktree without changing Git's index.
-Conflicts require resolution followed by `sun merge --continue`, or `sun merge --abort`.
-Only resolution edits are newly attributed; imported operations keep their original actors.
+`sun sync` and agent hooks record locally. Normal Git commits and merges do not invoke Sun,
+create checkpoints, or publish Sun history. There are no Sun post-commit, post-merge, or pre-push
+hooks. A later sync observes the resulting files without changing the Git index or history.
 
-The pre-push hook runs `sun push`, publishing tips, operations, and snapshots in one atomic
-push without force. Publication errors are reported. Published calls are never squashed;
-interleaved turns may also remain separate commits. A server must support atomic pushes.
+`sun push [remote] [branch]` publishes **already recorded Sun history only**, independently of
+Git commits. The default is origin/current branch. It does not run sync, require a clean worktree,
+or push a normal Git branch. Use `git push` separately for normal Git history. Uncommitted edits
+that Sun has recorded are publishable; edits not yet recorded are not included.
+
+Fetching does not join histories. When publishing, Sun combines the selected branch's local
+and fetched Sun ancestry, preserving original operation IDs and keeping the local snapshot.
+This is a history join, not a file merge: it neither applies remote files nor resolves conflicts.
+Resolve file conflicts through normal Git once, then run `sun sync` to observe the result.
+A `merge` operation in Sun describes this history join, not a mirrored Git merge commit.
+There is no separate `sun merge` conflict-resolution workflow.
+
+Git feature-branch merges do not automatically link the feature's Sun ancestry into the target
+branch. Each branch retains its own recorded history; Sun observes the target's resulting files.
+Automatic cross-branch provenance is deliberately deferred rather than inferred from Git commits.
+
+Only the selected Sun history's reachable operations and snapshots travel in one atomic push,
+without force. Unrelated Sun branches stay local. If sharing raw sessions is enabled, your latest
+stored versions of sessions referenced by that history also travel. Raw sessions are not redacted
+or bounded by a Git commit: they may include later conversation or other branches.
+
+Published operations and operations inherited by another local Sun branch are not squashed.
+Interleaved turns may also remain separate commits. Atomic pushes require server support and
+are never retried non-atomically. A concurrent push rejection can be retried: Sun fetches and
+joins the additional history without changing your files. Recorded attempts and undone edits
+remain part of published history; Sun is not a secret-redaction tool.
 `sun log`, `sun show`, `sun blame`, and `sun viz` read this history. A repository must be
 initialized with Sun on each machine because Git does not clone local hook or refspec settings.
-Git must support `merge-tree --write-tree --merge-base` for three-way shadow merges.
 
 Operations have full unique IDs and separate refs under `refs/sun/events/`, so two computers
 using the same Git identity cannot overwrite each other's event logs. Operation metadata and
@@ -59,7 +79,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 
 | command | what it does |
 | --- | --- |
-| `sun sync` | record currently uncommitted files as a human edit |
+| `sun sync` | record local changes since the last Sun snapshot; never fetch or publish |
 | `sun log [-n COUNT]` | list Sun commits with actors and turns |
 | `sun show <commit>` | show a commit's operations and patches, including hidden operation snapshots |
 | `sun data [-n COUNT]` | JSON history, attribution, patches, and resolved session paths for agents |
@@ -69,8 +89,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun undo [--op ID \| --commit HASH]` | cleanly reverse an operation or commit as a new operation |
 | `sun undo --dry-run` | check whether the latest reversal can apply without changing anything |
 | `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
-| `sun merge [--continue \| --abort]` | merge shared Sun history and resolve conflicts |
-| `sun push [remote]` | atomically publish history and attribution, defaulting to origin |
+| `sun push [remote] [branch]` | publish the selected Sun history, separately from normal Git |
 | `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
 | `sun update` | update a Sun installation made from this repository with uv |
 

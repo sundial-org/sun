@@ -137,8 +137,8 @@ class SunTest(unittest.TestCase):
         self.assertFalse(sun.cfg_share_sessions())
         self.assertFalse(os.path.exists(".git/sun/viz.html"))
         self.assertFalse(os.path.exists(".git/hooks/pre-push"))
-        self.assertIn("sun git-hook commit", read(".git/hooks/post-commit"))
-        self.assertIn("sun git-hook merge", read(".git/hooks/post-merge"))
+        self.assertFalse(os.path.exists(".git/hooks/post-commit"))
+        self.assertFalse(os.path.exists(".git/hooks/post-merge"))
 
     def test_help_lists_public_workflows_without_internal_hook(self):
         out = io.StringIO()
@@ -172,11 +172,11 @@ class SunTest(unittest.TestCase):
         self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
         self.assertNotIn("refs/sun/sessions", specs)
         self.assertFalse(os.path.exists(".git/hooks/pre-push"))
-        self.assertIn("refs/sun/checkpoints/*:refs/sun/checkpoints/*", specs)
+        self.assertNotIn("refs/sun/checkpoints/", specs)
         run("init", "--share-sessions", "--no-claude-md")
         self.assertIn("+refs/sun/sessions/*:refs/sun/sessions/*",
                       self.git("config", "--get-all", "remote.origin.fetch"))
-        self.assertIn("sun git-hook commit", read(".git/hooks/post-commit"))
+        self.assertFalse(os.path.exists(".git/hooks/post-commit"))
         shutil.rmtree(bare, ignore_errors=True)
 
     def test_init_claude_md_flag(self):
@@ -310,8 +310,7 @@ class SunTest(unittest.TestCase):
         script = "#!/bin/sh\nprintf custom\n"
         for name in ("pre-push", "post-commit", "post-merge"):
             write(".git/hooks/" + name, script)
-        out = run("init", "--no-instructions")
-        self.assertIn("existing post-commit preserved", out)
+        run("init", "--no-instructions")
         for name in ("pre-push", "post-commit", "post-merge"):
             self.assertEqual(read(".git/hooks/" + name), script)
 
@@ -320,6 +319,17 @@ class SunTest(unittest.TestCase):
               '#!/bin/sh\n# sun: mirror shared refs\nexec sun push "$1"\n')
         run("init", "--no-instructions")
         self.assertFalse(os.path.exists(".git/hooks/pre-push"))
+
+    def test_init_removes_its_checkpoint_hooks_without_migrating_history(self):
+        before = self.sun_head()
+        for name, event in (("post-commit", "commit"), ("post-merge", "merge")):
+            write(".git/hooks/" + name,
+                  "#!/bin/sh\n# sun: clean Git checkpoint\nsun git-hook " + event + "\n")
+        run("init", "--no-instructions")
+        self.assertEqual(self.sun_head(), before)
+        for name in ("post-commit", "post-merge"):
+            self.assertFalse(os.path.exists(".git/hooks/" + name))
+        self.assertFalse(sun.refs("refs/sun/checkpoints/"))
 
     # ------------------------------------------------------- local edit sync
 

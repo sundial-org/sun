@@ -70,7 +70,7 @@ class Lab:
         if repo.git("status", "--porcelain").stdout:
             repo.commit("track hook configuration")
         if len(self.users) == 1:
-            repo.sun("push")
+            repo.share()
         return repo
 
     def remote_refs(self):
@@ -126,6 +126,12 @@ class Repo:
         self.git("commit", "--allow-empty", "-m", message)
         return self.oid()
 
+    def share(self):
+        # Deliberately two independent user commands, not a Sun requirement.
+        self.git("push", "origin", "HEAD")
+        self.sun("sync")
+        self.sun("push")
+
     def data(self):
         return json.loads(self.sun("data").stdout)
 
@@ -138,6 +144,15 @@ class Repo:
             for path, text in resolution.items():
                 self.edit(path, text)
             self.commit("resolve Git conflict once")
+        # Git does nothing to Sun. Explicitly record the result and join same-branch Sun history.
+        self.sun("sync")
+        self.sun("push")
+
+    def verify_stored(self, originals):
+        for event in originals:
+            stored = json.loads(self.git("cat-file", "blob", "refs/sun/events/" + event["id"]).stdout)
+            assert stored == event, "lost/rewritten operation on a source branch"
+            self.git("cat-file", "-e", event.get("snapshot", event["commit"]) + "^{commit}")
 
     def verify(self, originals=()):
         data = self.data()
@@ -164,28 +179,27 @@ def two_users_main(lab, same_identity=False):
     b = lab.user("belinda", "emma" if same_identity else None)
     expected = [a.agent("a.txt", "first\n", "a")]
     a.commit("first")
-    a.sun("push")
+    a.share()
     b.integrate()
     expected.append(b.human("b.txt", "second\n"))
     b.commit("second")
-    b.sun("push")
+    b.share()
     a.integrate()
-    # Different clocks and genuine same-line divergence, not manufactured Sun refs.
     a.env["GIT_COMMITTER_DATE"] = "2099-01-01T00:00:00+0000"
     b.env["GIT_COMMITTER_DATE"] = "1999-01-01T00:00:00+0000"
     expected.append(a.human("shared.txt", "emma version\n"))
     a.commit("emma conflict")
     expected.append(b.agent("shared.txt", "belinda version\n", "b"))
     b.commit("belinda conflict")
-    a.sun("push")
+    a.share()
     before = lab.remote_refs()
-    assert b.sun("push", ok=False).returncode
-    assert lab.remote_refs() == before, "rejected push leaked refs"
+    assert b.git("push", "origin", "main", ok=False).returncode
+    assert lab.remote_refs() == before
     before_tip, before_events = b.oid("refs/sun/heads/main"), b.data()["events"]
     b.git("fetch", "origin")
     b.sun("log")
-    assert b.oid("refs/sun/heads/main") == before_tip, "fetch/log joined histories"
-    assert b.data()["events"] == before_events
+    assert b.oid("refs/sun/heads/main") == before_tip
+    assert b.data()["events"] == before_events, "fetch/log joined histories"
     result = b.git("merge", "--no-edit", "origin/main", ok=False)
     assert result.returncode and b.git("ls-files", "-u").stdout
     markers, index = (b.path / "shared.txt").read_text(), b.git("ls-files", "--stage").stdout
@@ -197,7 +211,7 @@ def two_users_main(lab, same_identity=False):
     b.sun("sync")
     b.integrate(resolution={"shared.txt": "agreed result\n"})
     assert any(e["type"] == "merge" for e in b.data()["events"] if e not in before_events)
-    b.sun("push")
+    b.share()
     a.integrate()
     for repo in (a, b):
         repo.verify(expected)
@@ -205,7 +219,6 @@ def two_users_main(lab, same_identity=False):
         assert (repo.path / "a.txt").read_text() == "first\n"
         assert (repo.path / "b.txt").read_text() == "second\n"
     assert a.oid() == b.oid(), "Git did not converge"
-
 
 def branches(lab):
     a = lab.user("emma")
@@ -225,7 +238,8 @@ def branches(lab):
     a.sun("sync")
     assert child["id"] not in {e["id"] for e in a.data()["events"]}
     a.git("merge", "--ff-only", "feature-a-child")
-    a.verify([f, child])
+    a.verify([f])
+    a.verify_stored([child])
     a.git("switch", "main")
     a.sun("sync")
     assert a.oid("refs/sun/heads/main") == original
@@ -235,12 +249,16 @@ def branches(lab):
     a.git("switch", "main")
     a.git("merge", "--no-ff", "feature-a", "-m", "integrate a")
     a.git("merge", "--no-ff", "feature-b", "-m", "integrate b")
-    a.verify([f, child, sibling])
+    a.verify_stored([f, child, sibling])
+    a.verify()
+    assert child["id"] not in {e["id"] for e in a.data()["events"]}, "Git merge imported Sun ancestry"
     a.sun("push")
     remote = lab.remote_refs()
     assert "refs/heads/feature-a" not in remote and "refs/sun/heads/feature-b" not in remote
-    # Checkout without a preceding Sun command, then commit and branch again.
+    # A branch is registered when Sun runs there, not by a Git commit hook.
     a.git("switch", "-c", "empty-child")
+    assert not a.refs("refs/sun/heads/empty-child")
+    a.sun("sync")
     a.commit("empty boundary")
     a.git("switch", "-c", "empty-grandchild")
     a.sun("sync")
@@ -252,7 +270,7 @@ def collaborative_branches(lab):
     a.git("switch", "-c", "feature-a")
     first = a.human("parent.txt", "parent\n")
     a.commit("parent")
-    a.sun("push")
+    a.share()
     b.git("fetch", "origin")
     b.git("switch", "--track", "origin/feature-a")
     b.sun("sync")
@@ -263,18 +281,19 @@ def collaborative_branches(lab):
     later = a.agent("later.txt", "parent advanced\n", "later")
     parent_conflict = a.human("shared.txt", "parent version\n")
     a.commit("parent advanced")
-    a.sun("push")
+    a.share()
     b.integrate("origin/feature-a", resolution={"shared.txt": "parent + child\n"}, no_ff=True)
-    b.sun("push")
+    b.share()
     a.integrate("origin/feature-a-child", no_ff=True)
-    a.sun("push")
+    a.share()
     a.git("switch", "main")
     a.git("merge", "--no-ff", "feature-a", "-m", "integrate feature")
-    a.sun("push")
+    a.share()
     b.git("switch", "main")
     b.integrate()
     for repo in (a, b):
-        repo.verify([first, child, later, child_conflict, parent_conflict])
+        repo.verify()
+        repo.verify_stored([first, child, later, child_conflict, parent_conflict])
         assert (repo.path / "shared.txt").read_text() == "parent + child\n"
 
 
@@ -289,10 +308,10 @@ def many_users(lab, count=5):
     order = users[:]
     rng.shuffle(order)
     for repo in order:
-        result = repo.sun("push", ok=False)
+        result = repo.git("push", "origin", "HEAD", ok=False)
         if result.returncode:
             repo.integrate()
-            repo.sun("push")
+        repo.share()
     for repo in users:
         repo.integrate()
         repo.verify(originals)
@@ -305,18 +324,19 @@ def many_users(lab, count=5):
         repo.git("switch", "-c", f"topic-{i}-child")
         branch_ops.append(repo.agent(f"child-{i}.txt", "child\n", "child"))
         repo.commit("child")
-        repo.sun("push")
+        repo.share()
     lead = users[0]
     lead.git("switch", "main")
     rng.shuffle(order)
     for repo in order:
         i = users.index(repo)
         lead.integrate(f"origin/topic-{i}-child", no_ff=True)
-    lead.sun("push")
+    lead.share()
     for repo in users:
         repo.git("switch", "main")
         repo.integrate()
-        repo.verify(originals + branch_ops)
+        repo.verify(originals)
+        repo.verify_stored(branch_ops)
         assert repo.oid() == lead.oid()
     # Every collaborator also makes a conflicting edit before fetching.
     conflicts = []
@@ -327,75 +347,68 @@ def many_users(lab, count=5):
     accepted = []
     for repo in order:
         accepted.append(f"resolution from user {users.index(repo)}\n")
-        if repo.sun("push", ok=False).returncode:
+        if repo.git("push", "origin", "HEAD", ok=False).returncode:
             repo.integrate(resolution={"shared.txt": "".join(accepted)})
-            repo.sun("push")
+        repo.share()
     for repo in users:
         repo.integrate()
-        repo.verify(originals + branch_ops + conflicts)
+        repo.verify(originals + conflicts)
+        repo.verify_stored(branch_ops)
         assert (repo.path / "shared.txt").read_text() == "".join(accepted)
 
 
 def partial_and_later_edits(lab):
     a = lab.user("emma")
-    baseline = lab.remote_refs()
-    a.human("first.txt", "first\n")
+    remote_git = lab.command(lab.root, ["git", "--git-dir", str(lab.remote), "rev-parse", "main"]).stdout
+    first = a.human("first.txt", "first\n")
     a.human("second.txt", "second\n")
     a.git("add", "first.txt")
     a.git("commit", "-m", "partial files")
-    partial = a.oid()
-    assert not a.refs(f"refs/sun/checkpoints/{partial}/")
-    assert a.sun("push", ok=False).returncode
-    assert lab.remote_refs() == baseline
-    a.commit("finish files")
-    # Stage an earlier file version, then leave a different hunk unstaged.
+    a.sun("push")
+    assert first["id"] in lab.remote_refs(), "recorded uncommitted history must be publishable"
+    assert not a.refs("refs/sun/checkpoints/")
     a.edit("first.txt", "staged change\n")
     a.git("add", "first.txt")
     a.edit("first.txt", "staged change\nunstaged hunk\n")
     a.sun("sync")
+    tip = a.oid("refs/sun/heads/main")
     a.git("commit", "-m", "partial hunk")
-    assert not a.refs(f"refs/sun/checkpoints/{a.oid()}/")
-    assert a.sun("push", ok=False).returncode
-    clean = a.commit("finish hunks")
+    assert a.oid("refs/sun/heads/main") == tip, "Git commit recorded a Sun operation"
     a.sun("push")
-    published = lab.remote_refs()
-    later = a.agent("later.txt", "private later work\n", "later")
+    later = a.agent("later.txt", "recorded later work\n", "later")
+    a.edit("unrecorded.txt", "not synced\n")
+    index, head = a.git("ls-files", "--stage").stdout, a.oid()
     a.sun("push")
-    assert lab.remote_refs() == published
-    assert later["id"] not in lab.remote_refs()
-    assert a.oid() == clean and (a.path / "later.txt").exists()
-    # Untracked files also make a new commit boundary ineligible.
-    a.edit("untracked.txt", "untracked\n")
-    a.git("commit", "--allow-empty", "-m", "unclean boundary")
-    assert a.sun("push", ok=False).returncode
-
+    remote_tip = lab.command(lab.root, ["git", "--git-dir", str(lab.remote),
+                            "rev-parse", "refs/sun/heads/main"]).stdout.strip()
+    assert later["id"] in lab.remote_refs()
+    assert lab.command(lab.root, ["git", "--git-dir", str(lab.remote),
+                       "cat-file", "-e", remote_tip + ":unrecorded.txt"], ok=False).returncode
+    assert a.oid() == head and a.git("ls-files", "--stage").stdout == index
+    assert lab.command(lab.root, ["git", "--git-dir", str(lab.remote), "rev-parse", "main"]).stdout == remote_git
 
 def atomic_rejections(lab):
     a, b = lab.user("emma"), lab.user("belinda")
-    a.human("a.txt", "a\n")
+    original = a.human("a.txt", "a\n")
     a.commit("a")
-    # Publish only normal Git from b, leaving Sun refs at the shared baseline.
     b.human("b.txt", "b\n")
     b.commit("b")
-    b.git("push", "origin", "main")
-    before = lab.remote_refs()
-    assert a.sun("push", ok=False).returncode
-    assert lab.remote_refs() == before, "Git rejection must also reject Sun refs"
-    # Independent case: a server rejects Sun, and the normal branch must not advance either.
-    b.edit("b.txt", "next\n")
-    b.sun("sync")
-    b.commit("next")
+    b.git("push", "origin", "main")  # normal Git divergence does not block independent Sun publication
+    before_git = lab.command(lab.root, ["git", "--git-dir", str(lab.remote), "rev-parse", "main"]).stdout
+    a.sun("push")
+    assert original["id"] in lab.remote_refs()
+    assert lab.command(lab.root, ["git", "--git-dir", str(lab.remote), "rev-parse", "main"]).stdout == before_git
+    b.human("b.txt", "next\n")
     hook = lab.remote / "hooks" / "pre-receive"
-    hook.write_text('#!/bin/sh\nwhile read old new ref; do\ncase "$ref" in refs/sun/*) exit 1;; esac\ndone\n')
+    hook.write_text('#!/bin/sh\nwhile read old new ref; do\ncase "$ref" in refs/sun/events/*) exit 1;; esac\ndone\n')
     hook.chmod(0o755)
     before = lab.remote_refs()
     assert b.sun("push", ok=False).returncode
-    assert lab.remote_refs() == before
+    assert lab.remote_refs() == before, "rejected operation must reject the Sun head too"
     hook.unlink()
     lab.command(lab.root, ["git", "--git-dir", str(lab.remote), "config", "receive.advertiseAtomic", "false"])
     assert b.sun("push", ok=False).returncode
     assert lab.remote_refs() == before, "no non-atomic fallback allowed"
-
 
 def selected_branch(lab):
     a, b = lab.user("emma"), lab.user("belinda")
@@ -413,7 +426,8 @@ def selected_branch(lab):
     index, head = a.git("ls-files", "--stage").stdout, a.oid()
     a.sun("push", "team", "feature")
     refs = lab.remote_refs()
-    assert feature_git + " refs/heads/feature" in refs
+    assert "refs/sun/heads/feature" in refs
+    assert "refs/heads/feature" not in refs
     assert "refs/heads/private" not in refs and private["id"] not in refs
     assert a.oid() == head and a.git("ls-files", "--stage").stdout == index
     assert (a.path / "private.txt").read_text() == "private\n"
@@ -438,36 +452,31 @@ def parallel_agents(lab):
     a.sun("push")
 
 
-def duplicate_hooks_and_active_boundary(lab):
+def git_commit_independence(lab):
     a = lab.user("emma")
+    for name in ("post-commit", "post-merge", "pre-push"):
+        assert not (a.path / ".git" / "hooks" / name).exists()
     a.hook("PreToolUse", "active")
     a.edit("agent.txt", "agent\n")
+    before = a.refs("refs/sun/")
     a.commit("commit inside active call")
-    assert not a.refs(f"refs/sun/checkpoints/{a.oid()}/")
-    assert a.sun("push", ok=False).returncode
+    assert a.refs("refs/sun/") == before, "Git commit changed Sun refs"
+    a.sun("push")  # can publish already recorded history during an active call
     a.hook("PostToolUse", "active")
     a.hook("Stop", "active")
-    a.commit("clean boundary after call")
-    before = a.git("show-ref").stdout
-    a.sun("git-hook", "commit")
-    a.sun("git-hook", "merge")
-    assert a.git("show-ref").stdout == before
-    a.sun("push")
-    a.git("switch", "-c", "child")
-    a.agent("child.txt", "child\n")
-    a.commit("child")
-    a.git("switch", "main")
-    a.git("merge", "--no-ff", "child", "-m", "merge child")
-    before = a.git("show-ref").stdout
-    a.sun("git-hook", "merge")
-    a.sun("git-hook", "commit")
-    assert a.git("show-ref").stdout == before
-
+    original = a.data()["events"][-1]
+    a.hook("PostToolUse", "active")
+    assert a.data()["events"][-1] == original, "duplicate hook recorded the edit twice"
+    before = a.refs("refs/sun/")
+    a.commit("empty commit")
+    assert a.refs("refs/sun/") == before
+    assert not a.refs("refs/sun/checkpoints/")
 
 def editing_during_push(lab):
     a = lab.user("emma")
     a.human("published.txt", "published\n")
-    normal = a.commit("published")
+    a.commit("published")
+    normal = lab.command(lab.root, ["git", "--git-dir", str(lab.remote), "rev-parse", "main"]).stdout.strip()
     a.hook("PreToolUse", "during", file="during.txt")
     ready, release = lab.root / "ready", lab.root / "release"
     hook = lab.remote / "hooks" / "pre-receive"
@@ -501,45 +510,38 @@ def editing_during_push(lab):
     assert (a.path / "during.txt").exists()
 
 
-def checkpoints_and_transcripts(lab):
+def independent_transcripts(lab):
     a = lab.user("emma")
     a.sun("init", "--claude", "--share-sessions", "--no-instructions")
+    def turn(sid, path, message):
+        transcript = Path(a.env["SUN_PROJECTS"]) / (sid + ".jsonl")
+        transcript.touch()
+        payload = dict(cwd=str(a.path), hook_event_name="UserPromptSubmit",
+                       session_id=sid, transcript_path=str(transcript))
+        a.sun("hook", input=json.dumps(payload))
+        # Harnesses append the turn after the prompt boundary. Do not prefill the entire turn.
+        with transcript.open("a") as f:
+            f.write(json.dumps({"type": "user", "message": {"content": message}}) + "\n")
+        a.hook("PreToolUse", sid, file=path)
+        a.edit(path, message + "\n")
+        a.hook("PostToolUse", sid, file=path)
+        payload["hook_event_name"] = "Stop"
+        a.sun("hook", input=json.dumps(payload))
     a.git("switch", "-c", "private-session")
-    private = Path(a.env["SUN_PROJECTS"]) / "private.jsonl"
-    private.write_text('{"type":"user","message":{"content":"unrelated branch"}}\n')
-    a.sun("hook", input=json.dumps(dict(cwd=str(a.path), hook_event_name="UserPromptSubmit",
-                   session_id="private", transcript_path=str(private))))
-    a.hook("PreToolUse", "private", file="private.txt")
-    a.edit("private.txt", "private\n")
-    a.hook("PostToolUse", "private", file="private.txt")
-    a.sun("hook", input=json.dumps(dict(cwd=str(a.path), hook_event_name="Stop",
-                   session_id="private", transcript_path=str(private))))
+    turn("private", "private.txt", "unrelated branch")
     a.commit("private branch transcript")
     a.git("switch", "main")
-    transcript = Path(a.env["SUN_PROJECTS"]) / "native.jsonl"
-    transcript.write_text('{"type":"user","message":{"content":"old prompt"}}\n')
-    payload = dict(cwd=str(a.path), hook_event_name="UserPromptSubmit", session_id="shared",
-                   transcript_path=str(transcript))
-    a.sun("hook", input=json.dumps(payload))
-    a.hook("PreToolUse", "shared", file="shared.txt")
-    a.edit("shared.txt", "shared result\n")
-    a.hook("PostToolUse", "shared", file="shared.txt")
-    payload["hook_event_name"] = "Stop"
-    a.sun("hook", input=json.dumps(payload))
-    a.commit("checkpoint transcript")
+    turn("shared", "shared.txt", "first turn")
     source = "refs/sun/sessions/emma/shared"
-    pinned = a.oid(source)
-    # Append a later transcript chunk through a later turn, before publishing the earlier checkpoint.
-    payload["hook_event_name"] = "UserPromptSubmit"
-    a.sun("hook", input=json.dumps(payload))
-    with transcript.open("a") as f: f.write('{"type":"user","message":{"content":"private later"}}\n')
-    payload["hook_event_name"] = "Stop"
-    a.sun("hook", input=json.dumps(payload))
+    first = a.oid(source)
+    a.commit("normal commit does not bound session")
+    turn("shared", "shared.txt", "later uncommitted turn")
+    latest = a.oid(source)
+    assert latest != first
     a.sun("push")
     remote_sha = lab.command(lab.root, ["git", "--git-dir", str(lab.remote), "rev-parse", source]).stdout.strip()
-    assert remote_sha == pinned, "later transcript leaked past checkpoint"
+    assert remote_sha == latest, "explicit opt-in shares the latest recorded transcript"
     assert "refs/sun/sessions/emma/private" not in lab.remote_refs()
-
 
 def checks_and_reviews(lab):
     a, b = lab.user("emma"), lab.user("belinda")
@@ -547,7 +549,7 @@ def checks_and_reviews(lab):
         raise unittest.SkipTest("PR #26 checks/reviews are not part of this stack's base")
     a.human("RULES", "honest: Reports match the evidence.\n")
     a.commit("rules")
-    a.sun("push")
+    a.share()
     b.integrate()
     state = a.oid("refs/sun/heads/main")
     def check(repo, verdict, cites):
@@ -556,17 +558,17 @@ def checks_and_reviews(lab):
         return json.loads(p.stdout)["checks"][0]
     first = check(a, "pass", [{"at": state}])
     a.commit("publish check")
-    a.sun("push")
+    a.share()
     b.integrate()
     # Independent collaborators review the same check before seeing one another.
     second = check(b, "fail", [{"check": first["id"]}])
     third = check(a, "pass", [{"check": first["id"]}])
     a.commit("publish independent review")
-    a.sun("push")
+    a.share()
     b.commit("publish review")
-    if b.sun("push", ok=False).returncode:
+    if b.git("push", "origin", "HEAD", ok=False).returncode:
         b.integrate()
-    b.sun("push")
+    b.share()
     a.integrate()
     for repo in (a, b):
         rows = json.loads(repo.sun("coverage", "--json", "-n", "0").stdout)["commits"]
@@ -645,9 +647,9 @@ SCENARIOS = {
     "atomic-rejections": atomic_rejections,
     "selected-branch": selected_branch,
     "parallel-agents": parallel_agents,
-    "duplicate-hooks-active-boundary": duplicate_hooks_and_active_boundary,
+    "git-commit-independence": git_commit_independence,
     "editing-during-push": editing_during_push,
-    "checkpoint-transcripts": checkpoints_and_transcripts,
+    "independent-transcripts": independent_transcripts,
     "checks-and-reviews": checks_and_reviews,
     "tool-turns-branch-pins": tool_turns_and_branch_pins,
     "git-state-observation": git_state_observation,

@@ -1,10 +1,10 @@
 # Collaboration experiments
 
-These scenarios invoke the actual Sun CLI, real Git hooks, separate working clones,
+These scenarios invoke the actual Sun CLI, agent hook payloads, separate working clones,
 and a local bare remote. No mocks, GitHub credentials, VMs, or new dependencies.
 They do not call a live model: agent tool boundaries are supplied as harness JSON.
 
-**Authored, not executed. No passing results are claimed.**
+The scenarios now exercise independent Sun publication, without Git commit checkpoints.
 
 ## Run later
 
@@ -36,20 +36,20 @@ Do not use Python's `-O`: the experiment checks use assertions.
 
 | Case | Assertions |
 | --- | --- |
-| Two users on main | Alternating human and agent work; both edit before fetching; same-line conflict; rejected push; merge abort and retry; one Git resolution; both files and operations survive |
-| One user, nested branches | Main, siblings, child and grandchild; inherited IDs; checkout isolation; fast-forward and non-fast-forward merges; only selected branch published |
-| Two users, nested branches | Parent advances while collaborator edits child; genuine parent/child conflict; integrate child to parent to main; preserve each contribution |
+| Two users on main | Alternating human and agent work; both edit before fetching; same-line conflict; rejected normal Git push; merge abort and retry; one Git resolution; independent Sun history joins preserve operations |
+| One user, nested branches | Main, siblings, child and grandchild; inherited IDs; checkout isolation; observe fast-forward/non-fast-forward results; source operations retained on source branches, not automatically imported to target |
+| Two users, nested branches | Parent advances while collaborator edits child; genuine parent/child conflict; integrate child to parent to main through Git; original operations remain in their source Sun histories |
 | Multiple users | Everyone starts stale; shuffled publication; automatic nonconflicting merges; each forks a child; shuffled integration; all users also conflict on the same line and resolve through Git |
 | Same Git identity on two computers | Separate clones using the same identity, divergent edits, conflict resolution, immutable operation IDs without duplicates |
-| Partial commits | Staged files with other uncommitted files; staged versus unstaged hunks; untracked files; refuse publication without clean checkpoint; later clean commit works |
-| Later and in-flight edits | Existing checkpoint publishes without later operation refs; receiver barrier lets a real edit happen during push; worktree and index survive |
-| Atomic rejection | Normal branch rejection publishes no Sun refs; server rejecting Sun publishes no normal branch; lack of atomic support refuses without fallback |
+| Partial commits | Recorded uncommitted work can be published; staged/unstaged hunks do not gate Sun; unrecorded files stay local; normal Git remote branch stays unchanged |
+| Later and in-flight edits | Already recorded work publishes during an active call; receiver barrier lets a real edit happen during push; that unfinished edit stays out of publication; worktree and index survive |
+| Atomic rejection | Normal Git divergence does not gate Sun; rejection of an operation rejects the Sun head as well; normal branches never change; lack of atomic support refuses without fallback |
 | Selected branch and remote | Publish feature while checked out on private branch; unrelated main has advanced; explicit named remote; private operations stay local |
 | Parallel agents | Separate hook processes edit distinct files; attribution retained; overlapping same-file writes are explicitly uncertain |
-| Hook delivery | Duplicate post-commit/post-merge are idempotent; commit during active call is ineligible; clean boundary after call becomes publishable |
+| Git independence and hook delivery | No Sun Git hooks installed; normal and empty commits leave all Sun refs unchanged, including during an active agent call; duplicate agent completion remains idempotent |
 | Turn grouping | Human before turn remains separate; tool calls and intervening human edits squash with distinct original operations and snapshots; branch inheritance prevents rewriting shared operations |
 | Normal Git state | Empty commits do not invent Sun edits; resetting a fixture is observed as a new state, not a rewrite or guessed human attribution |
-| Session opt-in | No raw copies by default; opted-in transcript pinned at checkpoint; later transcript chunk is not published |
+| Session opt-in | No raw copies by default; explicit sharing publishes the latest recorded session independently of Git commits; unrelated branch sessions stay local |
 | Checks/reviews from PR #26 | Two collaborators independently review the same check; both records remain unchanged; disagreement remains mixed |
 
 Every collaboration convergence check verifies unique operation IDs, original
@@ -69,10 +69,11 @@ these real Git conflict scenarios.
 
 - PR #26 is not in this stack's base. Checks/reviews are marked SKIP until those
   commands are present, not reported as passing coverage.
-- These are authored regression expectations, not evidence that the implementation
-  passes. Run them before marking the implementation production-ready.
+- Passing assertions cover only the stated cases, not a general proof of reliability.
 - Local subprocesses exercise concurrency and Git receive hooks, not actual
   Codex/Claude hook approval, remote hosting policies, process-kill durability,
   arbitrary force-push recovery, or network partitions.
-- A clean checkpoint includes the preceding recorded attempts and undone edits.
-  It is not a filter that shares only the final Git diff.
+- Sun publication includes recorded attempts and undone edits, including uncommitted work.
+  Opted-in raw sessions may include later conversation and cross-branch context.
+- Git feature merges do not automatically combine source Sun ancestry into the target.
+  Tests verify retained source records and observed target state separately, not inferred provenance.

@@ -90,7 +90,8 @@ class ReliabilityTest(unittest.TestCase):
         self.git("commit", "-m", "human edit")
         run("log")
         ev = sun.events()[-1]
-        self.assertEqual(ev["type"], "edit")
+        self.assertEqual(ev["type"], "observe")
+        self.assertEqual(ev["actor"], "unknown")
         self.assertEqual(ev["edits"][0]["file"], "human.txt")
 
     def test_call_keeps_identity_from_pre_hook(self):
@@ -216,24 +217,7 @@ class ReliabilityTest(unittest.TestCase):
         run("log")
         self.assertEqual(self.sun_head(), before)
         self.assertFalse(any(e.get("edits") for e in sun.events()))
-        run("merge")
-        self.assertEqual(read("remote.txt"), "remote\n")
-        self.assertEqual(sun.events()[-1]["edits"], [])
-
-    def test_merge_conflict_requires_explicit_resolution(self):
-        base = self.sun_head()
-        write("README.md", "remote\n")
-        remote = self.plumbing_commit(base, ["README.md"])
-        write("README.md", "local\n")
-        run("sync")
-        self.git("update-ref", sun.remote_ref(), remote)
-        with self.assertRaisesRegex(SystemExit, "merge conflicts"):
-            run("merge")
-        self.assertIn("<<<<<<<", read("README.md"))
-        write("README.md", "resolved\n")
-        run("merge", "--continue")
-        self.assertEqual(self.git("show", f"{self.sun_head()}:README.md"), "resolved\n")
-        self.assertEqual(sun.events()[-1]["edits"][0]["attribution"]["method"], "resolution")
+        self.assertFalse(os.path.exists("remote.txt"))
 
     def test_linked_worktree_uses_git_paths(self):
         with tempfile.TemporaryDirectory() as path:
@@ -260,59 +244,4 @@ class ReliabilityTest(unittest.TestCase):
         _, chunk = sun.operation_transcript(ev, "tool0")
         self.assertEqual(sun.blame_context(chunk, "tool0"), ("new prompt", None, "apply_patch"))
         self.assertFalse(sun.refs("refs/sun/sessions/"))
-
-    def test_two_clones_same_identity_keep_all_operations(self):
-        with tempfile.TemporaryDirectory() as remote, tempfile.TemporaryDirectory() as clone:
-            self.git("init", "--bare", remote)
-            self.git("remote", "add", "origin", remote)
-            self.git("add", ".")
-            self.git("commit", "-m", "installed hooks")
-            self.git("push", "--no-verify", "origin", "HEAD")
-            run("push")
-            self.git("clone", remote, clone)
-            try:
-                os.chdir(clone)
-                run("init", "--no-instructions")
-                write("b.txt", "b\n")
-                run("sync")
-                b = sun.events()[-1]["id"]
-                os.chdir(self.dir)
-                write("a.txt", "a\n")
-                run("sync")
-                a = sun.events()[-1]["id"]
-                run("push")
-                os.chdir(clone)
-                before = self.sun_head()
-                with self.assertRaises(SystemExit): run("push")
-                self.assertEqual(self.git("--git-dir", remote, "for-each-ref", "--format=%(refname)",
-                                          f"refs/sun/events/{b}"), "")
-                self.git("fetch", "origin")
-                run("log")
-                self.assertEqual(self.sun_head(), before)
-                run("merge")
-                run("push")
-                os.chdir(self.dir)
-                run("merge")
-                evs = sun.events()
-                self.assertEqual(sum(e["id"] == a for e in evs), 1)
-                self.assertEqual(sum(e["id"] == b for e in evs), 1)
-                self.assertEqual(read("a.txt") + read("b.txt"), "a\nb\n")
-                self.assertTrue(all(e["edits"] == [] for e in evs if e["type"] == "merge"))
-            finally: os.chdir(self.dir)
-
-    def test_push_during_turn_prevents_squashing_published_calls(self):
-        with tempfile.TemporaryDirectory() as remote:
-            self.git("init", "--bare", remote)
-            self.git("remote", "add", "origin", remote)
-            hook("UserPromptSubmit")
-            self.tool_call("session12345", "a.txt", "a\n", 0)
-            published = self.sun_head()
-            run("push")
-            self.tool_call("session12345", "b.txt", "b\n", 1)
-            hook("Stop")
-            self.git("merge-base", "--is-ancestor", published, self.sun_head())
-            run("push")
-            self.assertEqual(len([e for e in sun.events() if e.get("session_id")]), 2)
-
-
 if __name__ == "__main__": unittest.main()

@@ -18,7 +18,12 @@ cd your-repo && sun init   # sets up every harness it detects (Claude Code, Code
 subagents are included. Raw transcripts remain in their existing local directories by default.
 Existing commits stay untracked because sun did not observe them: work done before `sun init` is
 one initial snapshot, and agent sessions already running are recorded from their next restart,
-since a harness reads its hooks when a session starts. From then on, hooks keep an
+since a harness reads its hooks when a session starts. `sun migrate`, run right after `sun init`,
+rebuilds that snapshot from what the transcripts prove: it replays every recorded `Write`, `Edit`,
+and Codex `apply_patch` onto a shadow tree, one turn commit per agent turn with per-call snapshots,
+and records each Git commit's remaining difference as observed state with an unknown author. Shell
+commands and edits that no longer apply are never guessed; their effects stay observed. From then
+on, hooks keep an
 independent Sun history current: one visible commit per turn, containing one operation per
 agent tool call. Each operation keeps a hidden Git snapshot for exact replay and undo. Human
 edits observed during a turn remain separately attributed operations inside that turn commit.
@@ -106,6 +111,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun extract` | record the verdicts you gave your agents in conversation |
 | `sun pr [--update]` | summarize checks for the pull request as Markdown, or write it into the PR |
 | `sun trust` | let hooks on this machine run the commands `RULES.md` names |
+| `sun migrate [--since DATE]` | rebuild this branch's history from existing agent sessions and Git commits |
 | `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
 | `sun update` | update a Sun installation made from this repository with uv |
 
@@ -134,8 +140,8 @@ adds a restoration commit. Neither command rewrites or deletes history.
 The operation history is what happened. Rules, checks, and coverage are what someone concluded
 about it. They are kept apart on purpose: a check can be wrong, so it never edits the history.
 
-The flow, end to end: the team writes `RULES.md`; `sun init` installs the hooks and trusts the
-commands it names. A person prompts and the agent works for hours: rules marked `on: call` run
+The flow, end to end: the team writes `RULES.md`; `sun init` installs the hooks, and a person runs
+`sun trust` once to let them run the commands it names. A person prompts and the agent works for hours: rules marked `on: call` run
 after each edit and rules marked `on: turn` run when the agent stops, failures go back to the
 agent once per turn, and the agent can run `sun check --run` itself before it stops. The person
 reads the result and replies; at the end of that turn, `extract:` turns explicit judgments in the
@@ -199,10 +205,12 @@ echo '{"rule": "use-current-results", "verdict": "fail", "actor": "program:cite"
 can run it before it stops and fix what failed. Rules with `on: call` or `on: turn` also run from
 the harness hooks, and a failing verdict goes back to the agent once per turn as the hook's reason,
 so it keeps working. A later run of the same rule in the same turn replaces the earlier verdict
-rather than leaving the turn `mixed`. Hooks run the commands in `RULES.md` only after you run
-`sun trust` on your machine (`sun init` does it once), and again after those commands change, so a
-commit from someone else cannot start programs or spend model credits on your machine. A judge
-runs outside Sun's lock with `SUN_CHECKING` set, so its own hooks record it but run no rules.
+rather than leaving the turn `mixed`; a rerun replaces only a verdict from the same turn whose
+files it covered. Hooks, and agents' shells, run the commands in `RULES.md` only after a person
+runs `sun trust` on that machine, and again after those commands change, so a commit from someone
+else cannot start programs or spend model credits there; `sun init` lists what `RULES.md` would
+run instead of trusting it for you. A judge runs outside Sun's lock with `SUN_CHECKING` set, so
+its own hooks record it but run no rules, and an `agent:` judge gets read-only tools.
 
 The verdict is any short word the task needs. `actor` is required on stdin and stored as
 `<git user>/<actor>`; `local`, `chat`, and harness session actors are Sun's own and cannot be
@@ -217,8 +225,9 @@ and `sun check` never overwrites one. A **review** is a check that cites another
 model call reads the reply that started it, the agent's last message before it, and the rules, and
 reports only explicit verdicts, quoting your words. Sun records each as `<git user>/chat`, citing
 the state you were looking at when you replied, and drops anything that is not a verbatim quote.
-`sun extract` does the same on demand for every session seen in this checkout.
-`sun show <check id>` prints one check.
+`sun extract` does the same on demand for every session seen in this checkout, and `sun pr` reads
+unread replies first when the model is trusted. What a harness or a hook injected into the
+conversation is never read as the person's words. `sun show <check id>` prints one check.
 
 `sun coverage [-n COUNT] [--json]` folds checks onto Sun commits. Each commit and rule is
 `unchecked`, the verdict, `mixed` when checkers disagree, or `outdated` when the rule changed since.

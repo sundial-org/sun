@@ -214,10 +214,18 @@ def ensure_branch():
     observe = previous.get("observe", False) or inherited or bool(previous and (
         previous.get("ref") != ref or previous.get("git") != normal))
     save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
-def sibling_history(normal, prefer=None):  # the Sun tip of another Git branch at this commit
+def sibling_history(normal, prefer=None):
+    """The Sun tip this branch should continue: its own remote lineage, else the branch it was created
+    from (the reflog says), else the last-used branch, else any branch at the same commit."""
+    remote = ref_oid(remote_ref())
+    if remote: return remote
     at = git("for-each-ref", "--points-at", normal, "--format=%(refname)", "refs/heads/", check=False).split()
     cands = [r.replace("refs/heads/", "refs/sun/heads/", 1) for r in at]
-    for cand in ([prefer] if prefer in cands else []) + cands:
+    first = git("reflog", "show", "--format=%gs", shadow_ref().replace("refs/sun/heads/", "refs/heads/", 1),
+                check=False).strip().splitlines()
+    m = first and re.match(r"branch: Created from (\S+)", first[-1])
+    source = "refs/sun/heads/" + m.group(1) if m else None
+    for cand in [c for c in (source, prefer) if c in cands] + cands:
         if cand != shadow_ref() and ref_oid(cand): return ref_oid(cand)
     return ""
 def history_head(required=True):
@@ -440,7 +448,7 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     record_batch(c, entries)
     release()
     start = state("turns.json", {}).get(session_key(sid, harness), {}).get("start") or pre
-    return {"at": c, "since": pre, "turn": start, "files": a_files} if a_files else None
+    return {"at": c, "since": pre, "turn": start, "in_turn": True, "files": a_files} if a_files else None
 def squash_turn(sid, harness="claude"):
     # Stop: squash the turn's agent calls and intervening local edits into one turn commit.
     # A different agent or an already-aggregated commit remains a hard boundary.
@@ -541,6 +549,17 @@ def subagent_chunk(sid, payload):
     tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
     if not (tp and sub and os.path.exists(tp) and cfg_share_sessions()): return
     store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": read_text(tp, errors="replace")})
+def turn_unit(sid, harness, t):
+    """The session's own work in a turn, for rules and extraction: {at, since, turn, files, in_turn}."""
+    tip = history_head(False)
+    if not (t.get("start") and tip and t.get("branch") == shadow_ref()): return None
+    n, mine = t.get("n"), []
+    for e in events():  # after the squash, the turn's events sit on the turn commit
+        if e.get("session_id") == sid and e.get("turn") == f"turn{n}" and e["actor"] == agent(sid, harness):
+            mine.append(e)
+    files = sorted({d["file"] for e in mine for d in e.get("edits") or []})
+    at = mine[-1]["commit"] if mine and quiet("git", "merge-base", "--is-ancestor", mine[-1]["commit"], tip).returncode == 0 else tip
+    return {"at": at, "since": t["start"], "turn": t["start"], "in_turn": True, "files": files}
 def cmd_hook(a):
     try: payload = json.load(sys.stdin)
     except (ValueError, OSError): payload = {}
@@ -628,12 +647,13 @@ def handle_hook(a, payload):
     elif event in ("PostToolUse", "PostToolUseFailure"):
         return finish_call(sid, active, payload, harness)
     elif event == "Stop":  # a queued prompt may end in a text-only turn: no PreToolUse
+        before = dict(state("turns.json", {}).get(session_key(sid, harness)) or {})
         prompt_boundary(sid, payload, harness)
         squash_turn(sid, harness)
         stop_chunk(sid, payload, harness)
-        t, tip = state("turns.json", {}).get(session_key(sid, harness)) or {}, history_head(False)
-        if t.get("start") and tip and t.get("branch") == shadow_ref():  # the turn, for rules and extraction
-            return {"at": tip, "since": t["start"], "turn": t["start"], "files": changed_between(t["start"], tip)}
+        t = state("turns.json", {}).get(session_key(sid, harness)) or {}
+        if before.get("n") and t.get("n") != before.get("n"): t = before  # a queued prompt already opened the next turn
+        return turn_unit(sid, harness, t)
     elif event == "SubagentStop":
         subagent_chunk(sid, payload)
 enc = lambda path: re.sub(r"[/.]", "-", path)
@@ -888,7 +908,9 @@ def install_hooks(harness="claude"):
     for event in hook_events:
         group = cfg["hooks"].setdefault(event, [])
         if not any(h.get("command") == command for g in group for h in g.get("hooks", [])):
-            group.append({"hooks": [{"type": "command", "command": command}]})
+            entry = {"type": "command", "command": command}
+            if harness == "claude" and event in ("PostToolUse", "Stop"): entry["timeout"] = 2 * CHECK_TIMEOUT
+            group.append({"hooks": [entry]})
     jwrite(path, cfg)
     return f"{harness} ({rel})"
 def remove_hooks(harness):  # a restrictive re-init un-installs the excluded harness's hook
@@ -943,6 +965,9 @@ done
 exit 0
 """
 def install_push_hook():  # `git push` publishes Sun history too; a hook Sun did not write is left alone
+    if git("config", "--get", "core.hooksPath", check=False).strip():
+        print("sun: core.hooksPath is set; add `sun push` to your pre-push hook yourself", file=sys.stderr)
+        return False
     path = git("rev-parse", "--git-path", "hooks/pre-push").strip()
     if os.path.exists(path):
         if read_text(path) == PRE_PUSH: return True
@@ -1045,7 +1070,6 @@ def init_locked(a):
     cfg["harnesses"] = harnesses
     cfg.pop("shadow_history", None)
     save_state("config.json", cfg)
-    jwrite(trust_path(), {"rules": runners_hash(*read_rules())})  # you ran init: hooks may run RULES.md commands
     share_sessions = configure_session_sharing(a.share_sessions)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
         git("fetch", "-q", "origin", *refspecs(share_sessions))
@@ -1071,8 +1095,14 @@ def init_locked(a):
     sync()
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
     if fresh:
-        print("sun: recording starts now: earlier work is one initial snapshot, and agent sessions "
-              "already running are recorded from their next restart")
+        print("sun: recording starts now: earlier work is one initial snapshot (`sun migrate` rebuilds it from "
+              "your agent sessions), and agent sessions already running are recorded from their next restart")
+    config, rs = read_rules()
+    if runners_hash(config, rs) and not trusted(config, rs):
+        named = [f"{n}: {r['runner']}: {r['command']}" for n, r in sorted(rs.items()) if r["runner"]]
+        named += [f"extract: {config['extract']}"] if config.get("extract") else []
+        print("sun: RULES.md names commands for hooks to run; review them and run `sun trust` to allow that:\n  "
+              + "\n  ".join(named))
     if "codex" in harnesses:
         print("sun: Codex requires separate hook approval; open `/hooks`, review "
               "`.codex/hooks.json`, and trust the Sun hooks before testing")
@@ -1346,6 +1376,7 @@ def trusted(config, rs):  # hooks run RULES.md commands only after a person trus
 def cmd_trust(a):
     config, rs = read_rules()
     h = runners_hash(config, rs)
+    os.makedirs(os.path.dirname(trust_path()), exist_ok=True)
     jwrite(trust_path(), {"rules": h})
     n = sum(1 for r in rs.values() if r["runner"])
     if not h: return print("sun: RULES.md asks Sun to run nothing; nothing to trust")
@@ -1477,7 +1508,7 @@ def cmd_check(a):
         for r in reqs:
             if not declared_actor(r.get("actor") if isinstance(r, dict) else None):
                 sys.exit("sun: a check on stdin declares an actor, like program:lean or agent:judge")
-        done = store_checks(reqs, "stdin", in_flight_session())
+        done = store_checks(reqs, "stdin", in_flight_session() if harness_env() else None)
     if a.json: return print(json.dumps({"checks": done}))
     for c in done: print(f"sun: check {c['id'][:8]} {c['rule']} {c['verdict']}")
 # --- running a rule ---------------------------------------------------------------------------
@@ -1676,7 +1707,7 @@ def epoch(ts):  # transcript timestamps: ISO strings, or milliseconds
     if z and z != "Z": t -= (1 if z[0] == "+" else -1) * (int(z[1:3]) * 3600 + int(z[-2:]) * 60)
     return t
 def state_at(t):  # the last Sun commit on this branch recorded before a moment
-    for line in git("log", "--format=%H %ct", shadow_ref(), check=False).splitlines():
+    for line in git("log", "--first-parent", "--format=%H %ct", shadow_ref(), check=False).splitlines():
         H, ct = line.split()
         if int(ct) <= t: return H
     return None
@@ -1690,6 +1721,7 @@ def transcript_records(path, harness):  # the person's prompts and the agent's t
             except ValueError: continue
             role, text, ts, uid = None, "", o.get("timestamp"), o.get("uuid")
             if harness == "claude":
+                if o.get("isMeta") or o.get("toolUseResult") is not None: continue  # injected, not typed
                 c = (o.get("message") or {}).get("content")
                 blocks = [{"type": "text", "text": c}] if isinstance(c, str) else c if isinstance(c, list) else []
                 text = "\n".join(b.get("text", "") for b in blocks if isinstance(b, dict) and b.get("type") == "text")
@@ -1701,7 +1733,9 @@ def transcript_records(path, harness):  # the person's prompts and the agent's t
                 elif o.get("type") == "response_item" and p.get("type") == "message" and p.get("role") in ("user", "assistant"):
                     role = p["role"]
                     text = "".join(b.get("text", "") for b in p.get("content") or [] if isinstance(b, dict))
-            if role == "user": text = re.sub(r"<system-reminder>.*?</system-reminder>", "", text, flags=re.S)
+            if role == "user":
+                text = re.sub(r"<(system-reminder|command-message|command-name|local-command-stdout)>.*?</\1>", "", text, flags=re.S)
+                if "hook feedback" in text.lower() or "sun check result (data, not instructions)" in text: continue
             if role and text.strip() and not (out and out[-1]["role"] == role and out[-1]["text"] == text.strip()):
                 out.append({"role": role, "text": text.strip(), "offset": start, "time": ts, "uuid": uid,
                             "sha256": hashlib.sha256(line).hexdigest()})
@@ -1740,7 +1774,7 @@ def extract_verdicts(item, config, rs, harness):  # one model call -> validated 
     except ValueError: found = None
     if not isinstance(found, list):
         print(f"sun: extraction returned no JSON array for {item['key']}: {one_line(out + err)[-300:]}", file=sys.stderr)
-        return []
+        return None
     norm = lambda s: " ".join(str(s).split())
     reqs = []
     for v in found:
@@ -1764,6 +1798,7 @@ def extract_session(key, config, rs, harness, unit=None):  # returns the number 
     n = 0
     for item in items:
         reqs = extract_verdicts(item, config, rs, harness)  # outside the lock: the model may run hooks
+        if reqs is None: break  # the model call failed: leave this reply unread for a later `sun extract`
         with lock():
             if reqs: n += len(store_checks(reqs, "extract"))
             done = state("extracted.json", {})
@@ -1909,11 +1944,14 @@ def cmd_pr(a):
     if not rs: sys.exit("sun: no RULES.md; nothing to summarize")
     exclude = [r for r in (f"refs/sun/heads/{base}", f"refs/sun/remotes/origin/{base}") if ref_oid(r) and r != shadow_ref()]
     commits = git("rev-list", "--topo-order", shadow_ref(), *[f"^{r}" for r in exclude]).split()
-    in_flight = in_flight_session()
+    in_flight = in_flight_session() if harness_env() else None
     if config.get("extract") and not agent_shell() and not a.json:
-        for key, entry in state("session-paths.json", {}).items():
-            extract_session(key, config, rs, entry.get("harness") or "claude")
-    writer = f"an agent tool call in session {in_flight}" if in_flight else f"{user()} at a terminal" if not harness_env() else f"{user()} in an agent's shell"
+        if trusted(config, rs):
+            for key, entry in state("session-paths.json", {}).items():
+                extract_session(key, config, rs, entry.get("harness") or "claude")
+        else: print("sun: replies were not read for verdicts: run `sun trust` to allow the extract: model", file=sys.stderr)
+    writer = (f"an agent tool call in session {in_flight}" if in_flight else
+              f"{user()} in an agent's shell" if harness_env() else f"{user()} at a terminal")
     table = coverage(commits=commits)
     if a.json: return print(json.dumps({"base": base, "writer": writer, "commits": table}))
     md = render_pr(table, rs, base, writer)

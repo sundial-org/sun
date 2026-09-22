@@ -8,6 +8,7 @@ it combines recorded histories without changing files or normal Git refs.
 Raw transcripts are shared only when you explicitly enable session sharing."""
 import argparse, calendar, difflib, fcntl, fnmatch, glob, hashlib, json, os, re, shutil
 import subprocess, sys, time, uuid
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, TypedDict
 
 
@@ -1285,15 +1286,19 @@ CLI = {  # a bare model name runs through the harness CLI; a value with a space 
     ("model", "claude"): 'claude -p --model {m} --tools "" --strict-mcp-config --max-turns 1 '
                          '--no-session-persistence --output-format json',
     ("agent", "claude"): 'claude -p --model {m} --strict-mcp-config --output-format json --permission-mode dontAsk '
-                         '--allowedTools "Read,Grep,Glob,Bash(git *),Bash(sun *)"',
+                         '--allowedTools "Read,Grep,Glob,Bash(git diff *),Bash(git show *),Bash(git log *),'
+                         'Bash(git blame *),Bash(sun show *),Bash(sun log *),Bash(sun blame *),Bash(sun data *)"',
     ("model", "codex"): "codex exec -m {m} -s read-only --ephemeral -",
     ("agent", "codex"): "codex exec -m {m} -s read-only -",
 }
+def unquote(v):  # a value in matching outer quotes, or as written; `  # comment` is dropped
+    v = re.sub(r"\s+#.*$", "", v.strip())
+    return v[1:-1] if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'" else v
 def kv_block(lines):  # `key: value` lines -> dict: a strict subset of YAML, no nesting
     out = {}
     for l in lines:
         m = re.fullmatch(r"\s*([\w-]+)\s*:\s*(.*?)\s*", l)
-        if m: out[m.group(1)] = m.group(2).strip("\"'")
+        if m: out[m.group(1)] = unquote(m.group(2))
     return out
 def front_matter(lines):  # (dict, rest) when the lines open with a `---` fenced block
     while lines and not lines[0].strip(): lines = lines[1:]
@@ -1305,7 +1310,7 @@ def rule_record(name, meta, text):
     runner = next((k for k in ("run", "model", "agent") if meta.get(k)), None)
     keyed = {k: meta[k] for k in RULE_KEYS if k in meta}
     return {"name": name, "text": text, "runner": runner, "command": meta.get(runner, "") if runner else "",
-            "on": meta.get("on", ""), "files": [g.strip() for g in meta.get("files", "").split(",") if g.strip()],
+            "on": meta.get("on", ""), "files": [unquote(g) for g in meta.get("files", "").split(",") if g.strip()],
             "feedback": meta.get("feedback", "true").lower() not in ("false", "no", "0", "off"),
             "hash": hashlib.sha256((" ".join(text.split()) + "\n" + json.dumps(keyed, sort_keys=True))
                                    .encode()).hexdigest()[:12]}
@@ -1316,9 +1321,10 @@ def read_rules():  # (front matter, {name: rule}) from RULES.md, or a legacy RUL
         found = re.findall(r"(?m)^([\w.-]+):[ \t]+(\S.*?)\s*$", read_text(legacy)) if os.path.exists(legacy) else []
         return {}, {n: rule_record(n, {}, t) for n, t in found}
     config, lines = front_matter(read_text(p).splitlines())
-    rules, name, body = {}, None, []
+    rules, name, body, fenced = {}, None, [], False
     for l in lines + [None]:
-        if l is None or re.match(r"##(\s|$)", l):  # a level-2 heading starts a rule, or ends one
+        if l is not None and l.lstrip().startswith("```"): fenced = not fenced
+        if l is None or (not fenced and re.match(r"##(\s|$)", l)):  # a level-2 heading starts a rule, or ends one
             if name:
                 meta, rest = front_matter(body)
                 rules[name] = rule_record(name, meta, "\n".join(rest).strip())
@@ -1355,7 +1361,11 @@ def well_formed(c):  # the shape coverage relies on; checks arrive by fetch, so 
                c.get("via", ""), c.get("rule_text", ""), c.get("from") or ""]
     for x in c["cites"]:
         if not isinstance(x, dict) or not ("at" in x or "check" in x): return False
-        strings += [x[k] for k in ("at", "check") if k in x]
+        strings += [x[k] for k in ("at", "check", "file") if k in x]
+        lines = x.get("lines")
+        if lines is not None and not (isinstance(lines, list) and len(lines) == 2
+                                      and all(isinstance(n, int) and not isinstance(n, bool) for n in lines)): return False
+    if not isinstance(c.get("meta", {}), dict) or not isinstance(c.get("note", ""), str): return False
     return all(isinstance(s, str) for s in strings) and "/" in c["actor"]
 def checks():  # {id: check}; a blob that is malformed, outside its user's namespace, or does not hash to its ID is not a check
     out = {}
@@ -1381,8 +1391,9 @@ def check_label(c, authored=None):
     tag = "self-check" if c.get("from") and c["from"] == authored else via
     return label + (f" ({tag})" if tag else "")
 one_line = lambda s: " ".join(str(s or "").split())[:500]
-def harness_env():  # a shell an agent is running, even after its tool call has been released
-    return bool(os.environ.get("CLAUDECODE")) or any(k.startswith("CODEX_SANDBOX") for k in os.environ)
+def harness_env():  # a shell an agent or a judge is running, even after its tool call has been released
+    return bool(os.environ.get("CLAUDECODE") or os.environ.get("SUN_CHECKING")) or \
+        any(k.startswith("CODEX_SANDBOX") for k in os.environ)
 def agent_shell():  # refuse the terminal form here: it is the one check that counts as your eyes
     return bool(state("active.json", {})) or harness_env()
 def in_flight_session():  # the one agent session whose tool call is running, if exactly one is
@@ -1414,12 +1425,17 @@ def store_checks(reqs, via, origin=None):
             elif isinstance(x, dict) and isinstance(x.get("at"), str):
                 at = x["at"] if x["at"] in recorded else resolve_history_rev(x["at"])
                 if at not in recorded: sys.exit(f"sun: nothing recorded at {at[:8]} (run `sun sync` first?)")
-                path = x.get("file")
-                if path and quiet("git", "cat-file", "-e", f"{at}:{path}").returncode:
+                path, lines = x.get("file"), x.get("lines")
+                if path and (not isinstance(path, str) or quiet("git", "cat-file", "-e", f"{at}:{path}").returncode):
                     sys.exit(f"sun: {path} is not in {at[:8]}")
+                if lines and not (isinstance(lines, list) and len(lines) == 2 and all(
+                        isinstance(n, int) and not isinstance(n, bool) and n > 0 for n in lines)):
+                    sys.exit("sun: lines is [first, last], 1-based")
                 cites.append({"at": at, **{k: x[k] for k in ("file", "lines") if x.get(k)}})
             else: sys.exit('sun: a cite is {"at": SHA, "file": PATH, "lines": [A, B]} or {"check": ID}')
         rule, verdict = r.get("rule"), r.get("verdict")
+        if not isinstance(r.get("meta", {}), dict) or not isinstance(r.get("note") or "", str):
+            sys.exit("sun: note is text and meta is a JSON object")
         if not cites: sys.exit("sun: a check must cite the recorded state it read")
         if not isinstance(rule, str) or rule not in rs: sys.exit(f"sun: no rule {rule!r} in RULES.md")
         if not (isinstance(verdict, str) and verdict.strip() and "\n" not in verdict):
@@ -1486,11 +1502,8 @@ def runner_name(cmd):  # a bare model name, or the script a command runs, else i
     words = cmd.split()
     script = next((w for w in words if "/" in w or re.search(r"\.(py|sh|js|ts|rb|pl)$", w)), words[0])
     return os.path.basename(script)
-def runner_actor(rule, harness, session=None):
-    name = runner_name(rule["command"].strip())
-    if rule["runner"] == "run": return "program:" + name
-    if rule["runner"] == "model": return "model:" + name
-    return f"agent:{harness}/{session}" if session else "agent:" + name
+def runner_actor(rule):
+    return {"run": "program:", "model": "model:", "agent": "agent:"}[rule["runner"]] + runner_name(rule["command"].strip())
 def last_json(text):  # the last JSON object in some output that carries a verdict
     dec = json.JSONDecoder()
     for m in list(re.finditer(r"\{", text))[::-1]:
@@ -1527,11 +1540,18 @@ def run_command(cmd, stdin, extra_env):  # (stdout, stderr, exit status or None)
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}  # a judge is its own session
     env.update({"SUN_CHECKING": "1", "SUN_ROOT": root(), **extra_env})
     try:
-        p = subprocess.run(cmd, shell=True, cwd=root(), env=env, input=stdin or "",
-                           capture_output=True, text=True, timeout=CHECK_TIMEOUT)
-        return p.stdout, p.stderr, p.returncode
-    except (subprocess.TimeoutExpired, OSError) as exc:
+        p = subprocess.Popen(cmd, shell=True, cwd=root(), env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True, start_new_session=True)
+    except OSError as exc:
         return "", f"{type(exc).__name__}: {str(exc)[:400]}", None
+    try:
+        out, err = p.communicate(stdin or "", timeout=CHECK_TIMEOUT)
+        return out, err, p.returncode
+    except subprocess.TimeoutExpired:
+        try: os.killpg(p.pid, 9)  # the shell and everything it started
+        except OSError: pass
+        p.communicate()
+        return "", f"timed out after {CHECK_TIMEOUT}s", None
 def model_reply(out):  # (text, session id): `claude -p --output-format json` wraps the reply
     try: whole = json.loads(out)
     except ValueError: return out, None
@@ -1558,12 +1578,19 @@ def run_rule(rule, unit, harness):
             lines = x.get("lines")
             ok = isinstance(lines, list) and len(lines) == 2 and all(isinstance(n, int) for n in lines)
             cites.append({"at": at, "file": f, **({"lines": lines} if ok else {})})
-    actor = runner_actor(rule, harness, session)
-    rng = turn_range(unit)  # a later run of the same runner in the same turn replaces the earlier verdict
+    actor = runner_actor(rule)
+    # A later run of the same runner in the same turn replaces the earlier verdict, if it covered its files.
+    rng = turn_range(unit) if unit.get("in_turn") else {at}
     earlier = [i for i, c in checks().items() if c["rule"] == rule["name"] and c["actor"] == f"{user()}/{actor}"
-               and c.get("via", "").split(":")[0] in ("run", "hook") and any(x.get("at") in rng for x in c["cites"])]
+               and c.get("via", "").split(":")[0] in ("run", "hook") and any(x.get("at") in rng for x in c["cites"])
+               and set((c.get("meta") or {}).get("files", [])) <= set(unit["files"])]
+    meta = {"files": unit["files"], **({"session": session} if session else {})}
     return {"actor": actor, "rule": rule["name"], "verdict": verdict, "note": note[:2000], "command": cmd,
-            "cites": (cites or [{"at": at}]) + [{"check": i} for i in earlier]}
+            "meta": meta, "cites": (cites or [{"at": at}]) + [{"check": i} for i in earlier]}
+def run_rules(rules_, unit, harness):  # judges are slow: run them side by side, in the rules' order
+    if len(rules_) <= 1: return [run_rule(r, unit, harness) for r in rules_]
+    with ThreadPoolExecutor(min(8, len(rules_))) as pool:
+        return list(pool.map(lambda r: run_rule(r, unit, harness), rules_))
 def print_results(done, as_json=False):
     bad = 0
     for c in done:
@@ -1580,15 +1607,19 @@ def run_checks(a):  # `sun check --run`: runners start models and agents, so thi
         if n not in rs: sys.exit(f"sun: no rule {n!r} in RULES.md")
         if not rs[n]["runner"]: sys.exit(f"sun: rule {n!r} names no run:, model: or agent:; check it yourself or pipe a check")
     if not names: sys.exit("sun: no rule in RULES.md names a command, model, or agent to run")
+    if os.environ.get("SUN_CHECKING"): sys.exit("sun: a judge does not run rules of its own")
+    if harness_env() and not trusted(config, rs):  # a person at a terminal may run anything; an agent may not
+        sys.exit("sun: RULES.md names commands this machine has not trusted; a person runs `sun trust` first")
     with lock():
         if a.at in (None, "HEAD"): maybe_sync()
         at = resolve_history_rev(a.at or "HEAD")
         origin = in_flight_session()
         turn = state("turns.json", {}).get(origin, {}).get("start") if origin else None
         since = resolve_history_rev(a.since) if a.since else turn or parent_of(at)
-        unit = {"at": at, "since": since, "turn": turn or since, "files": changed_between(since, at)}
-    results = [run_rule(rs[n], unit, configured_harnesses()[0]) for n in names]
-    with lock(): done = store_checks(results, "run", origin)
+        unit = {"at": at, "since": since, "turn": turn or since, "in_turn": bool(turn) and not a.since,
+                "files": changed_between(since, at)}
+    results = run_rules([rs[n] for n in names], unit, configured_harnesses()[0])
+    with lock(): done = store_checks(results, "run", origin if harness_env() else None)
     if print_results(done, a.json): sys.exit(1)
 def hook_checks(a, payload, unit):
     """After the lock is released: run the rules due for this hook, record them, and answer the harness."""
@@ -1603,7 +1634,7 @@ def hook_checks(a, payload, unit):
     if not trusted(config, rs):
         return print("sun: RULES.md asks hooks to run commands this machine has not trusted; run `sun trust`",
                      file=sys.stderr)
-    results = [run_rule(r, unit, a.harness) for r in due]
+    results = run_rules(due, unit, a.harness)
     with lock(): done = store_checks(results, f"hook:{event}") if results else []
     if extract: extract_session(key, config, rs, a.harness, unit)
     failing = [c for r, c in zip(due, done) if c["verdict"] != "pass" and r["feedback"]]

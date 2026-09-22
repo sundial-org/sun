@@ -1,5 +1,5 @@
 """Tests for rules, checks and coverage: judgments recorded over the operation history."""
-import json, os, subprocess, sys, tempfile, time, unittest
+import json, os, shutil, subprocess, sys, tempfile, time, unittest
 import test_sun as fixtures
 from test_sun import run, hook, write, read, sun
 
@@ -497,8 +497,10 @@ class SetupTest(unittest.TestCase):
             out = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True, check=True)
             self.assertNotIn("not published", out.stderr)
             self.assertEqual(self.git("--git-dir", remote, "rev-parse", sun.shadow_ref()).strip(), self.sun_head())
+            no_sun = os.pathsep.join([os.path.dirname(shutil.which("git")), "/usr/bin", "/bin"])  # git, but no `sun`
+            self.git("commit", "-q", "--allow-empty", "-m", "again")
             self.assertIn("not published", subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True,
-                                                          env={**os.environ, "PATH": "/nonexistent"}).stderr + "")
+                                                          env={**os.environ, "PATH": no_sun}).stderr)
             self.git("checkout", "-q", "-b", "nosun"); self.git("commit", "-q", "--allow-empty", "-m", "x")
             self.git("update-ref", "-d", "refs/sun/heads/nosun")
             subprocess.run(["git", "push", "origin", "nosun"], capture_output=True, text=True, check=True)  # no history: skipped quietly
@@ -568,9 +570,11 @@ class SetupTest(unittest.TestCase):
 
 class MigrateTest(unittest.TestCase):
     """sun migrate: history rebuilt from the sessions and commits that predate sun init."""
-    setUp, tearDown, git, sun_head = (fixtures.SunTest.setUp, fixtures.SunTest.tearDown,
-                                      fixtures.SunTest.git, fixtures.SunTest.sun_head)
-    T = ["2026-01-01T00:0%d:00.000Z" % i for i in range(10)]
+    tearDown, git, sun_head = fixtures.SunTest.tearDown, fixtures.SunTest.git, fixtures.SunTest.sun_head
+
+    def setUp(self):
+        fixtures.SunTest.setUp(self)  # the baseline commit is now; the sessions and commits below come after it
+        self.T = [time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() + 60 * i)) for i in range(10)]
 
     def claude_transcript(self, sid, records):  # [(role, ts, payload)] -> a native transcript for this repo
         d = os.path.join(self.proj, sun.enc(os.getcwd())); os.makedirs(d, exist_ok=True)

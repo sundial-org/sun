@@ -2052,7 +2052,7 @@ def replay_call(call, tree):
     tool, inp, cwd = call["tool"], call["input"], call.get("cwd")
     def rel(p):
         if not isinstance(p, str) or not p: return None
-        p = os.path.abspath(p if os.path.isabs(p) else os.path.join(cwd or root(), p))
+        p = os.path.realpath(p if os.path.isabs(p) else os.path.join(cwd or root(), p))
         for base in sorted(repo_locations(), key=len, reverse=True) + ([os.path.realpath(cwd)] if cwd else []):
             if p == base or p.startswith(base.rstrip(os.sep) + os.sep): return os.path.relpath(p, base)
         return None

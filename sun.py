@@ -189,12 +189,17 @@ def ensure_branch():
     """Select a timeline; Git ancestry never determines how Sun combines file contents."""
     ref, normal = shadow_ref(), ref_oid("HEAD")
     previous = state("branch.json", {})
-    tip = history_head(False)
+    tip, inherited = history_head(False), False
     if not tip:
         source = previous.get("ref")
         # A normal commit may have happened since Sun last ran, before `git switch -c`.
         at_source = source and normal == ref_oid(source.replace("refs/sun/heads/", "refs/heads/"))
         tip = ref_oid(source) if source and (previous.get("git") == normal or at_source) else ""
+        if not tip and not previous and normal:  # a new worktree: a sibling branch at the same commit
+            for sibling in git("for-each-ref", "--points-at", normal, "--format=%(refname)",
+                               "refs/heads/", check=False).split():
+                tip = ref_oid(sibling.replace("refs/heads/", "refs/sun/heads/", 1))
+                if tip: inherited = True; break
         if tip: git("update-ref", ref, tip)
         else:
             # A freshly cloned branch starts at its Git checkout, not the possibly newer
@@ -207,7 +212,7 @@ def ensure_branch():
                 c = make_shadow_commit(tree, "sun: initial state", local())
                 record(type="init", actor=local(), commit=c, edits=[])
     # A changed checkout is evidence of a new state, not evidence that this user authored it.
-    observe = previous.get("observe", False) or bool(previous and (
+    observe = previous.get("observe", False) or inherited or bool(previous and (
         previous.get("ref") != ref or previous.get("git") != normal))
     save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
 def history_head(required=True):
@@ -535,9 +540,9 @@ def cmd_hook(a):
     try: payload.get("cwd") and os.chdir(payload["cwd"])
     except OSError: return
     p = quiet("git", "rev-parse", "--show-toplevel")
-    if p.returncode or not os.path.isdir(sun_dir(False)):
-        return  # not a sun repo; hooks must never break the harness
+    if p.returncode: return  # not a Git repo; hooks must never break the harness
     os.chdir(p.stdout.strip())
+    if not adopt(): return  # not a Sun repo
     with lock():  # serialize concurrent hooks (parallel sessions/subagents)
         ensure_branch()
         handle_hook(a, payload)
@@ -910,6 +915,46 @@ def configure_sharing(share_sessions=False):
     for name, scripts in managed.items():
         path = git("rev-parse", "--git-path", "hooks/" + name).strip()
         if os.path.exists(path) and read_text(path) in scripts: os.remove(path)
+    install_push_hook()
+PRE_PUSH = """#!/bin/sh
+# sun: publish recorded Sun history for each pushed branch, without blocking the Git push
+while read local_ref local_oid remote_ref remote_oid; do
+  case "$local_ref" in refs/heads/*) ;; *) continue;; esac
+  branch="${local_ref#refs/heads/}"
+  git rev-parse -q --verify "refs/sun/heads/$branch" >/dev/null 2>&1 || continue
+  sun push "$1" "$branch" || echo "sun: Sun history for $branch was not published; run: sun push $1 $branch" >&2
+done
+exit 0
+"""
+def install_push_hook():  # `git push` publishes Sun history too; a hook Sun did not write is left alone
+    path = git("rev-parse", "--git-path", "hooks/pre-push").strip()
+    if os.path.exists(path):
+        if read_text(path) == PRE_PUSH: return True
+        if "# sun:" not in read_text(path):
+            print(f"sun: {path} exists; run `sun push` yourself, or call it from that hook", file=sys.stderr)
+            return False
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    write_text(path, PRE_PUSH); os.chmod(path, 0o755)
+    return True
+def adopt():
+    """A worktree or clone of a repository that already uses Sun sets itself up on first use."""
+    d = sun_dir(False)
+    if os.path.isdir(d): return True
+    common = git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()
+    shared = jread(os.path.join(common, "sun", "config.json"), {})
+    hooked = [h for h in ("claude", "codex") if os.path.exists(os.path.join(root(), hook_file(h)))
+              and hook_cmd(h) in read_text(os.path.join(root(), hook_file(h)))]
+    if not shared and not hooked: return False  # nobody ran `sun init` here: stay out of the way
+    with lock():
+        if os.path.isdir(d): return True
+        os.makedirs(d, exist_ok=True)
+        save_state("config.json", {"harnesses": hooked or shared.get("harnesses", ["claude"]),
+                                   "share_sessions": bool(shared.get("share_sessions"))})
+        configure_sharing(cfg_share_sessions())
+        if "origin" in git("remote", check=False).split():
+            try: quiet("git", "fetch", "-q", "origin", *refspecs(cfg_share_sessions()), timeout=60)
+            except subprocess.TimeoutExpired: pass
+    return True
 
 def join_history(remote, ref):
     """Combine recorded ancestry, retaining the selected branch's snapshot and original operations."""
@@ -1670,7 +1715,7 @@ def main(argv=None):
         if a.cmd == "check" and not a.args:  # read stdin before taking the lock, so a slow producer blocks nobody
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(root())
-        sun_dir()
+        if not adopt(): sun_dir()  # exits with the `sun init` hint
         if a.cmd in ("viz", "data"):
             commands[a.cmd](a)
         else:

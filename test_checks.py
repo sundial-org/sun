@@ -181,7 +181,7 @@ class ChecksTest(unittest.TestCase):
                     write("c.txt", "c\n")  # the clone's own initial state differs from the shared tip
                     run("init", "--no-instructions")
                     stranded, = self.check(rule="tidy", verdict="pass", actor="program:t", cites=[{"at": turn}])
-                    with self.assertRaises(SystemExit): run("push")  # history is rejected, non-fast-forward
+                    run("push")  # a diverged history is fetched and joined, never rejected
                 finally:
                     os.chdir(self.dir)
             self.assertIn(stranded["id"], self.git("--git-dir", remote, "for-each-ref", "refs/sun/checks/"))

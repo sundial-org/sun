@@ -291,29 +291,39 @@ class SunTest(unittest.TestCase):
         finally:
             shutil.rmtree(bare, ignore_errors=True)
 
-    def test_merge_joins_divergent_shadow_history_using_worktree(self):
-        normal = self.git("rev-parse", "HEAD").strip()
-        base = self.sun_head()
-        write("remote.txt", "remote\n")
-        remote = self.plumbing_commit(base, ["remote.txt"], "remote shadow edit")
-        os.remove("remote.txt")
-        write("local.txt", "local\n")
-        local = self.plumbing_commit(base, ["local.txt"], "local shadow edit")
-        subprocess.run(["git", "update-ref", sun.shadow_ref(), local], check=True)
-        subprocess.run(["git", "update-ref", sun.remote_ref(), remote], check=True)
+    def test_push_joins_divergent_shadow_history_without_merging_files(self):
+        bare = tempfile.mkdtemp()
+        try:
+            subprocess.run(["git", "init", "-q", "--bare", bare], check=True)
+            subprocess.run(["git", "remote", "add", "origin", bare], check=True)
+            normal = self.git("rev-parse", "HEAD").strip()
+            base = self.sun_head()
+            write("remote.txt", "remote\n")
+            remote = self.plumbing_commit(base, ["remote.txt"], "remote shadow edit")
+            os.remove("remote.txt")
+            write("local.txt", "local\n")
+            local = self.plumbing_commit(base, ["local.txt"], "local shadow edit")
+            subprocess.run(["git", "update-ref", sun.shadow_ref(), local], check=True)
+            subprocess.run(["git", "push", "-q", "--no-verify", "origin",
+                            f"{remote}:{sun.shadow_ref()}"], check=True, capture_output=True)
 
-        # Normal Git has already resolved the source tree before Sun joins its DAG.
-        write("remote.txt", "remote\n")
-        out = run("merge")
-        merged = self.sun_head()
-        parents = self.git("rev-list", "--parents", "-n1", merged).split()[1:]
-        self.assertIn("merged shared shadow history", out)
-        self.assertEqual(len(parents), 2)
-        self.assertEqual(parents[1], remote)
-        self.assertEqual(self.git("show", f"{merged}:local.txt"), "local\n")
-        self.assertEqual(self.git("show", f"{merged}:remote.txt"), "remote\n")
-        self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
-        self.assertEqual(sun.events()[-1]["type"], "merge")
+            # Normal Git brings in the remote file; push joins the DAG and keeps the local snapshot.
+            write("remote.txt", "remote\n")
+            run("push")
+            joined = self.sun_head()
+            self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:],
+                             [local, remote])
+            self.assertEqual(self.git("show", f"{joined}:local.txt"), "local\n")
+            self.assertNotIn("remote.txt", self.git("ls-tree", "--name-only", joined).split())
+            self.assertEqual(self.git("--git-dir", bare, "rev-parse", sun.shadow_ref()).strip(), joined)
+            self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
+            ev = sun.events()[-1]
+            self.assertEqual((ev["type"], ev["parents"], ev["edits"]), ("merge", [local, remote], []))
+            self.assertIn("remote.txt", sun.changed_files())  # a later sync observes it, not push
+            run("sync")
+            self.assertEqual(self.git("show", f"{self.sun_head()}:remote.txt"), "remote\n")
+        finally:
+            shutil.rmtree(bare, ignore_errors=True)
 
     # ------------------------------------------------------- local edit sync
 
@@ -813,7 +823,9 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "commit", "-q", "-m", "no transcript"], check=True)
         with self.assertRaisesRegex(SystemExit, "session sharing is disabled"):
             run("sessions", "import")
-        self.assertIn("[emma/local]", run("log").splitlines()[0])
+        first = run("log").splitlines()[0]
+        self.assertIn("sun: observed repository state  [unknown]", first)
+        self.assertNotIn("agent:", first)
 
     def test_codex_import_stores_sessions_without_attributing_old_commits(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
@@ -1090,13 +1102,14 @@ class SunTest(unittest.TestCase):
         self.assertIn("emma/local", out)
         self.assertIn("human edit", out)
 
-    def test_blame_snapshots_normal_commit_as_local_content(self):
+    def test_blame_snapshots_normal_commit_as_observed_state(self):
         write("x.txt", "1\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
         out = run("blame", "x.txt", "1")
-        self.assertIn("emma/local", out)
-        self.assertIn("human edit", out)
+        self.assertIn("  unknown  op ", out.splitlines()[0])
+        self.assertIn("observed change; author unknown", out)
+        self.assertNotIn("emma/local", out)
 
     # ------------------------------------------------------------------ undo
 
@@ -1436,8 +1449,9 @@ class SunTest(unittest.TestCase):
     # ------------------------------------------------------------ edge cases
 
     def test_hook_ignores_uninitialized_repo(self):
-        shutil.rmtree(".git/sun")
-        hook("PreToolUse")  # must not raise
+        shutil.rmtree(".git/sun"); shutil.rmtree(".claude"); shutil.rmtree(".codex", ignore_errors=True)
+        hook("PreToolUse")  # must not raise, and must not set up a repository nobody initialized
+        self.assertFalse(os.path.exists(".git/sun"))
         os.makedirs(".git/sun")
 
     def test_sessionstart_only_prints_context_when_sharing(self):

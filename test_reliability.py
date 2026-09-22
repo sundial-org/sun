@@ -84,14 +84,15 @@ class ReliabilityTest(unittest.TestCase):
         self.assertEqual(evs[-1]["actor"], "zoe/local")
         self.assertEqual(len({e["id"] for e in evs}), len(evs))
 
-    def test_normal_git_commit_does_not_hide_a_human_operation(self):
+    def test_normal_git_commit_does_not_hide_an_observed_operation(self):
         write("human.txt", "human\n")
         self.git("add", ".")
         self.git("commit", "-m", "human edit")
         run("log")
         ev = sun.events()[-1]
-        self.assertEqual(ev["type"], "edit")
+        self.assertEqual((ev["type"], ev["actor"]), ("observe", "unknown"))
         self.assertEqual(ev["edits"][0]["file"], "human.txt")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "observed")
 
     def test_call_keeps_identity_from_pre_hook(self):
         hook("PreToolUse", tool_name="Write", tool_input={"file_path": "a.txt"})
@@ -207,33 +208,50 @@ class ReliabilityTest(unittest.TestCase):
         run("log")
         self.assertEqual(self.sun_head(), feature_tip)
 
-    def test_fetch_never_changes_local_baseline(self):
-        before = self.sun_head()
-        write("remote.txt", "remote\n")
-        remote = self.plumbing_commit(before, ["remote.txt"])
-        os.remove("remote.txt")
-        self.git("update-ref", sun.remote_ref(), remote)
-        run("log")
-        self.assertEqual(self.sun_head(), before)
-        self.assertFalse(any(e.get("edits") for e in sun.events()))
-        run("merge")
-        self.assertEqual(read("remote.txt"), "remote\n")
-        self.assertEqual(sun.events()[-1]["edits"], [])
+    def test_fetch_and_join_never_change_local_files(self):
+        with tempfile.TemporaryDirectory() as bare:
+            self.git("init", "--bare", bare)
+            self.git("remote", "add", "origin", bare)
+            before = self.sun_head()
+            write("remote.txt", "remote\n")
+            remote = self.plumbing_commit(before, ["remote.txt"])
+            os.remove("remote.txt")
+            self.git("push", "--no-verify", "origin", f"{remote}:{sun.shadow_ref()}")
+            self.git("fetch", "origin", f"+{sun.shadow_ref()}:{sun.remote_ref()}")
+            run("log")
+            self.assertEqual(self.sun_head(), before)
+            self.assertFalse(any(e.get("edits") for e in sun.events()))
+            run("push")
+            joined = self.sun_head()
+            self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:], [before, remote])
+            self.assertFalse(os.path.exists("remote.txt"))
+            self.assertNotIn("remote.txt", self.git("ls-tree", "--name-only", joined).split())
+            self.assertEqual(sun.events()[-1]["edits"], [])
 
-    def test_merge_conflict_requires_explicit_resolution(self):
-        base = self.sun_head()
-        write("README.md", "remote\n")
-        remote = self.plumbing_commit(base, ["README.md"])
-        write("README.md", "local\n")
-        run("sync")
-        self.git("update-ref", sun.remote_ref(), remote)
-        with self.assertRaisesRegex(SystemExit, "merge conflicts"):
-            run("merge")
-        self.assertIn("<<<<<<<", read("README.md"))
-        write("README.md", "resolved\n")
-        run("merge", "--continue")
-        self.assertEqual(self.git("show", f"{self.sun_head()}:README.md"), "resolved\n")
-        self.assertEqual(sun.events()[-1]["edits"][0]["attribution"]["method"], "resolution")
+    def test_push_leaves_file_conflicts_to_git(self):
+        with tempfile.TemporaryDirectory() as bare:
+            self.git("init", "--bare", bare)
+            self.git("remote", "add", "origin", bare)
+            base = self.sun_head()
+            write("README.md", "remote\n")
+            remote = self.plumbing_commit(base, ["README.md"])
+            self.git("push", "--no-verify", "origin", f"{remote}:{sun.shadow_ref()}")
+            write("README.md", "local\n")
+            run("sync")
+            local = self.sun_head()
+            run("push")  # joins the histories: no conflict markers, no file changes, no resolution
+            joined = self.sun_head()
+            self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:], [local, remote])
+            self.assertEqual(read("README.md"), "local\n")
+            self.assertEqual(self.git("show", f"{joined}:README.md"), "local\n")
+            self.assertEqual(sun.events()[-1]["edits"], [])
+            write("README.md", "resolved\n")  # resolved through normal Git, then observed by sync
+            self.git("commit", "-am", "resolve")
+            run("sync")
+            ev = sun.events()[-1]
+            self.assertEqual(self.git("show", f"{self.sun_head()}:README.md"), "resolved\n")
+            self.assertEqual((ev["type"], ev["actor"]), ("observe", "unknown"))
+            self.assertEqual(ev["edits"][0]["attribution"]["method"], "observed")
 
     def test_linked_worktree_uses_git_paths(self):
         with tempfile.TemporaryDirectory() as path:
@@ -281,22 +299,23 @@ class ReliabilityTest(unittest.TestCase):
                 run("sync")
                 a = sun.events()[-1]["id"]
                 run("push")
+                published = self.sun_head()
                 os.chdir(clone)
                 before = self.sun_head()
-                with self.assertRaises(SystemExit): run("push")
-                self.assertEqual(self.git("--git-dir", remote, "for-each-ref", "--format=%(refname)",
-                                          f"refs/sun/events/{b}"), "")
-                self.git("fetch", "origin")
-                run("log")
-                self.assertEqual(self.sun_head(), before)
-                run("merge")
-                run("push")
+                run("push")  # diverged: joins both histories instead of rejecting the push
+                joined = self.sun_head()
+                self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:],
+                                 [before, published])
+                self.assertEqual(self.git("--git-dir", remote, "rev-parse", sun.shadow_ref()).strip(), joined)
+                self.assertTrue(self.git("--git-dir", remote, "for-each-ref", f"refs/sun/events/{b}"))
+                self.assertFalse(os.path.exists("a.txt"))
                 os.chdir(self.dir)
-                run("merge")
+                run("push")
                 evs = sun.events()
                 self.assertEqual(sum(e["id"] == a for e in evs), 1)
                 self.assertEqual(sum(e["id"] == b for e in evs), 1)
-                self.assertEqual(read("a.txt") + read("b.txt"), "a\nb\n")
+                self.assertEqual(read("a.txt"), "a\n")
+                self.assertFalse(os.path.exists("b.txt"))
                 self.assertTrue(all(e["edits"] == [] for e in evs if e["type"] == "merge"))
             finally: os.chdir(self.dir)
 

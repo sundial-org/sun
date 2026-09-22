@@ -590,6 +590,7 @@ class MigrateTest(unittest.TestCase):
         subprocess.run(["git", "commit", "-q", "-m", message], check=True, env=env)
 
     def test_migrate_replays_edits_and_observes_the_rest(self):
+        self.commit_at(self.T[0], "hooks")  # what sun init wrote, committed before the sessions
         a = os.path.abspath("a.txt")
         self.claude_transcript("s1", [
             ("user", self.T[1], "write a"),
@@ -633,7 +634,8 @@ class MigrateTest(unittest.TestCase):
                  {"type": "response_item", "timestamp": self.T[2], "payload": {"type": "function_call", "name": "shell", "call_id": "p2",
                                                                               "arguments": json.dumps({"command": ["apply_patch", patch2]})}}]
         write(rollout, "".join(json.dumps(l) + "\n" for l in lines))
-        run("migrate")
+        write("n.md", "hello\nthere\n")  # as the agent left it on disk
+        self.assertIn("replayed 2 tool calls", run("migrate"))
         self.assertEqual(self.git("show", f"{self.sun_head()}:n.md"), "hello\nthere\n")
         replayed = [e for e in sun.events() if e["type"] == "edit"]
         self.assertEqual([e["tool_calls"][0]["id"] for e in replayed], ["p1", "p2"])

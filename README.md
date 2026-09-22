@@ -16,7 +16,9 @@ cd your-repo && sun init   # sets up every harness it detects (Claude Code, Code
 
 `sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
 subagents are included. Raw transcripts remain in their existing local directories by default.
-Existing commits stay untracked because sun did not observe them. From then on, hooks keep an
+Existing commits stay untracked because sun did not observe them: work done before `sun init` is
+one initial snapshot, and agent sessions already running are recorded from their next restart,
+since a harness reads its hooks when a session starts. From then on, hooks keep an
 independent Sun history current: one visible commit per turn, containing one operation per
 agent tool call. Each operation keeps a hidden Git snapshot for exact replay and undo. Human
 edits observed during a turn remain separately attributed operations inside that turn commit.
@@ -25,8 +27,9 @@ or the real index, and they do not appear in GitHub's branch history. Codex asks
 and trust new project hooks through `/hooks` before it runs them.
 
 Each Git branch has a corresponding Sun branch under `refs/sun/heads/<branch>`.
-Creating a branch at the current checkout inherits its Sun history; subsequent edits stay
-on that branch. Git commits do not rewrite Sun history. Git checkout/reset changes are observed
+A branch created at another branch's commit continues that branch's Sun history, whether by
+`git checkout -b`, `git worktree add`, or `sun init` there, and files that differ are observed
+rather than credited to you; subsequent edits stay on the new branch. Git commits do not rewrite Sun history. Git checkout/reset changes are observed
 as repository state, with unknown authorship rather than assigning imported edits to you.
 Detached HEAD is unsupported. Do not switch branches during a tool call.
 

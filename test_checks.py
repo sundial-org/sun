@@ -484,6 +484,22 @@ class SetupTest(unittest.TestCase):
             os.chdir(self.dir); sun._r.clear()
         self.assertNotEqual(self.git("rev-parse", "refs/sun/heads/feature").strip(), self.git("rev-parse", "refs/sun/heads/main").strip())
 
+    def test_a_new_branch_continues_its_parent_history(self):
+        write("a.txt", "a\n"); run("sync"); self.git("add", "-A"); self.git("commit", "-q", "-m", "a")
+        main = self.sun_head()
+        self.git("checkout", "-q", "-b", "feature")
+        self.assertNotIn("recording starts now", run("init", "--no-instructions"))  # init on a new branch inherits
+        self.assertEqual(self.git("rev-parse", "refs/sun/heads/feature").strip(), main)
+        write("b.txt", "b\n"); self.git("add", "-A"); self.git("commit", "-q", "-m", "b"); run("sync")
+        self.git("checkout", "-q", "-b", "fix", "main")  # created from another branch's commit
+        self.assertIn("edits a.txt", run("log"))
+        self.assertEqual(self.git("rev-parse", "refs/sun/heads/fix").strip(), main)
+        self.git("checkout", "-q", "main"); write("c.txt", "c\n"); self.git("add", "-A"); self.git("commit", "-q", "-m", "c")
+        self.git("checkout", "-q", "-b", "later")  # after a commit Sun never saw
+        self.assertIn("edits a.txt", run("log"))
+        self.assertEqual((sun.events()[-1]["type"], sun.events()[-1]["actor"]), ("observe", "unknown"))
+        self.assertIn("c.txt", json.dumps(sun.events()[-1]["edits"]))
+
     def test_a_clone_with_committed_hooks_sets_itself_up_on_the_first_hook(self):
         self.on_path()
         self.git("add", "-A"); self.git("commit", "-q", "-m", "hooks")

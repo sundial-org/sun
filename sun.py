@@ -195,11 +195,9 @@ def ensure_branch():
         # A normal commit may have happened since Sun last ran, before `git switch -c`.
         at_source = source and normal == ref_oid(source.replace("refs/sun/heads/", "refs/heads/"))
         tip = ref_oid(source) if source and (previous.get("git") == normal or at_source) else ""
-        if not tip and not previous and normal:  # a new worktree: a sibling branch at the same commit
-            for sibling in git("for-each-ref", "--points-at", normal, "--format=%(refname)",
-                               "refs/heads/", check=False).split():
-                tip = ref_oid(sibling.replace("refs/heads/", "refs/sun/heads/", 1))
-                if tip: inherited = True; break
+        if not tip and normal:  # a branch created at another branch's commit continues that history
+            tip = sibling_history(normal, source)
+            inherited = bool(tip)
         if tip: git("update-ref", ref, tip)
         else:
             # A freshly cloned branch starts at its Git checkout, not the possibly newer
@@ -215,6 +213,12 @@ def ensure_branch():
     observe = previous.get("observe", False) or inherited or bool(previous and (
         previous.get("ref") != ref or previous.get("git") != normal))
     save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
+def sibling_history(normal, prefer=None):  # the Sun tip of another Git branch at this commit
+    at = git("for-each-ref", "--points-at", normal, "--format=%(refname)", "refs/heads/", check=False).split()
+    cands = [r.replace("refs/heads/", "refs/sun/heads/", 1) for r in at]
+    for cand in ([prefer] if prefer in cands else []) + cands:
+        if cand != shadow_ref() and ref_oid(cand): return ref_oid(cand)
+    return ""
 def history_head(required=True):
     oid = ref_oid(shadow_ref())
     if required and not oid: sys.exit("sun: shadow history has no commits (run `sun init`)")
@@ -1049,16 +1053,25 @@ def init_locked(a):
         if explicit and h not in explicit: remove_hooks(h)
     if share_sessions:
         agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
+    fresh = False
     if not history_head(False):
-        c = commit_files(["."], "sun: initial state", local())
-        remote, tree = ref_oid(remote_ref()), ref_oid(f"{c}^{{tree}}")
-        matches = [line.split()[0] for line in git("log", remote, "--format=%H %T").splitlines()
-                   if line.split()[1] == tree] if remote else []
-        if matches: git("update-ref", shadow_ref(), matches[0])
-        else: record(type="init", actor=local(), commit=c, edits=[])
+        normal, inherited = ref_oid("HEAD"), sibling_history(ref_oid("HEAD"))
+        if inherited:  # a new branch or worktree continues the history of the branch it came from
+            git("update-ref", shadow_ref(), inherited)
+            save_state("branch.json", {"ref": shadow_ref(), "git": normal, "observe": True})
+        else:
+            c = commit_files(["."], "sun: initial state", local())
+            remote, tree = ref_oid(remote_ref()), ref_oid(f"{c}^{{tree}}")
+            matches = [line.split()[0] for line in git("log", remote, "--format=%H %T").splitlines()
+                       if line.split()[1] == tree] if remote else []
+            if matches: git("update-ref", shadow_ref(), matches[0])
+            else: record(type="init", actor=local(), commit=c, edits=[]); fresh = True
     ensure_branch()
     sync()
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
+    if fresh:
+        print("sun: recording starts now: earlier work is one initial snapshot, and agent sessions "
+              "already running are recorded from their next restart")
     if "codex" in harnesses:
         print("sun: Codex requires separate hook approval; open `/hooks`, review "
               "`.codex/hooks.json`, and trust the Sun hooks before testing")

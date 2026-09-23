@@ -8,6 +8,7 @@ it combines recorded histories without changing files or normal Git refs.
 Raw transcripts are shared only when you explicitly enable session sharing."""
 import argparse, calendar, difflib, fcntl, fnmatch, glob, hashlib, json, os, re, shutil
 import subprocess, sys, time, uuid
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, TypedDict
 
 
@@ -213,10 +214,18 @@ def ensure_branch():
     observe = previous.get("observe", False) or inherited or bool(previous and (
         previous.get("ref") != ref or previous.get("git") != normal))
     save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
-def sibling_history(normal, prefer=None):  # the Sun tip of another Git branch at this commit
+def sibling_history(normal, prefer=None):
+    """The Sun tip this branch should continue: its own remote lineage, else the branch it was created
+    from (the reflog says), else the last-used branch, else any branch at the same commit."""
+    remote = ref_oid(remote_ref())
+    if remote: return remote
     at = git("for-each-ref", "--points-at", normal, "--format=%(refname)", "refs/heads/", check=False).split()
     cands = [r.replace("refs/heads/", "refs/sun/heads/", 1) for r in at]
-    for cand in ([prefer] if prefer in cands else []) + cands:
+    first = git("reflog", "show", "--format=%gs", shadow_ref().replace("refs/sun/heads/", "refs/heads/", 1),
+                check=False).strip().splitlines()
+    m = first and re.match(r"branch: Created from (\S+)", first[-1])
+    source = "refs/sun/heads/" + m.group(1) if m else None
+    for cand in [c for c in (source, prefer) if c in cands] + cands:
         if cand != shadow_ref() and ref_oid(cand): return ref_oid(cand)
     return ""
 def history_head(required=True):
@@ -230,9 +239,10 @@ def resolve_history_rev(rev):  # HEAD, HEAD~2, HEAD^ name the Sun branch, not th
     return git("rev-parse", rev).strip()
 def shadow_index():
     return os.path.join(sun_dir(), "shadow-index")
-def make_shadow_commit(tree, message, author, parents=()):
+def make_shadow_commit(tree, message, author, parents=(), when=None):
     ident = {**os.environ, "GIT_AUTHOR_NAME": author, "GIT_AUTHOR_EMAIL": "sun@sun",
              "GIT_COMMITTER_NAME": author, "GIT_COMMITTER_EMAIL": "sun@sun"}
+    if when: ident.update(GIT_AUTHOR_DATE=str(when), GIT_COMMITTER_DATE=str(when))  # migrated: the original time
     args = ["-c", "commit.gpgsign=false", "commit-tree", tree]
     for parent in parents: args += ["-p", parent]
     return git(*args, "-m", message, env=ident).strip()
@@ -439,7 +449,7 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     record_batch(c, entries)
     release()
     start = state("turns.json", {}).get(session_key(sid, harness), {}).get("start") or pre
-    return {"at": c, "since": pre, "turn": start, "files": a_files} if a_files else None
+    return {"at": c, "since": pre, "turn": start, "in_turn": True, "files": a_files} if a_files else None
 def squash_turn(sid, harness="claude"):
     # Stop: squash the turn's agent calls and intervening local edits into one turn commit.
     # A different agent or an already-aggregated commit remains a hard boundary.
@@ -540,6 +550,17 @@ def subagent_chunk(sid, payload):
     tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
     if not (tp and sub and os.path.exists(tp) and cfg_share_sessions()): return
     store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": read_text(tp, errors="replace")})
+def turn_unit(sid, harness, t):
+    """The session's own work in a turn, for rules and extraction: {at, since, turn, files, in_turn}."""
+    tip = history_head(False)
+    if not (t.get("start") and tip and t.get("branch") == shadow_ref()): return None
+    n, mine = t.get("n"), []
+    for e in events():  # after the squash, the turn's events sit on the turn commit
+        if e.get("session_id") == sid and e.get("turn") == f"turn{n}" and e["actor"] == agent(sid, harness):
+            mine.append(e)
+    files = sorted({d["file"] for e in mine for d in e.get("edits") or []})
+    at = mine[-1]["commit"] if mine and quiet("git", "merge-base", "--is-ancestor", mine[-1]["commit"], tip).returncode == 0 else tip
+    return {"at": at, "since": t["start"], "turn": t["start"], "in_turn": True, "files": files}
 def cmd_hook(a):
     try: payload = json.load(sys.stdin)
     except (ValueError, OSError): payload = {}
@@ -627,12 +648,13 @@ def handle_hook(a, payload):
     elif event in ("PostToolUse", "PostToolUseFailure"):
         return finish_call(sid, active, payload, harness)
     elif event == "Stop":  # a queued prompt may end in a text-only turn: no PreToolUse
+        before = dict(state("turns.json", {}).get(session_key(sid, harness)) or {})
         prompt_boundary(sid, payload, harness)
         squash_turn(sid, harness)
         stop_chunk(sid, payload, harness)
-        t, tip = state("turns.json", {}).get(session_key(sid, harness)) or {}, history_head(False)
-        if t.get("start") and tip and t.get("branch") == shadow_ref():  # the turn, for rules and extraction
-            return {"at": tip, "since": t["start"], "turn": t["start"], "files": changed_between(t["start"], tip)}
+        t = state("turns.json", {}).get(session_key(sid, harness)) or {}
+        if before.get("n") and t.get("n") != before.get("n"): t = before  # a queued prompt already opened the next turn
+        return turn_unit(sid, harness, t)
     elif event == "SubagentStop":
         subagent_chunk(sid, payload)
 enc = lambda path: re.sub(r"[/.]", "-", path)
@@ -887,7 +909,9 @@ def install_hooks(harness="claude"):
     for event in hook_events:
         group = cfg["hooks"].setdefault(event, [])
         if not any(h.get("command") == command for g in group for h in g.get("hooks", [])):
-            group.append({"hooks": [{"type": "command", "command": command}]})
+            entry = {"type": "command", "command": command}
+            if harness == "claude" and event in ("PostToolUse", "Stop"): entry["timeout"] = 2 * CHECK_TIMEOUT
+            group.append({"hooks": [entry]})
     jwrite(path, cfg)
     return f"{harness} ({rel})"
 def remove_hooks(harness):  # a restrictive re-init un-installs the excluded harness's hook
@@ -942,6 +966,9 @@ done
 exit 0
 """
 def install_push_hook():  # `git push` publishes Sun history too; a hook Sun did not write is left alone
+    if git("config", "--get", "core.hooksPath", check=False).strip():
+        print("sun: core.hooksPath is set; add `sun push` to your pre-push hook yourself", file=sys.stderr)
+        return False
     path = git("rev-parse", "--git-path", "hooks/pre-push").strip()
     if os.path.exists(path):
         if read_text(path) == PRE_PUSH: return True
@@ -1044,7 +1071,6 @@ def init_locked(a):
     cfg["harnesses"] = harnesses
     cfg.pop("shadow_history", None)
     save_state("config.json", cfg)
-    jwrite(trust_path(), {"rules": runners_hash(*read_rules())})  # you ran init: hooks may run RULES.md commands
     share_sessions = configure_session_sharing(a.share_sessions)
     if "origin" in git("remote", check=False).split():  # fresh clone: fetch team refs
         git("fetch", "-q", "origin", *refspecs(share_sessions))
@@ -1070,8 +1096,14 @@ def init_locked(a):
     sync()
     print(f"sun: initialized {root()} (hooks: {installed}); {do_import(harnesses)}")
     if fresh:
-        print("sun: recording starts now: earlier work is one initial snapshot, and agent sessions "
-              "already running are recorded from their next restart")
+        print("sun: recording starts now: earlier work is one initial snapshot (`sun migrate` rebuilds it from "
+              "your agent sessions), and agent sessions already running are recorded from their next restart")
+    config, rs = read_rules()
+    if runners_hash(config, rs) and not trusted(config, rs):
+        named = [f"{n}: {r['runner']}: {r['command']}" for n, r in sorted(rs.items()) if r["runner"]]
+        named += [f"extract: {config['extract']}"] if config.get("extract") else []
+        print("sun: RULES.md names commands for hooks to run; review them and run `sun trust` to allow that:\n  "
+              + "\n  ".join(named))
     if "codex" in harnesses:
         print("sun: Codex requires separate hook approval; open `/hooks`, review "
               "`.codex/hooks.json`, and trust the Sun hooks before testing")
@@ -1285,15 +1317,19 @@ CLI = {  # a bare model name runs through the harness CLI; a value with a space 
     ("model", "claude"): 'claude -p --model {m} --tools "" --strict-mcp-config --max-turns 1 '
                          '--no-session-persistence --output-format json',
     ("agent", "claude"): 'claude -p --model {m} --strict-mcp-config --output-format json --permission-mode dontAsk '
-                         '--allowedTools "Read,Grep,Glob,Bash(git *),Bash(sun *)"',
+                         '--allowedTools "Read,Grep,Glob,Bash(git diff *),Bash(git show *),Bash(git log *),'
+                         'Bash(git blame *),Bash(sun show *),Bash(sun log *),Bash(sun blame *),Bash(sun data *)"',
     ("model", "codex"): "codex exec -m {m} -s read-only --ephemeral -",
     ("agent", "codex"): "codex exec -m {m} -s read-only -",
 }
+def unquote(v):  # a value in matching outer quotes, or as written; `  # comment` is dropped
+    v = re.sub(r"\s+#.*$", "", v.strip())
+    return v[1:-1] if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'" else v
 def kv_block(lines):  # `key: value` lines -> dict: a strict subset of YAML, no nesting
     out = {}
     for l in lines:
         m = re.fullmatch(r"\s*([\w-]+)\s*:\s*(.*?)\s*", l)
-        if m: out[m.group(1)] = m.group(2).strip("\"'")
+        if m: out[m.group(1)] = unquote(m.group(2))
     return out
 def front_matter(lines):  # (dict, rest) when the lines open with a `---` fenced block
     while lines and not lines[0].strip(): lines = lines[1:]
@@ -1305,7 +1341,7 @@ def rule_record(name, meta, text):
     runner = next((k for k in ("run", "model", "agent") if meta.get(k)), None)
     keyed = {k: meta[k] for k in RULE_KEYS if k in meta}
     return {"name": name, "text": text, "runner": runner, "command": meta.get(runner, "") if runner else "",
-            "on": meta.get("on", ""), "files": [g.strip() for g in meta.get("files", "").split(",") if g.strip()],
+            "on": meta.get("on", ""), "files": [unquote(g) for g in meta.get("files", "").split(",") if g.strip()],
             "feedback": meta.get("feedback", "true").lower() not in ("false", "no", "0", "off"),
             "hash": hashlib.sha256((" ".join(text.split()) + "\n" + json.dumps(keyed, sort_keys=True))
                                    .encode()).hexdigest()[:12]}
@@ -1316,9 +1352,10 @@ def read_rules():  # (front matter, {name: rule}) from RULES.md, or a legacy RUL
         found = re.findall(r"(?m)^([\w.-]+):[ \t]+(\S.*?)\s*$", read_text(legacy)) if os.path.exists(legacy) else []
         return {}, {n: rule_record(n, {}, t) for n, t in found}
     config, lines = front_matter(read_text(p).splitlines())
-    rules, name, body = {}, None, []
+    rules, name, body, fenced = {}, None, [], False
     for l in lines + [None]:
-        if l is None or re.match(r"##(\s|$)", l):  # a level-2 heading starts a rule, or ends one
+        if l is not None and l.lstrip().startswith("```"): fenced = not fenced
+        if l is None or (not fenced and re.match(r"##(\s|$)", l)):  # a level-2 heading starts a rule, or ends one
             if name:
                 meta, rest = front_matter(body)
                 rules[name] = rule_record(name, meta, "\n".join(rest).strip())
@@ -1338,8 +1375,10 @@ def trusted(config, rs):  # hooks run RULES.md commands only after a person trus
     h = runners_hash(config, rs)
     return not h or jread(trust_path(), {}).get("rules") == h
 def cmd_trust(a):
+    if agent_shell(): sys.exit("sun: trusting RULES.md commands is a person's decision; run `sun trust` at a terminal")
     config, rs = read_rules()
     h = runners_hash(config, rs)
+    os.makedirs(os.path.dirname(trust_path()), exist_ok=True)
     jwrite(trust_path(), {"rules": h})
     n = sum(1 for r in rs.values() if r["runner"])
     if not h: return print("sun: RULES.md asks Sun to run nothing; nothing to trust")
@@ -1355,7 +1394,11 @@ def well_formed(c):  # the shape coverage relies on; checks arrive by fetch, so 
                c.get("via", ""), c.get("rule_text", ""), c.get("from") or ""]
     for x in c["cites"]:
         if not isinstance(x, dict) or not ("at" in x or "check" in x): return False
-        strings += [x[k] for k in ("at", "check") if k in x]
+        strings += [x[k] for k in ("at", "check", "file") if k in x]
+        lines = x.get("lines")
+        if lines is not None and not (isinstance(lines, list) and len(lines) == 2
+                                      and all(isinstance(n, int) and not isinstance(n, bool) for n in lines)): return False
+    if not isinstance(c.get("meta", {}), dict) or not isinstance(c.get("note", ""), str): return False
     return all(isinstance(s, str) for s in strings) and "/" in c["actor"]
 def checks():  # {id: check}; a blob that is malformed, outside its user's namespace, or does not hash to its ID is not a check
     out = {}
@@ -1381,8 +1424,9 @@ def check_label(c, authored=None):
     tag = "self-check" if c.get("from") and c["from"] == authored else via
     return label + (f" ({tag})" if tag else "")
 one_line = lambda s: " ".join(str(s or "").split())[:500]
-def harness_env():  # a shell an agent is running, even after its tool call has been released
-    return bool(os.environ.get("CLAUDECODE")) or any(k.startswith("CODEX_SANDBOX") for k in os.environ)
+def harness_env():  # a shell an agent or a judge is running, even after its tool call has been released
+    return bool(os.environ.get("CLAUDECODE") or os.environ.get("SUN_CHECKING")) or \
+        any(k.startswith("CODEX_SANDBOX") for k in os.environ)
 def agent_shell():  # refuse the terminal form here: it is the one check that counts as your eyes
     return bool(state("active.json", {})) or harness_env()
 def in_flight_session():  # the one agent session whose tool call is running, if exactly one is
@@ -1414,12 +1458,17 @@ def store_checks(reqs, via, origin=None):
             elif isinstance(x, dict) and isinstance(x.get("at"), str):
                 at = x["at"] if x["at"] in recorded else resolve_history_rev(x["at"])
                 if at not in recorded: sys.exit(f"sun: nothing recorded at {at[:8]} (run `sun sync` first?)")
-                path = x.get("file")
-                if path and quiet("git", "cat-file", "-e", f"{at}:{path}").returncode:
+                path, lines = x.get("file"), x.get("lines")
+                if path and (not isinstance(path, str) or quiet("git", "cat-file", "-e", f"{at}:{path}").returncode):
                     sys.exit(f"sun: {path} is not in {at[:8]}")
+                if lines and not (isinstance(lines, list) and len(lines) == 2 and all(
+                        isinstance(n, int) and not isinstance(n, bool) and n > 0 for n in lines)):
+                    sys.exit("sun: lines is [first, last], 1-based")
                 cites.append({"at": at, **{k: x[k] for k in ("file", "lines") if x.get(k)}})
             else: sys.exit('sun: a cite is {"at": SHA, "file": PATH, "lines": [A, B]} or {"check": ID}')
         rule, verdict = r.get("rule"), r.get("verdict")
+        if not isinstance(r.get("meta", {}), dict) or not isinstance(r.get("note") or "", str):
+            sys.exit("sun: note is text and meta is a JSON object")
         if not cites: sys.exit("sun: a check must cite the recorded state it read")
         if not isinstance(rule, str) or rule not in rs: sys.exit(f"sun: no rule {rule!r} in RULES.md")
         if not (isinstance(verdict, str) and verdict.strip() and "\n" not in verdict):
@@ -1461,7 +1510,7 @@ def cmd_check(a):
         for r in reqs:
             if not declared_actor(r.get("actor") if isinstance(r, dict) else None):
                 sys.exit("sun: a check on stdin declares an actor, like program:lean or agent:judge")
-        done = store_checks(reqs, "stdin", in_flight_session())
+        done = store_checks(reqs, "stdin", in_flight_session() if harness_env() else None)
     if a.json: return print(json.dumps({"checks": done}))
     for c in done: print(f"sun: check {c['id'][:8]} {c['rule']} {c['verdict']}")
 # --- running a rule ---------------------------------------------------------------------------
@@ -1486,11 +1535,8 @@ def runner_name(cmd):  # a bare model name, or the script a command runs, else i
     words = cmd.split()
     script = next((w for w in words if "/" in w or re.search(r"\.(py|sh|js|ts|rb|pl)$", w)), words[0])
     return os.path.basename(script)
-def runner_actor(rule, harness, session=None):
-    name = runner_name(rule["command"].strip())
-    if rule["runner"] == "run": return "program:" + name
-    if rule["runner"] == "model": return "model:" + name
-    return f"agent:{harness}/{session}" if session else "agent:" + name
+def runner_actor(rule):
+    return {"run": "program:", "model": "model:", "agent": "agent:"}[rule["runner"]] + runner_name(rule["command"].strip())
 def last_json(text):  # the last JSON object in some output that carries a verdict
     dec = json.JSONDecoder()
     for m in list(re.finditer(r"\{", text))[::-1]:
@@ -1527,11 +1573,18 @@ def run_command(cmd, stdin, extra_env):  # (stdout, stderr, exit status or None)
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}  # a judge is its own session
     env.update({"SUN_CHECKING": "1", "SUN_ROOT": root(), **extra_env})
     try:
-        p = subprocess.run(cmd, shell=True, cwd=root(), env=env, input=stdin or "",
-                           capture_output=True, text=True, timeout=CHECK_TIMEOUT)
-        return p.stdout, p.stderr, p.returncode
-    except (subprocess.TimeoutExpired, OSError) as exc:
+        p = subprocess.Popen(cmd, shell=True, cwd=root(), env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True, start_new_session=True)
+    except OSError as exc:
         return "", f"{type(exc).__name__}: {str(exc)[:400]}", None
+    try:
+        out, err = p.communicate(stdin or "", timeout=CHECK_TIMEOUT)
+        return out, err, p.returncode
+    except subprocess.TimeoutExpired:
+        try: os.killpg(p.pid, 9)  # the shell and everything it started
+        except OSError: pass
+        p.communicate()
+        return "", f"timed out after {CHECK_TIMEOUT}s", None
 def model_reply(out):  # (text, session id): `claude -p --output-format json` wraps the reply
     try: whole = json.loads(out)
     except ValueError: return out, None
@@ -1558,12 +1611,19 @@ def run_rule(rule, unit, harness):
             lines = x.get("lines")
             ok = isinstance(lines, list) and len(lines) == 2 and all(isinstance(n, int) for n in lines)
             cites.append({"at": at, "file": f, **({"lines": lines} if ok else {})})
-    actor = runner_actor(rule, harness, session)
-    rng = turn_range(unit)  # a later run of the same runner in the same turn replaces the earlier verdict
+    actor = runner_actor(rule)
+    # A later run of the same runner in the same turn replaces the earlier verdict, if it covered its files.
+    rng = turn_range(unit) if unit.get("in_turn") else {at}
     earlier = [i for i, c in checks().items() if c["rule"] == rule["name"] and c["actor"] == f"{user()}/{actor}"
-               and c.get("via", "").split(":")[0] in ("run", "hook") and any(x.get("at") in rng for x in c["cites"])]
+               and c.get("via", "").split(":")[0] in ("run", "hook") and any(x.get("at") in rng for x in c["cites"])
+               and set((c.get("meta") or {}).get("files", [])) <= set(unit["files"])]
+    meta = {"files": unit["files"], **({"session": session} if session else {})}
     return {"actor": actor, "rule": rule["name"], "verdict": verdict, "note": note[:2000], "command": cmd,
-            "cites": (cites or [{"at": at}]) + [{"check": i} for i in earlier]}
+            "meta": meta, "cites": (cites or [{"at": at}]) + [{"check": i} for i in earlier]}
+def run_rules(rules_, unit, harness):  # judges are slow: run them side by side, in the rules' order
+    if len(rules_) <= 1: return [run_rule(r, unit, harness) for r in rules_]
+    with ThreadPoolExecutor(min(8, len(rules_))) as pool:
+        return list(pool.map(lambda r: run_rule(r, unit, harness), rules_))
 def print_results(done, as_json=False):
     bad = 0
     for c in done:
@@ -1580,15 +1640,19 @@ def run_checks(a):  # `sun check --run`: runners start models and agents, so thi
         if n not in rs: sys.exit(f"sun: no rule {n!r} in RULES.md")
         if not rs[n]["runner"]: sys.exit(f"sun: rule {n!r} names no run:, model: or agent:; check it yourself or pipe a check")
     if not names: sys.exit("sun: no rule in RULES.md names a command, model, or agent to run")
+    if os.environ.get("SUN_CHECKING"): sys.exit("sun: a judge does not run rules of its own")
+    if harness_env() and not trusted(config, rs):  # a person at a terminal may run anything; an agent may not
+        sys.exit("sun: RULES.md names commands this machine has not trusted; a person runs `sun trust` first")
     with lock():
         if a.at in (None, "HEAD"): maybe_sync()
         at = resolve_history_rev(a.at or "HEAD")
         origin = in_flight_session()
         turn = state("turns.json", {}).get(origin, {}).get("start") if origin else None
         since = resolve_history_rev(a.since) if a.since else turn or parent_of(at)
-        unit = {"at": at, "since": since, "turn": turn or since, "files": changed_between(since, at)}
-    results = [run_rule(rs[n], unit, configured_harnesses()[0]) for n in names]
-    with lock(): done = store_checks(results, "run", origin)
+        unit = {"at": at, "since": since, "turn": turn or since, "in_turn": bool(turn) and not a.since,
+                "files": changed_between(since, at)}
+    results = run_rules([rs[n] for n in names], unit, configured_harnesses()[0])
+    with lock(): done = store_checks(results, "run", origin if harness_env() else None)
     if print_results(done, a.json): sys.exit(1)
 def hook_checks(a, payload, unit):
     """After the lock is released: run the rules due for this hook, record them, and answer the harness."""
@@ -1603,7 +1667,7 @@ def hook_checks(a, payload, unit):
     if not trusted(config, rs):
         return print("sun: RULES.md asks hooks to run commands this machine has not trusted; run `sun trust`",
                      file=sys.stderr)
-    results = [run_rule(r, unit, a.harness) for r in due]
+    results = run_rules(due, unit, a.harness)
     with lock(): done = store_checks(results, f"hook:{event}") if results else []
     if extract: extract_session(key, config, rs, a.harness, unit)
     failing = [c for r, c in zip(due, done) if c["verdict"] != "pass" and r["feedback"]]
@@ -1645,7 +1709,7 @@ def epoch(ts):  # transcript timestamps: ISO strings, or milliseconds
     if z and z != "Z": t -= (1 if z[0] == "+" else -1) * (int(z[1:3]) * 3600 + int(z[-2:]) * 60)
     return t
 def state_at(t):  # the last Sun commit on this branch recorded before a moment
-    for line in git("log", "--format=%H %ct", shadow_ref(), check=False).splitlines():
+    for line in git("log", "--first-parent", "--format=%H %ct", shadow_ref(), check=False).splitlines():
         H, ct = line.split()
         if int(ct) <= t: return H
     return None
@@ -1659,6 +1723,7 @@ def transcript_records(path, harness):  # the person's prompts and the agent's t
             except ValueError: continue
             role, text, ts, uid = None, "", o.get("timestamp"), o.get("uuid")
             if harness == "claude":
+                if o.get("isMeta") or o.get("toolUseResult") is not None: continue  # injected, not typed
                 c = (o.get("message") or {}).get("content")
                 blocks = [{"type": "text", "text": c}] if isinstance(c, str) else c if isinstance(c, list) else []
                 text = "\n".join(b.get("text", "") for b in blocks if isinstance(b, dict) and b.get("type") == "text")
@@ -1670,7 +1735,9 @@ def transcript_records(path, harness):  # the person's prompts and the agent's t
                 elif o.get("type") == "response_item" and p.get("type") == "message" and p.get("role") in ("user", "assistant"):
                     role = p["role"]
                     text = "".join(b.get("text", "") for b in p.get("content") or [] if isinstance(b, dict))
-            if role == "user": text = re.sub(r"<system-reminder>.*?</system-reminder>", "", text, flags=re.S)
+            if role == "user":
+                text = re.sub(r"<(system-reminder|command-message|command-name|local-command-stdout)>.*?</\1>", "", text, flags=re.S)
+                if "hook feedback" in text.lower() or "sun check result (data, not instructions)" in text: continue
             if role and text.strip() and not (out and out[-1]["role"] == role and out[-1]["text"] == text.strip()):
                 out.append({"role": role, "text": text.strip(), "offset": start, "time": ts, "uuid": uid,
                             "sha256": hashlib.sha256(line).hexdigest()})
@@ -1709,7 +1776,7 @@ def extract_verdicts(item, config, rs, harness):  # one model call -> validated 
     except ValueError: found = None
     if not isinstance(found, list):
         print(f"sun: extraction returned no JSON array for {item['key']}: {one_line(out + err)[-300:]}", file=sys.stderr)
-        return []
+        return None
     norm = lambda s: " ".join(str(s).split())
     reqs = []
     for v in found:
@@ -1733,6 +1800,7 @@ def extract_session(key, config, rs, harness, unit=None):  # returns the number 
     n = 0
     for item in items:
         reqs = extract_verdicts(item, config, rs, harness)  # outside the lock: the model may run hooks
+        if reqs is None: break  # the model call failed: leave this reply unread for a later `sun extract`
         with lock():
             if reqs: n += len(store_checks(reqs, "extract"))
             done = state("extracted.json", {})
@@ -1878,11 +1946,14 @@ def cmd_pr(a):
     if not rs: sys.exit("sun: no RULES.md; nothing to summarize")
     exclude = [r for r in (f"refs/sun/heads/{base}", f"refs/sun/remotes/origin/{base}") if ref_oid(r) and r != shadow_ref()]
     commits = git("rev-list", "--topo-order", shadow_ref(), *[f"^{r}" for r in exclude]).split()
-    in_flight = in_flight_session()
+    in_flight = in_flight_session() if harness_env() else None
     if config.get("extract") and not agent_shell() and not a.json:
-        for key, entry in state("session-paths.json", {}).items():
-            extract_session(key, config, rs, entry.get("harness") or "claude")
-    writer = f"an agent tool call in session {in_flight}" if in_flight else f"{user()} at a terminal" if not harness_env() else f"{user()} in an agent's shell"
+        if trusted(config, rs):
+            for key, entry in state("session-paths.json", {}).items():
+                extract_session(key, config, rs, entry.get("harness") or "claude")
+        else: print("sun: replies were not read for verdicts: run `sun trust` to allow the extract: model", file=sys.stderr)
+    writer = (f"an agent tool call in session {in_flight}" if in_flight else
+              f"{user()} in an agent's shell" if harness_env() else f"{user()} at a terminal")
     table = coverage(commits=commits)
     if a.json: return print(json.dumps({"base": base, "writer": writer, "commits": table}))
     md = render_pr(table, rs, base, writer)
@@ -1893,6 +1964,202 @@ def cmd_pr(a):
         else body.rstrip() + "\n\n" + block + "\n"
     sh("gh", "pr", "edit", "--body-file", "-", input=new)
     print("sun: updated the pull request description")
+# --- migration: rebuild history from the agent sessions and Git commits that predate sun init -----
+# Transcripts hold exact tool inputs: a Write's content, an Edit's old and new strings, a Codex
+# apply_patch. Replaying them onto a shadow tree attributes each edit to the call that made it
+# without guessing. Whatever a replay cannot explain (shell commands, edits that no longer apply)
+# surfaces as observed state at the next Git commit, with an unknown author.
+EDIT_TOOLS = ("Write", "Edit", "MultiEdit", "apply_patch")
+base_tool = lambda name: (name or "?").rsplit("__", 1)[-1]  # mcp__server__Edit is an Edit
+def call_records(path, harness, sid):
+    """[(time, sid, harness, turn, call)] for every tool call in a transcript, with its cwd."""
+    out, turn, cwd = [], 0, None
+    lines = read_text(path, errors="replace").splitlines()
+    kinds = [prompt_line(l, harness) for l in lines]
+    boundary = 3 if 3 in kinds else 1 if 1 in kinds else 2  # codex mirrors one prompt across records
+    for line, kind in zip(lines, kinds):
+        if kind and (harness == "claude" or kind == boundary): turn += 1
+        try: o = json.loads(line)
+        except ValueError: continue
+        p = o.get("payload") or {}
+        cwd = (p.get("cwd") if o.get("type") == "session_meta" else o.get("cwd")) or cwd
+        t = epoch(o.get("timestamp"))
+        if t is None: continue
+        if harness == "claude":
+            m = o.get("message") or {}
+            for b in (m.get("content") if isinstance(m.get("content"), list) else []):
+                if isinstance(b, dict) and b.get("type") == "tool_use" and isinstance(b.get("input"), dict):
+                    out.append((t, sid, harness, max(turn, 1),
+                                {"id": b.get("id"), "tool": b.get("name"), "input": b["input"], "cwd": cwd}))
+            continue
+        if o.get("type") != "response_item" or p.get("type") not in ("custom_tool_call", "function_call"): continue
+        raw = p.get("input") if p.get("type") == "custom_tool_call" else p.get("arguments")
+        if isinstance(raw, str) and raw.lstrip().startswith("{"):
+            try: raw = json.loads(raw)
+            except ValueError: pass
+        texts = [raw] if isinstance(raw, str) else [v for v in (raw or {}).values() if isinstance(v, str)] + \
+            [w for v in (raw or {}).values() if isinstance(v, list) for w in v if isinstance(w, str)]
+        patch = next((s[s.find("*** Begin Patch"):] for s in texts if "*** Begin Patch" in s), None)
+        call = {"id": p.get("call_id") or p.get("id"), "cwd": cwd}
+        if patch: call.update(tool="apply_patch", input={"patch": patch[:patch.find("*** End Patch") + 13]})
+        else: call.update(tool=p.get("name") or "?", input=raw if isinstance(raw, dict) else {"command": raw})
+        out.append((t, sid, harness, max(turn, 1), call))
+    return out
+def tree_read(tree, path):
+    p = quiet("git", "cat-file", "-p", f"{tree}:{path}")
+    return None if p.returncode else p.stdout
+def tree_write(base, overlay):  # a base tree plus {path: text, or None to delete} -> a new tree
+    ix, env = os.path.join(sun_dir(), "migrate-index"), None
+    env = {**os.environ, "GIT_INDEX_FILE": ix}
+    if os.path.exists(ix): os.remove(ix)
+    git("read-tree", *([base] if base else ["--empty"]), env=env)
+    info = "".join(f"0 {'0' * 40}\t{p}\n" if text is None else f"100644 {blob(text)}\t{p}\n"
+                   for p, text in overlay.items())
+    if info: git("update-index", "--index-info", input=info, env=env)
+    return git("write-tree", env=env).strip()
+def apply_codex_patch(patch, tree, rel):  # {path: text or None}, or None when a hunk no longer applies
+    out, lines, i = {}, patch.replace("\r\n", "\n").split("\n"), 0
+    while i < len(lines):
+        l = lines[i]; i += 1
+        m = re.match(r"\*\*\* (Add|Delete|Update) File: (.+)", l)
+        if not m: continue
+        kind, f = m.group(1), rel(m.group(2).strip())
+        if not f: return None
+        body = []
+        while i < len(lines) and not lines[i].startswith("*** ") or (i < len(lines) and lines[i].startswith("*** End of File")):
+            body.append(lines[i]); i += 1
+        if i < len(lines) and lines[i].startswith("*** Move to: "):
+            dest = rel(lines[i][len("*** Move to: "):].strip()); i += 1
+        else: dest = None
+        if kind == "Add": out[f] = "\n".join(x[1:] for x in body if x.startswith("+")) + "\n"; continue
+        if kind == "Delete": out[f] = None; continue
+        text = out.get(f, tree_read(tree, f)) if f not in out or out[f] is not None else None
+        if text is None: return None
+        cur, pos, hunk = text.split("\n"), 0, []
+        for x in body + ["@@"]:
+            if x.startswith("@@") or x.startswith("*** End of File"):
+                if hunk:
+                    old = [h[1:] for h in hunk if h[:1] in (" ", "-")]
+                    new = [h[1:] for h in hunk if h[:1] in (" ", "+")]
+                    at = next((j for j in range(pos, len(cur) - len(old) + 1) if cur[j:j + len(old)] == old), None)
+                    if at is None: return None
+                    cur[at:at + len(old)] = new; pos = at + len(new); hunk = []
+                continue
+            hunk.append(x)
+        out[f] = "\n".join(cur)
+        if dest and dest != f: out[dest], out[f] = out[f], None
+    return out
+def replay_call(call, tree):
+    """The files a recorded tool call changes on `tree`: {path: text or None}, or None if it cannot be replayed."""
+    tool, inp, cwd = base_tool(call["tool"]), call["input"], call.get("cwd")
+    def rel(p):
+        if not isinstance(p, str) or not p: return None
+        p = os.path.realpath(p if os.path.isabs(p) else os.path.join(cwd or root(), p))
+        for base in sorted(repo_locations(), key=len, reverse=True) + ([os.path.realpath(cwd)] if cwd else []):
+            if p == base or p.startswith(base.rstrip(os.sep) + os.sep): return os.path.relpath(p, base)
+        return None
+    if tool == "Write":
+        f = rel(inp.get("file_path"))
+        return {f: inp["content"]} if f and isinstance(inp.get("content"), str) else None
+    if tool in ("Edit", "MultiEdit"):
+        f = rel(inp.get("file_path"))
+        text = tree_read(tree, f) if f else None
+        if text is None: return None
+        for e in (inp.get("edits") if tool == "MultiEdit" else [inp]) or []:
+            old, new = e.get("old_string"), e.get("new_string")
+            if not (isinstance(old, str) and isinstance(new, str) and old and old in text): return None
+            text = text.replace(old, new) if e.get("replace_all") else text.replace(old, new, 1)
+        return {f: text}
+    if tool == "apply_patch" and isinstance(inp.get("patch"), str): return apply_codex_patch(inp["patch"], tree, rel)
+    return None
+iso = lambda t: time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t))
+def cmd_migrate(a):
+    """Rebuild this branch's Sun history from existing agent sessions and Git commits."""
+    ref, tip, evs = shadow_ref(), history_head(False), events()
+    if tip and (len(evs) != 1 or evs[0].get("type") != "init"):
+        sys.exit("sun: migrate right after `sun init`, before anything is recorded on this branch")
+    published = [sha for _, sha in refs("refs/sun/published/")] + [ref_oid(remote_ref())]
+    if tip and any(p and not quiet("git", "merge-base", "--is-ancestor", tip, p).returncode for p in published):
+        sys.exit("sun: this branch's Sun history is already published; migrate on a fresh branch")
+    calls = []
+    for harness in ("claude", "codex"):
+        for path, sid, sub in transcript_sources(harness):
+            calls += call_records(path, harness, sid)
+    since = epoch(a.since + "T00:00:00Z") if a.since else None
+    calls = sorted((c for c in calls if base_tool(c[4]["tool"]) in EDIT_TOOLS and (since is None or c[0] >= since)),
+                   key=lambda c: c[0])
+    if not calls: sys.exit("sun: no file-editing tool calls found in the agent sessions for this repository")
+    log = [(int(ct), H, an) for H, ct, an in (l.split(" ", 2) for l in
+           git("log", "--first-parent", "--reverse", "--format=%H %ct %an", "HEAD", check=False).splitlines())]
+    before = [x for x in log if x[0] <= calls[0][0]]
+    base = before[-1][1] if before else ""
+    timeline = sorted([(t, 0, H, an) for t, H, an in log if t > calls[0][0]] +
+                      [(c[0], 1, c, None) for c in calls], key=lambda x: (x[0], x[1]))
+    if a.dry_run:
+        sessions = {(c[1], c[2]) for c in calls}
+        return print(f"sun: would replay {len(calls)} tool calls from {len(sessions)} sessions across "
+                     f"{len(timeline) - len(calls)} Git commits since {iso(calls[0][0])}, starting at {base[:8] or 'an empty tree'}")
+    tree = ref_oid(f"{base}^{{tree}}") if base else git("mktree", input="").strip()
+    parent = make_shadow_commit(tree, "sun: initial state" + (f" at {base[:8]}" if base else ""), local(),
+                                when=int(calls[0][0]))
+    init = {"id": uuid.uuid4().hex, "timestamp": iso(calls[0][0]), "sequence": 0, "commit": parent, "branch": ref,
+            "type": "init", "actor": local(), "edits": [], "git_commit": base}
+    updates = [f"update refs/sun/ops/{parent} {parent}"]
+    def put(ev): updates.append(f"update refs/sun/events/{ev['id']} {blob(json.dumps(ev))} {'0' * 40}")
+    put(init)
+    turn_key, turn_start, turn_evs, turn_calls, turn_when = None, parent, [], 0, [None]
+    replayed = skipped = observed = 0
+    def close_turn():
+        nonlocal parent, turn_key, turn_start, turn_evs, turn_calls
+        if not turn_evs: return
+        actor, n = turn_evs[0]["actor"], turn_evs[0]["turn"][4:]
+        T = make_shadow_commit(ref_oid(f"{parent}^{{tree}}"), f"sun: {actor} turn {n} ({turn_calls} tool calls)",
+                               actor, [turn_start], when=turn_when[0])
+        pid = patch_id(T)
+        for i, ev in enumerate(turn_evs): ev.update(commit=T, sequence=i, patch_id=pid); put(ev)
+        parent, turn_evs, turn_calls, turn_key = T, [], 0, None
+    for t, kind, item, author in timeline:
+        cur_tree = ref_oid(f"{parent}^{{tree}}")
+        if kind == 0:  # a Git commit: whatever the replay did not explain is observed state
+            close_turn()
+            new_tree = ref_oid(f"{item}^{{tree}}")
+            if new_tree == cur_tree: continue
+            files = changed_between(cur_tree, new_tree)
+            c = make_shadow_commit(new_tree, f"sun: observed repository state at {item[:8]}", "unknown", [parent], when=int(t))
+            p = patches(cur_tree, c, files)
+            put({"id": uuid.uuid4().hex, "timestamp": iso(t), "sequence": 0, "commit": c, "branch": ref, "type": "observe",
+                 "actor": "unknown", "patch_id": patch_id(c), "git_commit": item, "git_author": author,
+                 "edits": [{"file": f, "patch": p[f], "attribution": {"method": "import"}} for f in files]})
+            updates.append(f"update refs/sun/ops/{c} {c}"); parent, observed = c, observed + 1
+            continue
+        _, sid, harness, turn, call = item
+        key = (sid, harness, turn)
+        if key != turn_key: close_turn(); turn_key, turn_start = key, parent
+        overlay = replay_call(call, cur_tree)
+        overlay = {f: x for f, x in (overlay or {}).items() if x != tree_read(cur_tree, f)}
+        if not overlay: skipped += 1; continue
+        new_tree = tree_write(cur_tree, overlay)
+        actor = agent(sid, harness)
+        snap = make_shadow_commit(new_tree, f"sun: {actor} {call['tool']}", actor, [parent], when=int(t))
+        turn_when[0] = int(t)
+        p = patches(cur_tree, snap, list(overlay))
+        turn_evs.append({"id": uuid.uuid4().hex, "timestamp": iso(t), "branch": ref, "type": "edit", "actor": actor,
+                         "session_id": sid, "turn": f"turn{turn}", "snapshot": snap,
+                         "tool_calls": [{"id": call["id"], "tool": call["tool"],
+                                         "input": {"file": next(iter(overlay))} if len(overlay) == 1 else {"files": sorted(overlay)}}],
+                         "edits": [{"file": f, "patch": p[f], "tool_call_id": call["id"],
+                                    "attribution": {"method": "replay"}} for f in sorted(overlay)]})
+        updates.append(f"update refs/sun/ops/{snap} {snap}")
+        parent, turn_calls, replayed = snap, turn_calls + 1, replayed + 1
+    close_turn()
+    updates.append(f"update {ref} {parent} {tip or '0' * 40}")  # one transaction: all of it, or none
+    if tip:  # the lone init commit this replaces: its event and snapshot ref go with it
+        updates += [f"delete refs/sun/events/{evs[0]['id']}", f"delete refs/sun/ops/{tip}"]
+    git("update-ref", "--stdin", input="start\n" + "\n".join(dict.fromkeys(updates)) + "\nprepare\ncommit\n")
+    save_state("branch.json", {"ref": ref, "git": ref_oid("HEAD"), "observe": True})
+    sync(method="observed")  # what changed since the last commit or call, author unknown
+    print(f"sun: replayed {replayed} tool calls into turn commits, observed {observed} Git commits, "
+          f"could not replay {skipped} calls (their effects appear as observed state)")
 def actor_info(actor):
     """Split a stable actor id into fields the visualizations can present."""
     actor = actor or "unknown"
@@ -2160,6 +2427,7 @@ def main(argv=None):
         ("extract", "record the verdicts you gave your agents in conversation"),
         ("pr", "summarize checks for the pull request as Markdown, or update its description"),
         ("trust", "let hooks on this machine run the commands RULES.md names"),
+        ("migrate", "rebuild this branch's history from existing agent sessions and Git commits"),
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
@@ -2234,6 +2502,8 @@ def main(argv=None):
     ps["pr"].add_argument("--json", action="store_true", help="print the coverage of the pull request as JSON")
     ps["pr"].add_argument("--update", action="store_true",
                           help="write the section into the open pull request's description with gh")
+    ps["migrate"].add_argument("--since", metavar="DATE", help="replay tool calls from this day on (YYYY-MM-DD)")
+    ps["migrate"].add_argument("--dry-run", action="store_true", help="say what would be replayed, without writing")
     ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
                                 help="maximum commits (default: 30; 0 for all)")
     ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")
@@ -2245,7 +2515,7 @@ def main(argv=None):
         "log": cmd_log, "show": cmd_show, "undo": cmd_undo, "restore": cmd_restore,
         "viz": cmd_viz, "data": cmd_viz, "sessions": cmd_sessions, "update": cmd_update,
         "export": cmd_export, "blame": cmd_blame, "check": cmd_check, "coverage": cmd_coverage,
-        "extract": cmd_extract, "pr": cmd_pr, "trust": cmd_trust,
+        "extract": cmd_extract, "pr": cmd_pr, "trust": cmd_trust, "migrate": cmd_migrate,
     }
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir

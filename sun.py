@@ -239,9 +239,10 @@ def resolve_history_rev(rev):  # HEAD, HEAD~2, HEAD^ name the Sun branch, not th
     return git("rev-parse", rev).strip()
 def shadow_index():
     return os.path.join(sun_dir(), "shadow-index")
-def make_shadow_commit(tree, message, author, parents=()):
+def make_shadow_commit(tree, message, author, parents=(), when=None):
     ident = {**os.environ, "GIT_AUTHOR_NAME": author, "GIT_AUTHOR_EMAIL": "sun@sun",
              "GIT_COMMITTER_NAME": author, "GIT_COMMITTER_EMAIL": "sun@sun"}
+    if when: ident.update(GIT_AUTHOR_DATE=str(when), GIT_COMMITTER_DATE=str(when))  # migrated: the original time
     args = ["-c", "commit.gpgsign=false", "commit-tree", tree]
     for parent in parents: args += ["-p", parent]
     return git(*args, "-m", message, env=ident).strip()
@@ -2099,19 +2100,21 @@ def cmd_migrate(a):
         return print(f"sun: would replay {len(calls)} tool calls from {len(sessions)} sessions across "
                      f"{len(timeline) - len(calls)} Git commits since {iso(calls[0][0])}, starting at {base[:8] or 'an empty tree'}")
     tree = ref_oid(f"{base}^{{tree}}") if base else git("mktree", input="").strip()
-    parent = make_shadow_commit(tree, "sun: initial state" + (f" at {base[:8]}" if base else ""), local())
+    parent = make_shadow_commit(tree, "sun: initial state" + (f" at {base[:8]}" if base else ""), local(),
+                                when=int(calls[0][0]))
     init = {"id": uuid.uuid4().hex, "timestamp": iso(calls[0][0]), "sequence": 0, "commit": parent, "branch": ref,
             "type": "init", "actor": local(), "edits": [], "git_commit": base}
     updates = [f"update refs/sun/ops/{parent} {parent}"]
     def put(ev): updates.append(f"update refs/sun/events/{ev['id']} {blob(json.dumps(ev))} {'0' * 40}")
     put(init)
-    turn_key, turn_start, turn_evs, turn_calls = None, parent, [], 0
+    turn_key, turn_start, turn_evs, turn_calls, turn_when = None, parent, [], 0, [None]
     replayed = skipped = observed = 0
     def close_turn():
         nonlocal parent, turn_key, turn_start, turn_evs, turn_calls
         if not turn_evs: return
         actor, n = turn_evs[0]["actor"], turn_evs[0]["turn"][4:]
-        T = make_shadow_commit(ref_oid(f"{parent}^{{tree}}"), f"sun: {actor} turn {n} ({turn_calls} tool calls)", actor, [turn_start])
+        T = make_shadow_commit(ref_oid(f"{parent}^{{tree}}"), f"sun: {actor} turn {n} ({turn_calls} tool calls)",
+                               actor, [turn_start], when=turn_when[0])
         pid = patch_id(T)
         for i, ev in enumerate(turn_evs): ev.update(commit=T, sequence=i, patch_id=pid); put(ev)
         parent, turn_evs, turn_calls, turn_key = T, [], 0, None
@@ -2122,7 +2125,7 @@ def cmd_migrate(a):
             new_tree = ref_oid(f"{item}^{{tree}}")
             if new_tree == cur_tree: continue
             files = changed_between(cur_tree, new_tree)
-            c = make_shadow_commit(new_tree, f"sun: observed repository state at {item[:8]}", "unknown", [parent])
+            c = make_shadow_commit(new_tree, f"sun: observed repository state at {item[:8]}", "unknown", [parent], when=int(t))
             p = patches(cur_tree, c, files)
             put({"id": uuid.uuid4().hex, "timestamp": iso(t), "sequence": 0, "commit": c, "branch": ref, "type": "observe",
                  "actor": "unknown", "patch_id": patch_id(c), "git_commit": item, "git_author": author,
@@ -2137,7 +2140,8 @@ def cmd_migrate(a):
         if not overlay: skipped += 1; continue
         new_tree = tree_write(cur_tree, overlay)
         actor = agent(sid, harness)
-        snap = make_shadow_commit(new_tree, f"sun: {actor} {call['tool']}", actor, [parent])
+        snap = make_shadow_commit(new_tree, f"sun: {actor} {call['tool']}", actor, [parent], when=int(t))
+        turn_when[0] = int(t)
         p = patches(cur_tree, snap, list(overlay))
         turn_evs.append({"id": uuid.uuid4().hex, "timestamp": iso(t), "branch": ref, "type": "edit", "actor": actor,
                          "session_id": sid, "turn": f"turn{turn}", "snapshot": snap,

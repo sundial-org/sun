@@ -1969,6 +1969,7 @@ def cmd_pr(a):
 # without guessing. Whatever a replay cannot explain (shell commands, edits that no longer apply)
 # surfaces as observed state at the next Git commit, with an unknown author.
 EDIT_TOOLS = ("Write", "Edit", "MultiEdit", "apply_patch")
+base_tool = lambda name: (name or "?").rsplit("__", 1)[-1]  # mcp__server__Edit is an Edit
 def call_records(path, harness, sid):
     """[(time, sid, harness, turn, call)] for every tool call in a transcript, with its cwd."""
     out, turn, cwd = [], 0, None
@@ -2049,7 +2050,7 @@ def apply_codex_patch(patch, tree, rel):  # {path: text or None}, or None when a
     return out
 def replay_call(call, tree):
     """The files a recorded tool call changes on `tree`: {path: text or None}, or None if it cannot be replayed."""
-    tool, inp, cwd = call["tool"], call["input"], call.get("cwd")
+    tool, inp, cwd = base_tool(call["tool"]), call["input"], call.get("cwd")
     def rel(p):
         if not isinstance(p, str) or not p: return None
         p = os.path.realpath(p if os.path.isabs(p) else os.path.join(cwd or root(), p))
@@ -2084,7 +2085,8 @@ def cmd_migrate(a):
         for path, sid, sub in transcript_sources(harness):
             calls += call_records(path, harness, sid)
     since = epoch(a.since + "T00:00:00Z") if a.since else None
-    calls = sorted((c for c in calls if c[4]["tool"] in EDIT_TOOLS and (since is None or c[0] >= since)), key=lambda c: c[0])
+    calls = sorted((c for c in calls if base_tool(c[4]["tool"]) in EDIT_TOOLS and (since is None or c[0] >= since)),
+                   key=lambda c: c[0])
     if not calls: sys.exit("sun: no file-editing tool calls found in the agent sessions for this repository")
     log = [(int(ct), H, an) for H, ct, an in (l.split(" ", 2) for l in
            git("log", "--first-parent", "--reverse", "--format=%H %ct %an", "HEAD", check=False).splitlines())]

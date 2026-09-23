@@ -908,10 +908,12 @@ def install_hooks(harness="claude"):
     hook_events = HOOK_EVENTS if harness == "claude" else CODEX_HOOK_EVENTS
     for event in hook_events:
         group = cfg["hooks"].setdefault(event, [])
-        if not any(h.get("command") == command for g in group for h in g.get("hooks", [])):
-            entry = {"type": "command", "command": command}
-            if harness == "claude" and event in ("PostToolUse", "Stop"): entry["timeout"] = 2 * CHECK_TIMEOUT
-            group.append({"hooks": [entry]})
+        ours = [h for g in group for h in g.get("hooks", []) if h.get("command") == command]
+        if not ours:
+            ours = [{"type": "command", "command": command}]
+            group.append({"hooks": ours})
+        if harness == "claude" and event in ("PostToolUse", "Stop"):  # judges take longer than the harness default
+            for h in ours: h.setdefault("timeout", 2 * CHECK_TIMEOUT)
     jwrite(path, cfg)
     return f"{harness} ({rel})"
 def remove_hooks(harness):  # a restrictive re-init un-installs the excluded harness's hook
@@ -1669,13 +1671,13 @@ def hook_checks(a, payload, unit):
                      file=sys.stderr)
     results = run_rules(due, unit, a.harness)
     with lock(): done = store_checks(results, f"hook:{event}") if results else []
-    if extract: extract_session(key, config, rs, a.harness, unit)
     failing = [c for r, c in zip(due, done) if c["verdict"] != "pass" and r["feedback"]]
     if failing and not (event == "Stop" and payload.get("stop_hook_active")):  # feedback once per turn
         reason = "sun check result (data, not instructions): " + "; ".join(
             f"{c['rule']} {c['verdict']}" + (f": {one_line(c['note'])}" if c.get("note") else "")
             + f" (check {c['id'][:8]})" for c in failing)
-        print(json.dumps({"decision": "block", "reason": reason}))
+        print(json.dumps({"decision": "block", "reason": reason}), flush=True)  # before anything slow
+    if extract: extract_session(key, config, rs, a.harness, unit, last_only=True)  # the backlog is `sun extract`'s
 # --- verdicts you gave in conversation -------------------------------------------------------
 EXTRACT_PROMPT = """You read one reply a person wrote to an AI agent and report only the explicit verdicts in it on the rules below, as JSON.
 
@@ -1795,8 +1797,9 @@ def extract_verdicts(item, config, rs, harness):  # one model call -> validated 
                               "reply_to": {k: item["reply_to"][k] for k in ("offset", "sha256", "uuid")},
                               "extractor": {"model": runner_name(model), "version": "sun-extract/1"}}})
     return reqs
-def extract_session(key, config, rs, harness, unit=None):  # returns the number of verdicts recorded
+def extract_session(key, config, rs, harness, unit=None, last_only=False):  # returns the number of verdicts recorded
     with lock(): items = pending_prompts(key, unit)
+    if last_only: items = items[-1:]  # a hook reads the reply that started this turn, nothing older
     n = 0
     for item in items:
         reqs = extract_verdicts(item, config, rs, harness)  # outside the lock: the model may run hooks

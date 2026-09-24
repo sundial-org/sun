@@ -11,6 +11,100 @@ class ReliabilityTest(unittest.TestCase):
     git, sun_head, tool_call = fixtures.SunTest.git, fixtures.SunTest.sun_head, fixtures.SunTest.tool_call
     plumbing_commit = fixtures.SunTest.plumbing_commit
 
+    def test_legacy_unborn_master_keeps_history_and_read_only_shell_is_empty(self):
+        write("note.md", "already here\n")
+        run("sync")
+        old_tip = self.sun_head()
+        old_event = {**sun.events()[-1], "id": "1234abcd"}
+        old_event.pop("branch", None)
+        # The old release always used main, even with an unborn Git master.
+        for ref, _ in sun.refs("refs/heads/") + sun.refs("refs/sun/heads/") + sun.refs("refs/sun/events/"):
+            self.git("update-ref", "-d", ref)
+        self.git("symbolic-ref", "HEAD", "refs/heads/master")
+        self.git("update-ref", "refs/sun/heads/main", old_tip)
+        os.remove(os.path.join(sun.sun_dir(), "branch.json"))
+        write(os.path.join(sun.sun_dir(), "events.jsonl"), json.dumps(old_event) + "\n")
+        sun.save_state("active.json", {"codex/old/dead": {"files": ["note.md"]}})
+        with open(".git/index", "rb") as f: original_index = f.read()
+        hook("SessionStart", "new", harness="codex")
+        self.assertEqual(self.sun_head(), old_tip)
+        self.assertIn("1234abcd", {e["id"] for e in sun.events()})
+        self.assertFalse(sun.state("active.json", {}))
+        hook("PreToolUse", "new", harness="codex", tool_name="Bash", tool_use_id="read")
+        hook("PostToolUse", "new", harness="codex", tool_name="Bash", tool_use_id="read")
+        self.assertEqual(self.sun_head(), old_tip)
+        self.assertEqual(read("note.md"), "already here\n")
+        with open(".git/index", "rb") as f: self.assertEqual(f.read(), original_index)
+        self.assertTrue(sun.ref_oid("refs/sun/events/1234abcd"))
+        self.git("switch", "-c", "feature")
+        run("log")
+        self.assertEqual(self.sun_head(), old_tip)
+        self.tool_call("writer", "feature.txt", "new branch\n")
+        self.assertEqual(sun.ref_oid("refs/sun/heads/master"), old_tip)
+        with tempfile.TemporaryDirectory() as remote:
+            self.git("init", "--bare", remote)
+            self.git("remote", "add", "origin", remote)
+            run("push", "origin")
+            self.assertEqual(self.git("--git-dir", remote, "rev-parse", "refs/sun/events/1234abcd").strip(),
+                             sun.ref_oid("refs/sun/events/1234abcd"))
+
+    def test_read_only_shell_with_unsynced_active_file_records_nothing(self):
+        hook("PreToolUse", "other", tool_name="Write", tool_input={"file_path": "note.md"})
+        write("note.md", "already here before shell\n")
+        before = self.sun_head()
+        hook("PreToolUse", "reader", tool_name="Bash", tool_use_id="read")
+        hook("PostToolUse", "reader", tool_name="Bash", tool_use_id="read")
+        self.assertEqual(self.sun_head(), before)
+
+    def test_tool_patch_excludes_text_present_before_call(self):
+        hook("PreToolUse", "other", tool_name="Write", tool_input={"file_path": "note.md"})
+        write("note.md", "existing text\n")
+        hook("PreToolUse", "writer", tool_name="Bash", tool_use_id="edit")
+        write("note.md", "existing text\nactual addition\n")
+        hook("PostToolUse", "writer", tool_name="Bash", tool_use_id="edit")
+        ev = sun.events()[-1]
+        self.assertNotIn("+existing text", ev["edits"][0]["patch"])
+        self.assertIn("+actual addition", ev["edits"][0]["patch"])
+        self.assertEqual(ev["actor"], "unknown")
+        parent = self.git("rev-parse", ev["commit"] + "^").strip()
+        self.assertEqual(self.git("show", parent + ":note.md"), "existing text\n")
+        run("sync", "--recover")
+        self.assertFalse(sun.refs("refs/sun/pending/"))
+        run("undo", "--op", ev["id"])
+        self.assertEqual(read("note.md"), "existing text\n")
+
+    def test_deletion_of_unsynced_file_is_an_edit_not_a_noop(self):
+        hook("PreToolUse", "other", tool_name="Write", tool_input={"file_path": "note.md"})
+        write("note.md", "existing text\n")
+        hook("PreToolUse", "writer", tool_name="Bash", tool_use_id="delete")
+        os.remove("note.md")
+        hook("PostToolUse", "writer", tool_name="Bash", tool_use_id="delete")
+        ev = sun.events()[-1]
+        self.assertIn("-existing text", ev["edits"][0]["patch"])
+        self.assertIn("deleted file mode", ev["edits"][0]["patch"])
+
+    def test_legacy_migration_reconnects_already_split_history_once(self):
+        old_tip = self.sun_head()
+        old_event = {**sun.events()[0], "id": "abcd1234"}
+        self.git("update-ref", "refs/sun/heads/main", old_tip)
+        self.git("symbolic-ref", "HEAD", "refs/heads/other")
+        run("log")
+        write("new.txt", "new\n")
+        run("sync")
+        current = self.sun_head()
+        write(os.path.join(sun.sun_dir(), "events.jsonl"), json.dumps(old_event) + "\n")
+        # Simulate a disconnected timeline created by the buggy release.
+        orphan = sun.make_shadow_commit(sun.ref_oid(current + "^{tree}"), "split", sun.local())
+        self.git("update-ref", sun.shadow_ref(), orphan)
+        run("log")
+        repaired = self.sun_head()
+        self.git("merge-base", "--is-ancestor", old_tip, repaired)
+        self.git("merge-base", "--is-ancestor", orphan, repaired)
+        self.assertEqual(sun.ref_oid(repaired + "^{tree}"), sun.ref_oid(orphan + "^{tree}"))
+        run("log")
+        self.assertEqual(self.sun_head(), repaired)
+
+
     def test_failed_call_releases_claim_and_retry_is_recorded(self):
         hook("UserPromptSubmit")
         inp = {"file_path": "a.txt"}

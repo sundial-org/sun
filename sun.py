@@ -11,10 +11,13 @@ import time, uuid
 from typing import Any, Dict, List, Optional, TypedDict
 
 
+# How the edit was attributed; the responsible actor is stored on Event.
 class Attribution(TypedDict, total=False):
     method: str
 
 
+# An Edit is one file's observed change, whether made by a person or an agent.
+# A ToolCall is an attempted action that may produce zero or many Edits across files.
 class Edit(TypedDict, total=False):
     file: str
     patch: str
@@ -34,32 +37,35 @@ class Event(TypedDict, total=False):
     type: str
     actor: str
     session_id: str
-    commit: str
-    snapshot: str
+    commit: str  # History commit containing this event; may group a whole turn.
+    snapshot: str  # Original operation commit retained when commit becomes a turn squash.
     patch_id: Optional[str]
     turn: str
+    # Usually one call for a tool edit, none for a local edit; squashing keeps events separate.
     tool_calls: List[ToolCall]
     edits: List[Edit]
-    target_op: str
-    target_commit: str
+    target_op: str  # Operation being undone.
+    target_commit: str  # Commit being undone, or the desired state for restore.
     parents: List[str]
     pr: int
     branch: str
     sequence: int
 
 
+# Per-session turn bookkeeping persisted in turns.json.
 class TurnState(TypedDict, total=False):
     n: int
     start: str
     transcript: str
-    toffset: int
-    soffset: int
-    seen: int
+    toffset: int  # Transcript byte position where the next turn slice starts.
+    soffset: int  # Transcript byte position through which prompts have been scanned.
+    seen: int  # Nonzero once the starting prompt has been encountered.
     stopped: bool
     squashed: bool
     branch: str
 
 
+# One in-flight invocation, persisted in active.json between its pre/post hooks.
 class ActiveCall(TypedDict, total=False):
     files: List[str]
     id: str
@@ -407,6 +413,8 @@ def sync(exclude=(), method="sync"):  # record unclaimed file changes, without t
     return ev
 def maybe_sync(exclude=()):
     sync(exclude)  # sync itself excludes in-flight files and unknown-scope shell calls
+# Attribution covers the observed pre/post hook interval. Background writes after
+# completion, or writes without paired hooks, cannot reliably belong to this call.
 def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     key = call_key(sid, payload, harness)
     if key not in active: key = call_key(sid, {}, harness)

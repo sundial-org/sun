@@ -12,8 +12,8 @@ import os
 import re
 import sys
 
-from . import capture
-from . import display
+from . import hooks
+from . import output
 from . import git_store
 from . import history
 from . import sessions as session_store
@@ -51,7 +51,7 @@ def install_hooks(harness="claude"):
     if not isinstance(cfg.setdefault("hooks", {}), dict):
         sys.exit(f"sun: unexpected 'hooks' format in {rel}")
     command = hook_cmd(harness)
-    hook_events = capture.HOOK_EVENTS if harness == "claude" else capture.CODEX_HOOK_EVENTS
+    hook_events = hooks.HOOK_EVENTS if harness == "claude" else hooks.CODEX_HOOK_EVENTS
     for event in hook_events:
         group = cfg["hooks"].setdefault(event, [])
         if not any(h.get("command") == command for g in group for h in g.get("hooks", [])):
@@ -264,10 +264,10 @@ def main(argv=None):
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
-        "init": cmd_init, "hook": capture.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
-        "log": display.cmd_log, "show": display.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
-        "viz": display.cmd_viz, "data": display.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
-        "export": display.cmd_export, "blame": display.cmd_blame,
+        "init": cmd_init, "hook": hooks.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
+        "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
+        "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
+        "export": output.cmd_export, "blame": output.cmd_blame,
     }
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir

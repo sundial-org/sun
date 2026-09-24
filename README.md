@@ -149,9 +149,9 @@ The `sun/` package separates the main jobs:
 | `cli.py` | Command arguments, initialization, hook installation, and updates |
 | `git_store.py` | Git objects, refs, snapshots, and local state files |
 | `history.py` | Branch history, events, turn squashing, publishing, undo, and restore |
-| `capture.py` | Agent hooks and before/after tracking for tool calls |
+| `hooks.py` | Agent hooks and before/after tracking for tool calls |
 | `sessions.py` | Native transcripts and optional shared session storage |
-| `display.py` | Log, show, blame, JSON, terminal, HTML, and training export |
+| `output.py` | Log, show, blame, JSON, terminal, HTML, and training export |
 
 Run source checkouts with `python -m sun` instead of `python sun.py`. The installed
 `sun` command calls `sun.cli:main`. Modules use explicit imports so callers can

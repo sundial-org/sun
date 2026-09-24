@@ -3,7 +3,7 @@ import contextlib, io, json, os, shutil, subprocess, sys, tempfile, time, unitte
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from sun import capture, cli, display, git_store, history, sessions
+from sun import hooks, cli, output, git_store, history, sessions
 
 AGENT = "emma/agent:claude/session12345"
 
@@ -178,7 +178,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("open `/hooks`", out)
         self.assertIn("trust the Sun hooks", out)
         cfg = read_json(".codex/hooks.json")
-        for event in capture.CODEX_HOOK_EVENTS:
+        for event in hooks.CODEX_HOOK_EVENTS:
             self.assertIn("sun hook --harness codex",
                           [h["command"] for g in cfg["hooks"][event] for h in g["hooks"]])
         self.assertEqual(git_store.configured_harnesses(), ["codex"])
@@ -265,7 +265,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(len(commits), 2)  # initial snapshot + squashed turn
         self.assertEqual(len(git_store.refs("refs/sun/ops/")), 3)  # initial + per-call snapshots survive
         self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
-        data = display.viz_data()
+        data = output.viz_data()
         self.assertEqual([c["hash"] for c in data["commits"]], commits)
         self.assertEqual(data["summary"]["operations"], 3)  # init + two generated calls
         self.assertTrue(all(c["hash"] != normal for c in data["commits"]))
@@ -645,7 +645,7 @@ class SunTest(unittest.TestCase):
             self.assertEqual(after["snapshot"], before["commit"])
             self.assertEqual(self.git("rev-parse", f"refs/sun/ops/{after['snapshot']}").strip(),
                              after["snapshot"])
-        actors = {a["id"] for a in display.viz_data()["commits"][0]["attribution"]["actors"]}
+        actors = {a["id"] for a in output.viz_data()["commits"][0]["attribution"]["actors"]}
         self.assertEqual(actors, {AGENT, "emma/local"})
 
     def test_local_edit_after_last_call_stays_dirty_through_squash(self):
@@ -1234,15 +1234,15 @@ class SunTest(unittest.TestCase):
         self.assertNotIn("__DATA__", html)
 
     def test_viz_defaults_to_tui(self):
-        seen, old = [], display.run_viz_tui
-        display.run_viz_tui = lambda data: seen.append(data)
+        seen, old = [], output.run_viz_tui
+        output.run_viz_tui = lambda data: seen.append(data)
         try: run("viz")
-        finally: display.run_viz_tui = old
+        finally: output.run_viz_tui = old
         self.assertEqual(len(seen), 1)
         self.assertEqual(seen[0]["summary"]["commits"], 1)
 
     def test_viz_releases_lock_before_tui(self):
-        held, old_lock, old_tui = [False], git_store.lock, display.run_viz_tui
+        held, old_lock, old_tui = [False], git_store.lock, output.run_viz_tui
 
         @contextlib.contextmanager
         def tracked_lock():
@@ -1252,13 +1252,13 @@ class SunTest(unittest.TestCase):
                 finally: held[0] = False
 
         git_store.lock = tracked_lock
-        display.run_viz_tui = lambda data: self.assertFalse(held[0])
+        output.run_viz_tui = lambda data: self.assertFalse(held[0])
         try: run("viz")
-        finally: git_store.lock, display.run_viz_tui = old_lock, old_tui
+        finally: git_store.lock, output.run_viz_tui = old_lock, old_tui
 
     def test_viz_data_attributes_commit_and_operations(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
-        data = display.viz_data()
+        data = output.viz_data()
         commit = data["commits"][0]
         self.assertEqual(commit["git_author"]["name"], AGENT)
         self.assertEqual(commit["attribution"]["actors"][0], {
@@ -1277,9 +1277,9 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
         normal = self.git("rev-parse", "HEAD").strip()
-        data = display.viz_data()
+        data = output.viz_data()
         commit = data["commits"][0]
-        detail = "\n".join(display.commit_lines(commit))
+        detail = "\n".join(output.commit_lines(commit))
         self.assertNotIn(normal, [c["hash"] for c in data["commits"]])
         self.assertIn("subject       initial state", detail)
         self.assertIn("git identity  emma <sun@sun>", detail)
@@ -1304,7 +1304,7 @@ class SunTest(unittest.TestCase):
         with mock.patch("curses.has_colors", return_value=True), \
                 mock.patch("curses.start_color"), \
                 mock.patch("curses.use_default_colors") as defaults:
-            display.viz_tui(screen, display.viz_data())
+            output.viz_tui(screen, output.viz_data())
         rendered = "\n".join(screen.writes)
         defaults.assert_called_once_with()
         self.assertIn("sun viz", rendered)

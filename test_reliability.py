@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 import test_sun as fixtures
 from test_sun import run, hook, write, read
-from sun import capture, git_store, history, sessions
+from sun import hooks, git_store, history, sessions
 
 
 class ReliabilityTest(unittest.TestCase):
@@ -82,7 +82,7 @@ class ReliabilityTest(unittest.TestCase):
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
         hook("Stop", harness="codex")
         self.assertFalse(git_store.state("active.json", {}))
-        self.assertNotIn("PostToolUseFailure", capture.CODEX_HOOK_EVENTS)
+        self.assertNotIn("PostToolUseFailure", hooks.CODEX_HOOK_EVENTS)
 
     def test_interrupted_call_is_recovered_without_guessing_actor(self):
         hook("PreToolUse", tool_name="Write", tool_input={"file_path": "a.txt"})

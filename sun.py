@@ -65,6 +65,7 @@ class ActiveCall(TypedDict, total=False):
     id: str
     branch: str
     pre: str
+    before: str
     turn: int
     all_files: bool
     overlap: List[str]
@@ -188,6 +189,7 @@ def remote_ref(remote="origin"):
 def ensure_branch():
     """Select a timeline; Git ancestry never determines how Sun combines file contents."""
     ref, normal = shadow_ref(), ref_oid("HEAD")
+    migrate_legacy_history()
     previous = state("branch.json", {})
     tip = history_head(False)
     if not tip:
@@ -229,16 +231,59 @@ def make_shadow_commit(tree, message, author, parents=()):
     return git(*args, "-m", message, env=ident).strip()
 def commit_files(files, message, author):
     """Snapshot files into an independent commit graph without touching HEAD or the real index."""
+    parent = history_head(False)
+    tree = snapshot_tree(files)
+    commit = make_shadow_commit(tree, message, author, [parent] if parent else [])
+    # record() publishes this commit and its attribution in one Git ref transaction.
+    return commit
+def snapshot_tree(files=(".",), source=None):
     parent, ix = history_head(False), shadow_index()
     if os.path.exists(ix): os.remove(ix)
     env = {**os.environ, "GIT_INDEX_FILE": ix}
     if parent: git("read-tree", parent, env=env)
     else: git("read-tree", "--empty", env=env)
-    git("--literal-pathspecs", "add", "-A", "--", *files, env=env)
-    tree = git("write-tree", env=env).strip()
-    commit = make_shadow_commit(tree, message, author, [parent] if parent else [])
-    # record() publishes this commit and its attribution in one Git ref transaction.
-    return commit
+    if source:
+        git("--literal-pathspecs", "restore", "--source=" + source, "--staged", "--", *files, env=env)
+    else:
+        git("--literal-pathspecs", "add", "-A", "--", *files, env=env)
+    return git("write-tree", env=env).strip()
+
+def tree_changes(before, after):
+    return [f for f in git("diff", "--no-renames", "--name-only", "-z", before, after).split("\0") if f]
+
+def legacy_events():
+    logs = [git("cat-file", "blob", sha) for _, sha in refs("refs/sun/log/")]
+    path = os.path.join(sun_dir(), "events.jsonl")
+    if os.path.isfile(path): logs.append(read_text(path))
+    return list({e["id"]: e for log in logs for e in parse_events(log)
+                 if isinstance(e, dict) and e.get("id") and e.get("commit")}.values())
+
+def migrate_legacy_history():
+    cfg = state("config.json", {})
+    if cfg.get("legacy_branch"): return
+    old = legacy_events()
+    if not old: return
+    legacy = ref_oid("refs/sun/heads/main")
+    if not legacy: return
+    updates = []
+    for i, event in enumerate(old):
+        if not re.fullmatch(r"[0-9a-f]{8}|[0-9a-f]{32}", event["id"]):
+            sys.exit("sun: invalid legacy operation ID")
+        ref = "refs/sun/events/" + event["id"]
+        if ref_oid(ref): continue
+        snapshot = event.get("snapshot", event["commit"])
+        if not ref_oid(snapshot + "^{commit}"):
+            sys.exit("sun: missing legacy operation snapshot")
+        ev = {"branch": shadow_ref(), "sequence": i, **event}
+        updates += [f"create {ref} {blob(json.dumps(ev))}",
+                    f"update refs/sun/ops/{snapshot} {snapshot}"]
+    if updates:
+        git("update-ref", "--stdin", input="start\n" + "\n".join(dict.fromkeys(updates)) + "\nprepare\ncommit\n")
+    # Older releases always wrote main, regardless of the actual Git branch.
+    if not history_head(False): git("update-ref", shadow_ref(), legacy)
+    else: join_history(legacy, shadow_ref())
+    save_state("config.json", {**cfg, "legacy_branch": shadow_ref()})
+
 def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bricking every command
     out: List[Event] = []
     for l in text.splitlines():
@@ -256,7 +301,7 @@ def events(include_unreachable=False, scope=None) -> List[Event]:
         end = data.index(b"\n", pos)
         size = int(data[pos:end].split()[-1])
         ev = json.loads(data[end + 1:end + 1 + size])
-        if not re.fullmatch(r"[0-9a-f]{32}", ev.get("id", "")) or \
+        if not re.fullmatch(r"[0-9a-f]{8}|[0-9a-f]{32}", ev.get("id", "")) or \
                 entries[len(evs)][0] != f"refs/sun/events/{ev['id']}":
             sys.exit("sun: invalid operation ID in fetched history")
         evs.append(ev)
@@ -371,6 +416,7 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     def release():
         active.pop(key, None)
         save_state("active.json", active)
+        if st.get("id"): git("update-ref", "-d", "refs/sun/pending/" + st["id"])
     if st.get("branch") != shadow_ref():
         print("sun: branch changed during tool call; attribution unavailable", file=sys.stderr)
         release()
@@ -379,7 +425,16 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     if st.get("id") and ref_oid(f"refs/sun/events/{st['id']}"):
         release()
         return
-    files = [f for f in changed_files() if f not in others or f in st.get("overlap", [])]
+    if not st.get("before"):
+        release()
+        sync(method="uncertain")
+        return
+    after, tip = snapshot_tree(), history_head()
+    recorded = set(tree_changes(st["pre"], tip))
+    dirty = set(tree_changes(tip, after))
+    files = [f for f in tree_changes(st["before"], after)
+             if (f not in others or f in st.get("overlap", []) or "*" in st.get("overlap", []))
+             and (f not in recorded or f in dirty)]
     if not files:
         release()
         return
@@ -399,10 +454,19 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
         release()
         return
     h_files = [f for f in files if f not in a_files]
+    # Establish pre-existing contents separately, never as part of this tool's edit.
+    baseline = [f for f in tree_changes(tip, st["before"]) if f in files and f not in recorded]
+    if baseline:
+        c = make_shadow_commit(snapshot_tree(baseline, st["before"]),
+                               "sun: observed pre-tool state", "unknown", [tip])
+        p = patches(tip, c, baseline)
+        record(type="observe", actor="unknown", commit=c, edits=[
+            {"file": f, "patch": p[f], "attribution": {"method": "observed"}} for f in baseline])
     actor, pre = st["actor"], history_head()
     turn = st.get("turn", 0)
-    c = commit_files(files, f"sun: {actor} {tool}" if a_files else edits_msg(local(), files),
-                     actor if a_files else local())
+    c = make_shadow_commit(snapshot_tree(files, after),
+                           f"sun: {actor} {tool}" if a_files else edits_msg(local(), files),
+                           actor if a_files else local(), [pre])
     p = patches(pre, c, files)
     entries = []
     if a_files:
@@ -551,10 +615,18 @@ def handle_hook(a, payload):
         if sub and subpath: entry["subagents"][sub] = os.path.abspath(subpath)
         save_state("session-paths.json", paths)
     active: Dict[str, ActiveCall] = state("active.json", {})
+    # Old-format claims cannot identify a live call or provide a before snapshot.
+    obsolete = [key for key, claim in active.items() if not claim.get("id") or not claim.get("branch")]
+    if obsolete:
+        for key in obsolete: active.pop(key)
+        save_state("active.json", active)
+        sync(method="uncertain")
     if event in ("SessionStart", "UserPromptSubmit", "Stop", "SessionEnd", "Interrupt"):
         prefix = session_key(sid, harness) + "/"
         stale = [key for key in active if key.startswith(prefix)]
-        for key in stale: active.pop(key)
+        for key in stale:
+            claim = active.pop(key)
+            if claim.get("id"): git("update-ref", "-d", "refs/sun/pending/" + claim["id"])
         if stale:
             save_state("active.json", active)
             sync(method="uncertain")
@@ -602,8 +674,9 @@ def handle_hook(a, payload):
                        "ambiguous_actor": ambiguous_actor,
                        "id": uuid.uuid4().hex,
                        "actor": agent(sid, harness),
-                       "branch": shadow_ref(), "pre": history_head(),
+                       "branch": shadow_ref(), "pre": history_head(), "before": snapshot_tree(),
                        "turn": state("turns.json", {}).get(session_key(sid, harness), {}).get("n", 0)}
+        git("update-ref", "refs/sun/pending/" + active[key]["id"], active[key]["before"])
         save_state("active.json", active)
     elif event in ("PostToolUse", "PostToolUseFailure"):
         finish_call(sid, active, payload, harness)
@@ -985,6 +1058,7 @@ def init_locked(a):
         if explicit and h not in explicit: remove_hooks(h)
     if share_sessions:
         agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
+    migrate_legacy_history()
     if not history_head(False):
         c = commit_files(["."], "sun: initial state", local())
         remote, tree = ref_oid(remote_ref()), ref_oid(f"{c}^{{tree}}")
@@ -1000,7 +1074,10 @@ def init_locked(a):
               "`.codex/hooks.json`, and trust the Sun hooks before testing")
     print("run `sun viz` to explore your attributed history")
 def cmd_sync(a):
-    if a.recover: save_state("active.json", {})
+    if a.recover:
+        for claim in state("active.json", {}).values():
+            if claim.get("id"): git("update-ref", "-d", "refs/sun/pending/" + claim["id"])
+        save_state("active.json", {})
     ev = sync(method="uncertain" if a.recover else "sync")
     print(f"sun: recorded edits as op {ev['id']}" if ev else "sun: nothing to sync")
 def installed_git_source():

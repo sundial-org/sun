@@ -291,39 +291,42 @@ class SunTest(unittest.TestCase):
         finally:
             shutil.rmtree(bare, ignore_errors=True)
 
-    def test_push_joins_divergent_shadow_history_without_merging_files(self):
-        bare = tempfile.mkdtemp()
-        try:
-            subprocess.run(["git", "init", "-q", "--bare", bare], check=True)
-            subprocess.run(["git", "remote", "add", "origin", bare], check=True)
-            normal = self.git("rev-parse", "HEAD").strip()
-            base = self.sun_head()
-            write("remote.txt", "remote\n")
-            remote = self.plumbing_commit(base, ["remote.txt"], "remote shadow edit")
-            os.remove("remote.txt")
-            write("local.txt", "local\n")
-            local = self.plumbing_commit(base, ["local.txt"], "local shadow edit")
-            subprocess.run(["git", "update-ref", git_store.shadow_ref(), local], check=True)
-            subprocess.run(["git", "push", "-q", "--no-verify", "origin",
-                            f"{remote}:{git_store.shadow_ref()}"], check=True, capture_output=True)
-
-            # Normal Git brings in the remote file; push joins the DAG and keeps the local snapshot.
-            write("remote.txt", "remote\n")
+    def test_push_joins_history_without_recording_dirty_worktree(self):
+        normal = self.git("rev-parse", "HEAD").strip()
+        base = self.sun_head()
+        write("remote.txt", "remote\n")
+        remote = self.plumbing_commit(base, ["remote.txt"], "remote shadow edit")
+        os.remove("remote.txt")
+        write("local.txt", "local\n")
+        local = self.plumbing_commit(base, ["local.txt"], "local shadow edit")
+        subprocess.run(["git", "update-ref", git_store.shadow_ref(), local], check=True)
+        # Staged and unstaged changes must neither be captured nor changed by publication.
+        write("remote.txt", "remote\n")
+        self.git("add", "remote.txt")
+        write("local.txt", "not yet recorded\n")
+        with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
+            index = f.read()
+        with tempfile.TemporaryDirectory() as bare:
+            self.git("init", "--bare", bare)
+            self.git("remote", "add", "origin", bare)
+            self.git("push", "origin", f"{remote}:{git_store.shadow_ref()}")
             run("push")
-            joined = self.sun_head()
-            self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:],
-                             [local, remote])
-            self.assertEqual(self.git("show", f"{joined}:local.txt"), "local\n")
-            self.assertNotIn("remote.txt", self.git("ls-tree", "--name-only", joined).split())
-            self.assertEqual(self.git("--git-dir", bare, "rev-parse", git_store.shadow_ref()).strip(), joined)
-            self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
-            ev = history.events()[-1]
-            self.assertEqual((ev["type"], ev["parents"], ev["edits"]), ("merge", [local, remote], []))
-            self.assertIn("remote.txt", git_store.changed_files())  # a later sync observes it, not push
-            run("sync")
-            self.assertEqual(self.git("show", f"{self.sun_head()}:remote.txt"), "remote\n")
-        finally:
-            shutil.rmtree(bare, ignore_errors=True)
+            self.assertEqual(self.git("--git-dir", bare, "rev-parse", git_store.shadow_ref()).strip(),
+                             self.sun_head())
+        merged = self.sun_head()
+        parents = self.git("rev-list", "--parents", "-n1", merged).split()[1:]
+        self.assertEqual(parents, [local, remote])
+        self.assertEqual(self.git("rev-parse", f"{merged}^{{tree}}"),
+                         self.git("rev-parse", f"{local}^{{tree}}"))
+        self.assertEqual(self.git("show", f"{merged}:local.txt"), "local\n")
+        self.assertNotIn("remote.txt", self.git("ls-tree", "--name-only", merged).splitlines())
+        self.assertEqual(read("remote.txt"), "remote\n")
+        self.assertEqual(read("local.txt"), "not yet recorded\n")
+        with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
+            self.assertEqual(f.read(), index)
+        self.assertEqual(self.git("rev-parse", "HEAD").strip(), normal)
+        self.assertEqual(history.events()[-1]["type"], "merge")
+        self.assertEqual(history.events()[-1]["edits"], [])
 
     # ------------------------------------------------------- local edit sync
 
@@ -823,9 +826,12 @@ class SunTest(unittest.TestCase):
         subprocess.run(["git", "commit", "-q", "-m", "no transcript"], check=True)
         with self.assertRaisesRegex(SystemExit, "session sharing is disabled"):
             run("sessions", "import")
-        first = run("log").splitlines()[0]
-        self.assertIn("sun: observed repository state  [unknown]", first)
-        self.assertNotIn("agent:", first)
+        self.assertIn("[unknown]", run("log").splitlines()[0])
+        ev = history.events()[-1]
+        self.assertEqual(ev["type"], "observe")
+        self.assertEqual(ev["actor"], "unknown")
+        self.assertIn("other.txt", [edit["file"] for edit in ev["edits"]])
+        self.assertTrue(all(edit["attribution"]["method"] == "observed" for edit in ev["edits"]))
 
     def test_codex_import_stores_sessions_without_attributing_old_commits(self):
         run("init", "--codex", "--share-sessions", "--no-instructions")
@@ -1102,14 +1108,14 @@ class SunTest(unittest.TestCase):
         self.assertIn("emma/local", out)
         self.assertIn("human edit", out)
 
-    def test_blame_snapshots_normal_commit_as_observed_state(self):
+    def test_blame_marks_unobserved_git_commit_as_unknown(self):
         write("x.txt", "1\n")
         subprocess.run(["git", "add", "-A"], check=True)
         subprocess.run(["git", "commit", "-q", "-m", "manual"], check=True)
         out = run("blame", "x.txt", "1")
-        self.assertIn("  unknown  op ", out.splitlines()[0])
         self.assertIn("observed change; author unknown", out)
-        self.assertNotIn("emma/local", out)
+        self.assertNotIn("human edit", out)
+        self.assertEqual(history.events()[-1]["actor"], "unknown")
 
     # ------------------------------------------------------------------ undo
 

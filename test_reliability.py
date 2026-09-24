@@ -63,8 +63,8 @@ class ReliabilityTest(unittest.TestCase):
         write("note.md", "existing text\nactual addition\n")
         hook("PostToolUse", "writer", tool_name="Bash", tool_use_id="edit")
         ev = sun.events()[-1]
-        self.assertNotIn("+existing text", ev["edits"][0]["patch"])
-        self.assertIn("+actual addition", ev["edits"][0]["patch"])
+        self.assertNotIn("+existing text", sun.event_edits(ev)[0]["patch"])
+        self.assertIn("+actual addition", sun.event_edits(ev)[0]["patch"])
         self.assertEqual(ev["actor"], "unknown")
         parent = self.git("rev-parse", ev["commit"] + "^").strip()
         self.assertEqual(self.git("show", parent + ":note.md"), "existing text\n")
@@ -80,8 +80,8 @@ class ReliabilityTest(unittest.TestCase):
         os.remove("note.md")
         hook("PostToolUse", "writer", tool_name="Bash", tool_use_id="delete")
         ev = sun.events()[-1]
-        self.assertIn("-existing text", ev["edits"][0]["patch"])
-        self.assertIn("deleted file mode", ev["edits"][0]["patch"])
+        self.assertIn("-existing text", sun.event_edits(ev)[0]["patch"])
+        self.assertIn("deleted file mode", sun.event_edits(ev)[0]["patch"])
 
     def test_legacy_migration_reconnects_already_split_history_once(self):
         old_tip = self.sun_head()
@@ -113,7 +113,7 @@ class ReliabilityTest(unittest.TestCase):
         self.tool_call("session12345", "a.txt", "retry\n")
         self.assertEqual(sun.state("active.json", {}), {})
         self.assertEqual(sun.events()[-1]["actor"], sun.agent("session12345"))
-        self.assertIn("+retry", sun.events()[-1]["edits"][0]["patch"])
+        self.assertIn("+retry", sun.event_edits(sun.events()[-1])[0]["patch"])
 
     def test_codex_retry_is_not_hidden_by_missing_failure_callback(self):
         inp = {"file_path": "a.txt"}
@@ -124,7 +124,7 @@ class ReliabilityTest(unittest.TestCase):
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], sun.agent("session12345", "codex"))
         self.assertEqual(ev["tool_calls"][0]["id"], "retry")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
+        self.assertEqual(ev["edits"][0]["attribution_method"], "uncertain")
         hook("Stop", harness="codex")
         self.assertFalse(sun.state("active.json", {}))
         self.assertNotIn("PostToolUseFailure", sun.CODEX_HOOK_EVENTS)
@@ -215,7 +215,7 @@ class ReliabilityTest(unittest.TestCase):
                  tool_input={"file_path": "same.txt"})
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], "unknown")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
+        self.assertEqual(ev["edits"][0]["attribution_method"], "uncertain")
 
     def test_shell_edits_cannot_be_stolen_by_another_pre_hook(self):
         hook("PreToolUse", "shell", tool_name="Bash", tool_use_id="shell-call")
@@ -268,7 +268,7 @@ class ReliabilityTest(unittest.TestCase):
         run("sync")
         ev = sun.events()[-1]
         self.assertEqual(ev["edits"][0]["file"], name)
-        self.assertIn("GIT binary patch", ev["edits"][0]["patch"])
+        self.assertIn("GIT binary patch", sun.event_edits(ev)[0]["patch"])
         run("undo", "--op", ev["id"])
         with open(name, "rb") as f: self.assertEqual(f.read(), b"\x00before\xff")
 
@@ -276,7 +276,7 @@ class ReliabilityTest(unittest.TestCase):
         write("a[1].txt", "literal\n")
         write("a1.txt", "plain\n")
         run("sync")
-        edits = {ed["file"]: ed["patch"] for ed in sun.events()[-1]["edits"]}
+        edits = {ed["file"]: ed["patch"] for ed in sun.event_edits(sun.events()[-1])}
         self.assertNotIn("plain", edits["a[1].txt"])
         self.assertNotIn("literal", edits["a1.txt"])
 
@@ -327,7 +327,7 @@ class ReliabilityTest(unittest.TestCase):
         write("README.md", "resolved\n")
         run("merge", "--continue")
         self.assertEqual(self.git("show", f"{self.sun_head()}:README.md"), "resolved\n")
-        self.assertEqual(sun.events()[-1]["edits"][0]["attribution"]["method"], "resolution")
+        self.assertEqual(sun.events()[-1]["edits"][0]["attribution_method"], "resolution")
 
     def test_linked_worktree_uses_git_paths(self):
         with tempfile.TemporaryDirectory() as path:

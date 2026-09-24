@@ -324,8 +324,8 @@ class SunTest(unittest.TestCase):
         self.assertIn("[emma/local]", out.splitlines()[0])
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], "emma/local")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "sync")
-        self.assertIn("+v1", ev["edits"][0]["patch"])
+        self.assertEqual(ev["edits"][0]["attribution_method"], "sync")
+        self.assertIn("+v1", sun.event_edits(ev)[0]["patch"])
         self.assertTrue(ev["patch_id"])
         sha = self.git("rev-parse", f"refs/sun/events/{ev['id']}").strip()
         self.assertIn(ev["id"], self.git("cat-file", "blob", sha))
@@ -357,9 +357,8 @@ class SunTest(unittest.TestCase):
         self.assertEqual((ev["actor"], ev["turn"]), (AGENT, "turn1"))
         self.assertEqual(ev["session_id"], "session12345")
         self.assertEqual(ev["edits"][0]["tool_call_id"], "tool0")
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
-        self.assertEqual(ev["tool_calls"], [{"id": "tool0", "tool": "Write",
-                                             "input": {"file": "foo.ts"}}])
+        self.assertEqual(ev["edits"][0]["attribution_method"], "hook")
+        self.assertEqual(ev["tool_calls"], [{"id": "tool0", "tool": "Write"}])
         self.assertEqual(self.git("rev-parse", f"refs/sun/ops/{ev['commit']}").strip(),
                          ev["commit"])
 
@@ -586,7 +585,7 @@ class SunTest(unittest.TestCase):
         hook("PostToolUse", tool_name="Bash", tool_input={"command": "sed"})
         ev = sun.events()[-1]
         self.assertEqual(ev["actor"], AGENT)
-        self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook")
+        self.assertEqual(ev["edits"][0]["attribution_method"], "hook")
 
     def test_codex_apply_patch_tracks_agent_and_local_overlay(self):
         run("init", "--codex", "--no-instructions")
@@ -603,7 +602,8 @@ class SunTest(unittest.TestCase):
         self.assertEqual({e["actor"] for e in evs},
                          {"emma/agent:codex/codex-session-123", "emma/local"})
         agent_ev = next(e for e in evs if "agent:codex" in e["actor"])
-        self.assertEqual(agent_ev["tool_calls"][0]["input"], {"file": "agent.ts"})
+        self.assertEqual(agent_ev["tool_calls"][0], {"id": "call-1", "tool": "apply_patch"})
+        self.assertEqual(agent_ev["edits"][0]["file"], "agent.ts")
         hook("Stop", sid, harness="codex")
         self.assertIn("agent:codex/codex-session-123 turn 1", self.head_subject())
 

@@ -11,24 +11,17 @@ import time, uuid
 from typing import Any, Dict, List, Optional, TypedDict
 
 
-# How the edit was attributed; the responsible actor is stored on Event.
-class Attribution(TypedDict, total=False):
-    method: str
-
-
 # An Edit is one file's observed change, whether made by a person or an agent.
 # A ToolCall is an attempted action that may produce zero or many Edits across files.
 class Edit(TypedDict, total=False):
     file: str
-    patch: str
     tool_call_id: Optional[str]
-    attribution: Attribution
+    attribution_method: str  # The responsible actor is stored on Event.
 
 
 class ToolCall(TypedDict, total=False):
     id: Optional[str]
     tool: str
-    input: Dict[str, Any]
 
 
 class Event(TypedDict, total=False):
@@ -46,8 +39,6 @@ class Event(TypedDict, total=False):
     edits: List[Edit]
     target_op: str  # Operation being undone.
     target_commit: str  # Commit being undone, or the desired state for restore.
-    parents: List[str]
-    pr: int
     branch: str
     sequence: int
 
@@ -57,9 +48,9 @@ class TurnState(TypedDict, total=False):
     n: int
     start: str
     transcript: str
-    toffset: int  # Transcript byte position where the next turn slice starts.
-    soffset: int  # Transcript byte position through which prompts have been scanned.
-    seen: int  # Nonzero once the starting prompt has been encountered.
+    transcript_offset: int  # Transcript byte position where the next turn slice starts.
+    scan_offset: int  # Transcript byte position through which prompts have been scanned.
+    prompt_seen: bool  # Whether the starting prompt has been encountered.
     stopped: bool
     squashed: bool
     branch: str
@@ -109,10 +100,6 @@ def root():  # memoized per cwd: called on every event, and hooks chdir before u
     return _r.get(os.getcwd()) or _r.setdefault(os.getcwd(), git("rev-parse", "--show-toplevel").strip())
 def quiet(*args, **kwargs):
     return subprocess.run(args, capture_output=True, text=True, **kwargs)
-
-
-def patches(pre, post, files):
-    return {f: git("--literal-pathspecs", "diff", "--binary", pre, post, "--", f) for f in files}
 
 
 def changed_files():
@@ -177,7 +164,14 @@ def write_text(path, text, mode="w"):
 
 
 def state(name, default):
-    return jread(os.path.join(sun_dir(), name), default)
+    value = jread(os.path.join(sun_dir(), name), default)
+    if name == "turns.json":
+        for turn in value.values():
+            for old, new in (("toffset", "transcript_offset"), ("soffset", "scan_offset"),
+                             ("seen", "prompt_seen")):
+                if old in turn: turn.setdefault(new, turn.pop(old))
+            if "prompt_seen" in turn: turn["prompt_seen"] = bool(turn["prompt_seen"])
+    return value
 
 
 def save_state(name, obj):
@@ -296,6 +290,20 @@ def parse_events(text: str) -> List[Event]:  # skips torn lines rather than bric
         try: out.append(json.loads(l))
         except ValueError: pass
     return out
+def event_edits(event):
+    """Materialize file diffs only when needed; retain patches from older records."""
+    result = []
+    for edit in event.get("edits", []):
+        edit = dict(edit)
+        old = edit.pop("attribution", {}) or {}
+        if "method" in old: edit.setdefault("attribution_method", old["method"])
+        if "patch" not in edit:
+            rev = event.get("snapshot") or event["commit"]
+            edit["patch"] = git("--literal-pathspecs", "show", "--format=", "--binary",
+                                rev, "--", edit["file"])
+        result.append(edit)
+    return result
+
 def events(include_unreachable=False, scope=None) -> List[Event]:
     entries = refs("refs/sun/events/")
     if not entries: return []
@@ -401,13 +409,11 @@ def sync(exclude=(), method="sync"):  # record unclaimed file changes, without t
         if not active and branch.get("observe"):
             save_state("branch.json", {**branch, "observe": False})
         return None
-    pre, actor = history_head(), "unknown" if method in ("uncertain", "observed") else local()
+    actor = "unknown" if method in ("uncertain", "observed") else local()
     c = commit_files(files, "sun: observed repository state" if method == "observed"
                      else edits_msg(actor, files), actor)
-    p = patches(pre, c, files)
     ev = record(type="observe" if method == "observed" else "edit", actor=actor, commit=c, patch_id=patch_id(c),
-                  edits=[{"file": f, "patch": p[f],
-                          "attribution": {"method": method}} for f in files])
+                  edits=[{"file": f, "attribution_method": method} for f in files])
     if not active and branch.get("observe"):
         save_state("branch.json", {**branch, "observe": False})
     return ev
@@ -446,11 +452,8 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     if not files:
         release()
         return
-    tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
-    paths = relative_tool_files(tool, inp)
-    call_input = ({"file": paths[0]} if len(paths) == 1 else
-                  {"files": paths} if paths else inp)
-    call = {"id": payload.get("tool_use_id"), "tool": tool, "input": call_input}
+    tool = payload.get("tool_name", "?")
+    call = {"id": payload.get("tool_use_id"), "tool": tool}
     claimed = set(st["files"])
     # Edit/Write only touch their own file -> the rest of the diff is a concurrent local
     # overlay; for other tools (Bash, ...) the whole diff is the agent's
@@ -467,15 +470,13 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     if baseline:
         c = make_shadow_commit(snapshot_tree(baseline, st["before"]),
                                "sun: observed pre-tool state", "unknown", [tip])
-        p = patches(tip, c, baseline)
         record(type="observe", actor="unknown", commit=c, edits=[
-            {"file": f, "patch": p[f], "attribution": {"method": "observed"}} for f in baseline])
+            {"file": f, "attribution_method": "observed"} for f in baseline])
     actor, pre = st["actor"], history_head()
     turn = st.get("turn", 0)
     c = make_shadow_commit(snapshot_tree(files, after),
                            f"sun: {actor} {tool}" if a_files else edits_msg(local(), files),
                            actor if a_files else local(), [pre])
-    p = patches(pre, c, files)
     entries = []
     if a_files:
         overlap = st.get("overlap", [])
@@ -487,12 +488,11 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
             if group:
                 entries.append(dict(type="edit", actor=owner, session_id=sid, turn=f"turn{turn}",
                        patch_id=patch_id(c), tool_calls=[call], edits=[
-                           {"file": f, "patch": p[f], "tool_call_id": call["id"],
-                            "attribution": {"method": method}} for f in group]))
+                           {"file": f, "tool_call_id": call["id"],
+                            "attribution_method": method} for f in group]))
     if h_files:
         entries.append(dict(type="edit", actor=local(),
-               edits=[{"file": f, "patch": p[f],
-                       "attribution": {"method": "hook"}} for f in h_files]))
+               edits=[{"file": f, "attribution_method": "hook"} for f in h_files]))
     if entries: entries[0]["id"] = st["id"]
     record_batch(c, entries)
     release()
@@ -550,7 +550,7 @@ def prompt_boundary(sid, payload, harness="claude"):
     if not (t and tp and os.path.exists(tp)): return
     with open(tp, "rb") as f:
         prompts = []
-        f.seek(t.get("soffset", t.get("toffset", 0)))
+        f.seek(t.get("scan_offset", t.get("transcript_offset", 0)))
         while True:
             pos, line = f.tell(), f.readline()
             if not line:
@@ -566,19 +566,19 @@ def prompt_boundary(sid, payload, harness="claude"):
             prompts = [item for item in prompts if item[1] == 3]
         elif {1, 2} <= kinds:
             prompts = [item for item in prompts if item[1] == 1]
-        seen = t.get("seen", 0)
-        boundaries = prompts[0 if seen else 1:]
+        prompt_seen = t.get("prompt_seen", False)
+        boundaries = prompts[0 if prompt_seen else 1:]
         for boundary, _ in boundaries:
             squash_turn(sid, harness)
-            f.seek(t.get("toffset", 0))
+            f.seek(t.get("transcript_offset", 0))
             data = f.read(boundary - f.tell())
             if data and not t.get("stopped") and cfg_share_sessions():
                 store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
             sync(method="hook")
-            t.update(n=t["n"] + 1, start=history_head(), toffset=boundary)
+            t.update(n=t["n"] + 1, start=history_head(), transcript_offset=boundary)
             t.pop("stopped", None)
             t.pop("squashed", None)
-    t.update(soffset=end, seen=1 if boundaries else seen + len(prompts))
+    t.update(scan_offset=end, prompt_seen=prompt_seen or bool(prompts))
     turns[session_key(sid, harness)] = t
     save_state("turns.json", turns)
 def stop_chunk(sid, payload, harness="claude"):
@@ -588,10 +588,10 @@ def stop_chunk(sid, payload, harness="claude"):
     tp = payload.get("transcript_path") or (t or {}).get("transcript", "")
     if not (t and tp and os.path.exists(tp) and cfg_share_sessions()): return
     with open(tp, errors="replace") as f:
-        f.seek(t.get("toffset", 0))
+        f.seek(t.get("transcript_offset", 0))
         data = f.read()
     if data: store_chunks(sid, {f"turn-{t['n']:04d}.jsonl": data})
-    t.update(toffset=os.path.getsize(tp), stopped=True); save_state("turns.json", turns)
+    t.update(transcript_offset=os.path.getsize(tp), stopped=True); save_state("turns.json", turns)
 def subagent_chunk(sid, payload):
     tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
     if not (tp and sub and os.path.exists(tp) and cfg_share_sessions()): return
@@ -657,7 +657,7 @@ def handle_hook(a, payload):
         key = session_key(sid, harness)
         turns[key] = {"n": turns.get(key, {}).get("n", 0) + 1, "start": history_head(),
                       "transcript": tp, "branch": shadow_ref(),
-                      "toffset": os.path.getsize(tp) if os.path.exists(tp) else 0}
+                      "transcript_offset": os.path.getsize(tp) if os.path.exists(tp) else 0}
         save_state("turns.json", turns)
     elif event == "PreToolUse":  # claim the file BEFORE the write exists
         tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
@@ -897,6 +897,7 @@ def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt pai
     evs, merged = events(), {}
     for e in evs:
         if e.get("type") not in ("edit", "undo", "restore") or not e.get("edits"): continue
+        e = {**e, "edits": event_edits(e)}
         key = (e["actor"], e.get("session_id"), e["turn"]) if e.get("turn") else e["id"]
         m = merged.setdefault(key, {**e, "tool_calls": e.get("tool_calls", [])[:],
                                     "edits": e["edits"][:]})
@@ -910,9 +911,7 @@ def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt pai
         out.write(json.dumps({"timestamp": e["timestamp"], "actor": e["actor"], "session": sid,
                               "turn": e.get("turn"), "prompt": prompt,
                               "tool_calls": e["tool_calls"],
-                              "edits": [{"file": d["file"], "patch": d["patch"] or git(
-                                  "show", "--format=", e.get("commit") or "", "--", d["file"],
-                                  check=False)} for d in e["edits"]]}) + "\n")
+                              "edits": [{"file": d["file"], "patch": d["patch"]} for d in e["edits"]]}) + "\n")
     if a.output: out.close(); print(f"sun: exported to {a.output}")
 def cfg_share_sessions(): return state("config.json", {}).get("share_sessions", False)
 def configure_session_sharing(choice):
@@ -998,7 +997,7 @@ def join_history(remote, ref):
         git("update-ref", ref, remote, tip)
         return remote
     c = make_shadow_commit(tree, "sun: combine recorded histories", local(), [tip, remote])
-    record_batch(c, [dict(type="merge", actor=local(), parents=[tip, remote], edits=[])], ref=ref)
+    record_batch(c, [dict(type="merge", actor=local(), edits=[])], ref=ref)
     return c
 
 def cmd_push(a):
@@ -1117,7 +1116,6 @@ def cmd_log(a):
         H, h, date, subj = line.split("\t", 3)
         tags = "".join(dict.fromkeys(
             f"  [{e['actor']}" + (f" {e['turn']}" if e.get("turn") else "")
-            + (f" pr#{e['pr']}" if e.get("pr") else "")
             + (f" {e['type']}" if e["type"] in ("undo", "restore") else "") + "]"
             for e in by_commit.get(H, [])))
         print(f"{h} {date} {subj}{tags or '  [untracked]'}")
@@ -1128,7 +1126,7 @@ def cmd_show(a):
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead
         pid = patch_id(H); evs = [e for e in events(True) if pid and e.get("patch_id") == pid]
     if not evs: print("no sun operations recorded for this commit")
-    for e in evs: print(json.dumps(e, indent=2))
+    for e in evs: print(json.dumps({**e, "edits": event_edits(e)}, indent=2))
 def blame_context(chunk, tid):  # first user prompt + last agent text before tool call `tid`
     prompt = ctx = tool = None
     for obj in parse_events(chunk):
@@ -1205,6 +1203,7 @@ def cmd_blame(a):
           + (f" {ev['turn']}" if ev.get("turn") else "") + f"  op {ev['id']}" if ev else "untracked"))
     print("> " + next((l[1:] for l in out.splitlines() if l.startswith("\t")), ""))
     if not ev: return print("no sun operations recorded for this commit")
+    ev = {**ev, "edits": event_edits(ev)}
     if ev["actor"] == "unknown":
         return print("observed change; author unknown: no conversation\n" + json.dumps(ev, indent=2))
     if "/agent:" not in ev["actor"]:
@@ -1239,15 +1238,15 @@ def cmd_undo(a):
         if not a.dry_run: maybe_sync()
         apply_checked(patch, True, f"sun: cannot undo commit {H[:8]} cleanly", a.dry_run)
         if a.dry_run: return print(f"sun: can undo commit {H[:8]}")
-        files, pre = changed_files(), history_head()
+        files = changed_files()
         c = commit_files(files or ["."], f"sun: undo commit {H[:8]}", actor)
         record(type="undo", actor=actor, commit=c, target_commit=H,
-               edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
+               edits=[{"file": f} for f in files])
         return print(f"sun: undid commit {H[:8]} in {c[:8]}")
     target = next((e for e in reversed(events())
                    if (e["id"] == a.op or not a.op) and e.get("edits")), None)
     if not target: sys.exit("sun: no such operation")
-    combined = "".join(ed["patch"] for ed in target["edits"] if ed["patch"].strip())
+    combined = "".join(ed["patch"] for ed in event_edits(target) if ed["patch"].strip())
     if not a.dry_run: maybe_sync()
     apply_checked(combined, True,
                   f"sun: cannot undo op {target['id']}: its patch no longer applies cleanly",
@@ -1256,10 +1255,9 @@ def cmd_undo(a):
     if a.dry_run:
         return print(f"sun: can undo op {target['id']} by {target['actor']} "
                      f"({', '.join(files)})")
-    pre = history_head()
     c = commit_files(files, f"sun: undo op {target['id']}", actor)
     record(type="undo", actor=actor, commit=c, target_op=target["id"],
-           edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
+           edits=[{"file": f} for f in files])
     print(f"sun: undid op {target['id']} in {c[:8]}")
 def cmd_restore(a):
     if state("active.json", {}): sys.exit("sun: wait for active tool calls before restoring")
@@ -1271,7 +1269,7 @@ def cmd_restore(a):
     files = changed_files()
     c = commit_files(files or ["."], f"sun: restore {target[:8]}", local())
     record(type="restore", actor=local(), commit=c, target_commit=target,
-           edits=[{"file": f, "patch": patches(pre, c, files)[f]} for f in files])
+           edits=[{"file": f} for f in files])
     print(f"sun: restored {target[:8]} in {c[:8]}")
 def actor_info(actor):
     """Split a stable actor id into fields the visualizations can present."""
@@ -1294,17 +1292,16 @@ def display_subject(subject, actors):
         if subject.startswith(prefix): return subject[len(prefix):]
     return subject[5:] if subject.startswith("sun: ") else subject
 def viz_operation(ev):
-    methods = sorted({(ed.get("attribution") or {}).get("method")
-                      for ed in ev.get("edits") or []
-                      if (ed.get("attribution") or {}).get("method")})
+    edits = event_edits(ev)
+    methods = sorted({ed["attribution_method"] for ed in edits if ed.get("attribution_method")})
     return {"id": ev.get("id"), "type": ev.get("type", "edit"),
             "actor": ev.get("actor", "unknown"),
             "actor_info": actor_info(ev.get("actor", "unknown")),
             "session_id": ev.get("session_id"), "timestamp": ev.get("timestamp"),
-            "turn": ev.get("turn"), "pr": ev.get("pr"),
+            "turn": ev.get("turn"),
             "target_op": ev.get("target_op"), "target_commit": ev.get("target_commit"),
             "attribution_methods": methods, "tool_calls": ev.get("tool_calls") or [],
-            "edits": ev.get("edits") or []}
+            "edits": edits}
 def viz_data(n=0):
     limit = [f"-{n}"] if n else []
     scope = history_refs()
@@ -1314,7 +1311,8 @@ def viz_data(n=0):
             "author_email", "committer_name", "committer_email"]
     commits = [dict(zip(cols, l.split("\x1f"))) for l in log.splitlines()]
     sessions = session_data()
-    all_events, by_commit, by_pid = events(), {}, {}
+    all_events = [{**e, "edits": event_edits(e)} for e in events()]
+    by_commit, by_pid = {}, {}
     for ev in all_events:
         by_commit.setdefault(ev.get("commit"), []).append(ev)
         if ev.get("patch_id"): by_pid.setdefault(ev["patch_id"], []).append(ev)

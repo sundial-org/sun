@@ -134,14 +134,31 @@ class ReliabilityTest(unittest.TestCase):
         self.assertEqual(evs[-1]["actor"], "zoe/local")
         self.assertEqual(len({e["id"] for e in evs}), len(evs))
 
-    def test_normal_git_commit_does_not_hide_a_human_operation(self):
+    def test_git_commit_observes_unrecorded_edits_and_preserves_captured_attribution(self):
         write("human.txt", "human\n")
         self.git("add", ".")
         self.git("commit", "-m", "human edit")
         run("log")
         ev = history.events()[-1]
-        self.assertEqual(ev["type"], "edit")
+        self.assertEqual(ev["type"], "observe")
+        self.assertEqual(ev["actor"], "unknown")
         self.assertEqual(ev["edits"][0]["file"], "human.txt")
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "observed")
+        self.assertIn("+human", ev["edits"][0]["patch"])
+        self.tool_call("writer", "agent.txt", "captured\n")
+        captured = history.events()[-1]
+        self.assertEqual(captured["actor"], git_store.agent("writer"))
+        write("local.txt", "recorded before commit\n")
+        run("sync")
+        local = history.events()[-1]
+        self.assertEqual(local["actor"], git_store.local())
+        self.git("add", ".")
+        self.git("commit", "-m", "already recorded edits")
+        run("sync")
+        evs = history.events()
+        self.assertEqual([e for e in evs if e["id"] == captured["id"]], [captured])
+        self.assertEqual([e for e in evs if e["id"] == local["id"]], [local])
+        self.assertEqual(evs[-1]["id"], local["id"])
 
     def test_call_keeps_identity_from_pre_hook(self):
         hook("PreToolUse", tool_name="Write", tool_input={"file_path": "a.txt"})
@@ -294,31 +311,47 @@ class ReliabilityTest(unittest.TestCase):
 
     def test_fetch_never_changes_local_baseline(self):
         before = self.sun_head()
+        normal = self.git("rev-parse", "HEAD")
+        with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
+            index = f.read()
         write("remote.txt", "remote\n")
         remote = self.plumbing_commit(before, ["remote.txt"])
         os.remove("remote.txt")
-        self.git("update-ref", git_store.remote_ref(), remote)
+        with tempfile.TemporaryDirectory() as bare:
+            self.git("init", "--bare", bare)
+            self.git("remote", "add", "origin", bare)
+            self.git("push", "origin", f"{remote}:{git_store.shadow_ref()}")
+            self.git("fetch", "origin", *git_store.refspecs())
+        self.assertEqual(git_store.ref_oid(git_store.remote_ref()), remote)
         run("log")
         self.assertEqual(self.sun_head(), before)
         self.assertFalse(any(e.get("edits") for e in history.events()))
-        run("merge")
-        self.assertEqual(read("remote.txt"), "remote\n")
-        self.assertEqual(history.events()[-1]["edits"], [])
+        self.assertFalse(os.path.exists("remote.txt"))
+        self.assertEqual(read("README.md"), "hello\n")
+        self.assertEqual(self.git("rev-parse", "HEAD"), normal)
+        with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
+            self.assertEqual(f.read(), index)
 
-    def test_merge_conflict_requires_explicit_resolution(self):
+    def test_push_joins_conflicting_snapshots_without_merging_files(self):
         base = self.sun_head()
         write("README.md", "remote\n")
         remote = self.plumbing_commit(base, ["README.md"])
         write("README.md", "local\n")
         run("sync")
-        self.git("update-ref", git_store.remote_ref(), remote)
-        with self.assertRaisesRegex(SystemExit, "merge conflicts"):
-            run("merge")
-        self.assertIn("<<<<<<<", read("README.md"))
-        write("README.md", "resolved\n")
-        run("merge", "--continue")
-        self.assertEqual(self.git("show", f"{self.sun_head()}:README.md"), "resolved\n")
-        self.assertEqual(history.events()[-1]["edits"][0]["attribution"]["method"], "resolution")
+        local, normal = self.sun_head(), self.git("rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as bare:
+            self.git("init", "--bare", bare)
+            self.git("remote", "add", "origin", bare)
+            self.git("push", "origin", f"{remote}:{git_store.shadow_ref()}")
+            run("push")
+        self.assertEqual(self.git("rev-list", "--parents", "-n1", self.sun_head()).split()[1:],
+                         [local, remote])
+        self.assertEqual(read("README.md"), "local\n")
+        self.assertEqual(self.git("show", f"{self.sun_head()}:README.md"), "local\n")
+        self.assertEqual(self.git("show", f"{remote}:README.md"), "remote\n")
+        self.assertEqual(self.git("rev-parse", "HEAD"), normal)
+        self.assertEqual(history.events()[-1]["edits"], [])
+        self.assertFalse(os.path.exists(os.path.join(git_store.sun_dir(), "merge.json")))
 
     def test_linked_worktree_uses_git_paths(self):
         with tempfile.TemporaryDirectory() as path:
@@ -352,37 +385,56 @@ class ReliabilityTest(unittest.TestCase):
             self.git("remote", "add", "origin", remote)
             self.git("add", ".")
             self.git("commit", "-m", "installed hooks")
+            run("sync")  # establish the Git baseline before either clone makes its own edits
             self.git("push", "--no-verify", "origin", "HEAD")
             run("push")
             self.git("clone", remote, clone)
             try:
                 os.chdir(clone)
+                self.git("config", "user.name", "emma")
                 run("init", "--no-instructions")
                 write("b.txt", "b\n")
                 run("sync")
-                b = history.events()[-1]["id"]
+                b = history.events()[-1]
                 os.chdir(self.dir)
                 write("a.txt", "a\n")
                 run("sync")
-                a = history.events()[-1]["id"]
+                a = history.events()[-1]
+                self.assertEqual(a["actor"], b["actor"])
                 run("push")
-                os.chdir(clone)
-                before = self.sun_head()
-                with self.assertRaises(SystemExit): run("push")
-                self.assertEqual(self.git("--git-dir", remote, "for-each-ref", "--format=%(refname)",
-                                          f"refs/sun/events/{b}"), "")
-                self.git("fetch", "origin")
-                run("log")
-                self.assertEqual(self.sun_head(), before)
-                run("merge")
-                run("push")
-                os.chdir(self.dir)
-                run("merge")
-                evs = history.events()
-                self.assertEqual(sum(e["id"] == a for e in evs), 1)
-                self.assertEqual(sum(e["id"] == b for e in evs), 1)
-                self.assertEqual(read("a.txt") + read("b.txt"), "a\nb\n")
-                self.assertTrue(all(e["edits"] == [] for e in evs if e["type"] == "merge"))
+                remote_git_refs = self.git("--git-dir", remote, "for-each-ref", "refs/heads/")
+                for checkout, own, other in ((clone, "b", "a"), (self.dir, "a", "b")):
+                    os.chdir(checkout)
+                    before, normal = self.sun_head(), self.git("rev-parse", "HEAD")
+                    tree = self.git("rev-parse", f"{before}^{{tree}}")
+                    remote_tip = self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip()
+                    with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
+                        index = f.read()
+                    run("push")
+                    joined = self.sun_head()
+                    self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:],
+                                     [before, remote_tip])
+                    self.assertEqual(self.git("rev-parse", f"{joined}^{{tree}}"), tree)
+                    self.assertEqual(self.git("rev-parse", "HEAD"), normal)
+                    with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
+                        self.assertEqual(f.read(), index)
+                    self.assertEqual(read(own + ".txt"), own + "\n")
+                    self.assertFalse(os.path.exists(other + ".txt"))
+                    evs = history.events()
+                    for original in (a, b):
+                        self.assertEqual([e for e in evs if e["id"] == original["id"]], [original])
+                        ref = "refs/sun/events/" + original["id"]
+                        raw = self.git("--git-dir", remote, "cat-file", "blob", ref)
+                        self.assertEqual(json.loads(raw), original)
+                        snapshot = original.get("snapshot", original["commit"])
+                        self.assertEqual(self.git("--git-dir", remote, "rev-parse", "refs/sun/ops/" + snapshot).strip(),
+                                         snapshot)
+                    self.assertTrue(all(e["edits"] == [] for e in evs if e["type"] == "merge"))
+                    self.assertEqual(self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip(), joined)
+                    self.assertEqual(self.git("--git-dir", remote, "for-each-ref", "refs/heads/"), remote_git_refs)
+                    run("push")  # retrying does not add another merge or duplicate operations
+                    self.assertEqual(self.sun_head(), joined)
+                    self.assertEqual(history.events(), evs)
             finally: os.chdir(self.dir)
 
     def test_push_during_turn_prevents_squashing_published_calls(self):

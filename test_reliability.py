@@ -127,7 +127,7 @@ class ReliabilityTest(unittest.TestCase):
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
         hook("Stop", harness="codex")
         self.assertFalse(sun.state("active.json", {}))
-        self.assertNotIn("PostToolUseFailure", sun.CODEX_HOOK_EVENTS)
+        self.assertNotIn("PostToolUseFailure", sun.HARNESS_ADAPTERS["codex"]["events"])
 
     def test_interrupted_call_is_recovered_without_guessing_actor(self):
         hook("PreToolUse", tool_name="Write", tool_input={"file_path": "a.txt"})

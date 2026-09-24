@@ -3,7 +3,8 @@ import json, os, subprocess, sys, tempfile, unittest
 from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 import test_sun as fixtures
-from test_sun import run, hook, write, read, sun
+from test_sun import run, hook, write, read
+from sun import hooks, git_store, history, sessions
 
 
 class ReliabilityTest(unittest.TestCase):
@@ -11,15 +12,63 @@ class ReliabilityTest(unittest.TestCase):
     git, sun_head, tool_call = fixtures.SunTest.git, fixtures.SunTest.sun_head, fixtures.SunTest.tool_call
     plumbing_commit = fixtures.SunTest.plumbing_commit
 
+    def test_module_and_callable_entrypoints_show_the_same_history(self):
+        self.tool_call("writer", "note.md", "from a tool\n")
+        source = os.path.dirname(os.path.abspath(__file__))
+        env = {**os.environ, "PYTHONPATH": source}
+        outputs = []
+        for command in ([sys.executable, "-c", "from sun.cli import main; main()"],
+                        [sys.executable, "-m", "sun"]):
+            result = subprocess.run(command + ["data"], env=env, text=True,
+                                    capture_output=True, check=True)
+            outputs.append(json.loads(result.stdout))
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertIn("+from a tool", outputs[0]["events"][-1]["edits"][0]["patch"])
+
+    def test_read_only_shell_with_unsynced_active_file_records_nothing(self):
+        hook("PreToolUse", "other", tool_name="Write", tool_input={"file_path": "note.md"})
+        write("note.md", "already here before shell\n")
+        before = self.sun_head()
+        hook("PreToolUse", "reader", tool_name="Bash", tool_use_id="read")
+        hook("PostToolUse", "reader", tool_name="Bash", tool_use_id="read")
+        self.assertEqual(self.sun_head(), before)
+
+    def test_tool_patch_excludes_text_present_before_call(self):
+        hook("PreToolUse", "other", tool_name="Write", tool_input={"file_path": "note.md"})
+        write("note.md", "existing text\n")
+        hook("PreToolUse", "writer", tool_name="Bash", tool_use_id="edit")
+        write("note.md", "existing text\nactual addition\n")
+        hook("PostToolUse", "writer", tool_name="Bash", tool_use_id="edit")
+        ev = history.events()[-1]
+        self.assertNotIn("+existing text", ev["edits"][0]["patch"])
+        self.assertIn("+actual addition", ev["edits"][0]["patch"])
+        self.assertEqual(ev["actor"], "unknown")
+        parent = self.git("rev-parse", ev["commit"] + "^").strip()
+        self.assertEqual(self.git("show", parent + ":note.md"), "existing text\n")
+        run("sync", "--recover")
+        self.assertFalse(git_store.refs("refs/sun/pending/"))
+        run("undo", "--op", ev["id"])
+        self.assertEqual(read("note.md"), "existing text\n")
+
+    def test_deletion_of_unsynced_file_is_an_edit_not_a_noop(self):
+        hook("PreToolUse", "other", tool_name="Write", tool_input={"file_path": "note.md"})
+        write("note.md", "existing text\n")
+        hook("PreToolUse", "writer", tool_name="Bash", tool_use_id="delete")
+        os.remove("note.md")
+        hook("PostToolUse", "writer", tool_name="Bash", tool_use_id="delete")
+        ev = history.events()[-1]
+        self.assertIn("-existing text", ev["edits"][0]["patch"])
+        self.assertIn("deleted file mode", ev["edits"][0]["patch"])
+
     def test_failed_call_releases_claim_and_retry_is_recorded(self):
         hook("UserPromptSubmit")
         inp = {"file_path": "a.txt"}
         hook("PreToolUse", tool_name="Write", tool_input=inp, tool_use_id="failed")
         hook("PostToolUseFailure", tool_name="Write", tool_input=inp, tool_use_id="failed")
         self.tool_call("session12345", "a.txt", "retry\n")
-        self.assertEqual(sun.state("active.json", {}), {})
-        self.assertEqual(sun.events()[-1]["actor"], sun.agent("session12345"))
-        self.assertIn("+retry", sun.events()[-1]["edits"][0]["patch"])
+        self.assertEqual(git_store.state("active.json", {}), {})
+        self.assertEqual(history.events()[-1]["actor"], git_store.agent("session12345"))
+        self.assertIn("+retry", history.events()[-1]["edits"][0]["patch"])
 
     def test_codex_retry_is_not_hidden_by_missing_failure_callback(self):
         inp = {"file_path": "a.txt"}
@@ -27,59 +76,60 @@ class ReliabilityTest(unittest.TestCase):
             hook("PreToolUse", harness="codex", tool_name="Write", tool_input=inp, tool_use_id=tid)
         write("a.txt", "retry\n")
         hook("PostToolUse", harness="codex", tool_name="Write", tool_input=inp, tool_use_id="retry")
-        ev = sun.events()[-1]
-        self.assertEqual(ev["actor"], sun.agent("session12345", "codex"))
+        ev = history.events()[-1]
+        self.assertEqual(ev["actor"], git_store.agent("session12345", "codex"))
         self.assertEqual(ev["tool_calls"][0]["id"], "retry")
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
         hook("Stop", harness="codex")
-        self.assertFalse(sun.state("active.json", {}))
-        self.assertNotIn("PostToolUseFailure", sun.CODEX_HOOK_EVENTS)
+        self.assertFalse(git_store.state("active.json", {}))
+        self.assertNotIn("PostToolUseFailure", hooks.CODEX_HOOK_EVENTS)
 
     def test_interrupted_call_is_recovered_without_guessing_actor(self):
         hook("PreToolUse", tool_name="Write", tool_input={"file_path": "a.txt"})
         write("a.txt", "partial\n")
         hook("Stop")
-        self.assertFalse(sun.state("active.json", {}))
-        self.assertEqual(sun.events()[-1]["actor"], "unknown")
+        self.assertFalse(git_store.state("active.json", {}))
+        self.assertEqual(history.events()[-1]["actor"], "unknown")
 
     def test_read_tool_cannot_claim_human_edit(self):
         hook("PreToolUse", tool_name="Read", tool_input={"file_path": "README.md"})
         write("README.md", "human\n")
         hook("PostToolUse", tool_name="Read", tool_input={"file_path": "README.md"})
-        self.assertEqual(sun.events()[-1]["actor"], sun.local())
+        self.assertEqual(history.events()[-1]["actor"], git_store.local())
 
     def test_parallel_hook_processes_keep_distinct_files_attributed(self):
         def invoke(event, sid):
             payload = {"cwd": os.getcwd(), "hook_event_name": event, "session_id": sid,
                        "tool_name": "Write", "tool_use_id": sid,
                        "tool_input": {"file_path": sid + ".txt"}}
-            return subprocess.run([sys.executable, sun.__file__, "hook"],
+            env = {**os.environ, "PYTHONPATH": os.path.dirname(os.path.abspath(__file__))}
+            return subprocess.run([sys.executable, "-m", "sun", "hook"], env=env,
                                   input=json.dumps(payload), capture_output=True, text=True, check=True)
         with ThreadPoolExecutor(2) as pool:
             list(pool.map(lambda sid: invoke("PreToolUse", sid), ("a", "b")))
             write("a.txt", "a\n")
             write("b.txt", "b\n")
             list(pool.map(lambda sid: invoke("PostToolUse", sid), ("a", "b")))
-        changes = {d["file"]: e["actor"] for e in sun.events() for d in e.get("edits", [])}
-        self.assertEqual(changes, {"a.txt": sun.agent("a"), "b.txt": sun.agent("b")})
+        changes = {d["file"]: e["actor"] for e in history.events() for d in e.get("edits", [])}
+        self.assertEqual(changes, {"a.txt": git_store.agent("a"), "b.txt": git_store.agent("b")})
 
     def test_explicit_recovery_releases_dead_session(self):
         hook("PreToolUse", "dead", tool_name="Bash", tool_use_id="dead")
         write("partial.txt", "partial\n")
         run("sync", "--recover")
-        self.assertFalse(sun.state("active.json", {}))
-        self.assertEqual(sun.events()[-1]["actor"], "unknown")
+        self.assertFalse(git_store.state("active.json", {}))
+        self.assertEqual(history.events()[-1]["actor"], "unknown")
 
     def test_order_is_ancestry_not_clock_and_multiple_identities_do_not_duplicate(self):
         write("a.txt", "a\n")
-        with mock.patch("sun.time.strftime", return_value="2099-01-01T00:00:00+0000"):
+        with mock.patch("sun.history.time.strftime", return_value="2099-01-01T00:00:00+0000"):
             run("sync")
-        first = sun.events()[-1]["id"]
+        first = history.events()[-1]["id"]
         self.git("config", "user.name", "Zoe")
         write("b.txt", "b\n")
-        with mock.patch("sun.time.strftime", return_value="1999-01-01T00:00:00+0000"):
+        with mock.patch("sun.history.time.strftime", return_value="1999-01-01T00:00:00+0000"):
             run("sync")
-        evs = sun.events()
+        evs = history.events()
         self.assertEqual(evs[-2]["id"], first)
         self.assertEqual(evs[-1]["actor"], "zoe/local")
         self.assertEqual(len({e["id"] for e in evs}), len(evs))
@@ -89,7 +139,7 @@ class ReliabilityTest(unittest.TestCase):
         self.git("add", ".")
         self.git("commit", "-m", "human edit")
         run("log")
-        ev = sun.events()[-1]
+        ev = history.events()[-1]
         self.assertEqual((ev["type"], ev["actor"]), ("observe", "unknown"))
         self.assertEqual(ev["edits"][0]["file"], "human.txt")
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "observed")
@@ -99,18 +149,53 @@ class ReliabilityTest(unittest.TestCase):
         self.git("config", "user.name", "Zoe")
         write("a.txt", "a\n")
         hook("PostToolUse", tool_name="Write", tool_input={"file_path": "a.txt"})
-        self.assertEqual(sun.events()[-1]["actor"], "emma/agent:claude/session12345")
+        self.assertEqual(history.events()[-1]["actor"], "emma/agent:claude/session12345")
 
-    def test_old_logs_do_not_block_recording(self):
-        self.git("update-ref", "refs/sun/log/emma", sun.blob("old data\n"))
-        write(os.path.join(sun.sun_dir(), "events.jsonl"), "old data\n")
+    def test_old_logs_are_ignored_and_left_untouched(self):
+        old_event = {**history.events()[0], "id": "1234abcd"}
+        old_log = json.dumps(old_event) + "\n"
+        self.git("update-ref", "refs/sun/log/emma", git_store.blob(old_log))
+        old_path = os.path.join(git_store.sun_dir(), "events.jsonl")
+        write(old_path, old_log)
         before = self.sun_head()
+        self.git("update-ref", "refs/sun/heads/main", before)
         run("init", "--no-instructions")
+        hook("SessionStart")
+        run("log")
         self.assertEqual(self.sun_head(), before)
+        self.assertFalse(git_store.ref_oid("refs/sun/events/1234abcd"))
+        self.assertNotIn("legacy_branch", git_store.state("config.json", {}))
+        self.assertNotIn("1234abcd", {e["id"] for e in history.events()})
         write("new.txt", "new edit\n")
         run("sync")
-        self.assertEqual(sun.events()[-1]["edits"][0]["file"], "new.txt")
-        self.assertEqual(self.git("cat-file", "blob", "refs/sun/log/emma"), "old data\n")
+        self.assertEqual(history.events()[-1]["edits"][0]["file"], "new.txt")
+        self.assertEqual(self.git("cat-file", "blob", "refs/sun/log/emma"), old_log)
+        self.assertEqual(read(old_path), old_log)
+
+    def test_fresh_unborn_branches_keep_read_only_calls_empty(self):
+        for branch in ("main", "master"):
+            with self.subTest(branch=branch), tempfile.TemporaryDirectory() as repo:
+                os.chdir(repo)
+                try:
+                    self.git("init", "-q", "--initial-branch=" + branch)
+                    write("note.md", "already here\n")
+                    run("init", "--no-instructions")
+                    tip = self.sun_head()
+                    self.assertEqual(git_store.shadow_ref(), "refs/sun/heads/" + branch)
+                    hook("PreToolUse", tool_name="Bash", tool_use_id="read")
+                    hook("PostToolUse", tool_name="Bash", tool_use_id="read")
+                    self.assertEqual(self.sun_head(), tip)
+                    self.assertFalse(git_store.ref_oid("HEAD"))
+                    self.assertFalse(os.path.exists(".git/index"))
+                    self.git("switch", "-c", "feature")
+                    run("log")
+                    self.assertEqual(self.sun_head(), tip)
+                    self.tool_call("writer", "feature.txt", "new branch\n")
+                    self.assertEqual(git_store.ref_oid("refs/sun/heads/" + branch), tip)
+                    self.assertNotEqual(self.sun_head(), tip)
+                    self.assertEqual(read("note.md"), "already here\n")
+                finally:
+                    os.chdir(self.dir)
 
     def test_overlapping_writes_are_explicitly_uncertain(self):
         for sid in ("a", "b"):
@@ -120,7 +205,7 @@ class ReliabilityTest(unittest.TestCase):
         for sid in ("a", "b"):
             hook("PostToolUse", sid, tool_name="Write", tool_use_id=sid,
                  tool_input={"file_path": "same.txt"})
-        ev = sun.events()[-1]
+        ev = history.events()[-1]
         self.assertEqual(ev["actor"], "unknown")
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
 
@@ -129,8 +214,8 @@ class ReliabilityTest(unittest.TestCase):
         write("shell.txt", "shell\n")
         self.tool_call("other", "other.txt", "other\n")
         hook("PostToolUse", "shell", tool_name="Bash", tool_use_id="shell-call")
-        changes = {d["file"]: e["actor"] for e in sun.events() for d in e.get("edits", [])}
-        self.assertEqual(changes["shell.txt"], sun.agent("shell"))
+        changes = {d["file"]: e["actor"] for e in history.events() for d in e.get("edits", [])}
+        self.assertEqual(changes["shell.txt"], git_store.agent("shell"))
         # The unknown-scope shell overlaps this call, so do not invent precise attribution.
         self.assertEqual(changes["other.txt"], "unknown")
 
@@ -140,32 +225,32 @@ class ReliabilityTest(unittest.TestCase):
         hook("PreToolUse", tool_name="Write", tool_input=inp, tool_use_id="call")
         before = self.sun_head()
         write("a.txt", "a\n")
-        with mock.patch("sun.publish", side_effect=RuntimeError("interrupted")):
+        with mock.patch("sun.history.publish", side_effect=RuntimeError("interrupted")):
             with self.assertRaises(RuntimeError):
                 hook("PostToolUse", tool_name="Write", tool_input=inp, tool_use_id="call")
         self.assertEqual(self.sun_head(), before)
-        self.assertTrue(sun.state("active.json", {}))
+        self.assertTrue(git_store.state("active.json", {}))
         hook("PostToolUse", tool_name="Write", tool_input=inp, tool_use_id="call")
-        count = len(sun.events())
+        count = len(history.events())
         hook("PostToolUse", tool_name="Write", tool_input=inp, tool_use_id="call")
-        self.assertEqual(len(sun.events()), count)
+        self.assertEqual(len(history.events()), count)
 
     def test_interrupted_squash_keeps_original_operation_snapshots(self):
         hook("UserPromptSubmit")
         self.tool_call("session12345", "a.txt", "a\n", 0)
         self.tool_call("session12345", "b.txt", "b\n", 1)
-        original = [e["commit"] for e in sun.events() if e.get("session_id")]
-        save = sun.save_state
+        original = [e["commit"] for e in history.events() if e.get("session_id")]
+        save = git_store.save_state
         def interrupted(name, obj):
             if name == "turns.json" and any(t.get("squashed") for t in obj.values()):
                 raise RuntimeError("crash after commit")
             save(name, obj)
-        with mock.patch("sun.save_state", side_effect=interrupted):
+        with mock.patch("sun.git_store.save_state", side_effect=interrupted):
             with self.assertRaises(RuntimeError): hook("Stop")
         tip = self.sun_head()
         hook("Stop")
         self.assertEqual(self.sun_head(), tip)
-        self.assertEqual([e["snapshot"] for e in sun.events() if e.get("session_id")], original)
+        self.assertEqual([e["snapshot"] for e in history.events() if e.get("session_id")], original)
 
     def test_binary_and_unusual_filenames_roundtrip(self):
         name = "tab\tline\n[*].bin"
@@ -173,7 +258,7 @@ class ReliabilityTest(unittest.TestCase):
         run("sync")
         with open(name, "wb") as f: f.write(b"\x00after\xfe")
         run("sync")
-        ev = sun.events()[-1]
+        ev = history.events()[-1]
         self.assertEqual(ev["edits"][0]["file"], name)
         self.assertIn("GIT binary patch", ev["edits"][0]["patch"])
         run("undo", "--op", ev["id"])
@@ -183,7 +268,7 @@ class ReliabilityTest(unittest.TestCase):
         write("a[1].txt", "literal\n")
         write("a1.txt", "plain\n")
         run("sync")
-        edits = {ed["file"]: ed["patch"] for ed in sun.events()[-1]["edits"]}
+        edits = {ed["file"]: ed["patch"] for ed in history.events()[-1]["edits"]}
         self.assertNotIn("plain", edits["a[1].txt"])
         self.assertNotIn("literal", edits["a1.txt"])
 
@@ -191,7 +276,7 @@ class ReliabilityTest(unittest.TestCase):
         self.git("add", ".")
         self.git("commit", "-m", "track installed hooks")
         run("log")
-        old_ref, old_tip = sun.shadow_ref(), self.sun_head()
+        old_ref, old_tip = git_store.shadow_ref(), self.sun_head()
         self.git("switch", "-c", "feature")
         run("log")
         self.assertEqual(self.sun_head(), old_tip)
@@ -203,7 +288,7 @@ class ReliabilityTest(unittest.TestCase):
         self.git("switch", old_ref.removeprefix("refs/sun/heads/"))
         run("log")
         self.assertEqual(self.sun_head(), old_tip)
-        self.assertNotIn("feature.txt", {d["file"] for e in sun.events() for d in e.get("edits", [])})
+        self.assertNotIn("feature.txt", {d["file"] for e in history.events() for d in e.get("edits", [])})
         self.git("switch", "feature")
         run("log")
         self.assertEqual(self.sun_head(), feature_tip)
@@ -216,17 +301,17 @@ class ReliabilityTest(unittest.TestCase):
             write("remote.txt", "remote\n")
             remote = self.plumbing_commit(before, ["remote.txt"])
             os.remove("remote.txt")
-            self.git("push", "--no-verify", "origin", f"{remote}:{sun.shadow_ref()}")
-            self.git("fetch", "origin", f"+{sun.shadow_ref()}:{sun.remote_ref()}")
+            self.git("push", "--no-verify", "origin", f"{remote}:{git_store.shadow_ref()}")
+            self.git("fetch", "origin", f"+{git_store.shadow_ref()}:{git_store.remote_ref()}")
             run("log")
             self.assertEqual(self.sun_head(), before)
-            self.assertFalse(any(e.get("edits") for e in sun.events()))
+            self.assertFalse(any(e.get("edits") for e in history.events()))
             run("push")
             joined = self.sun_head()
             self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:], [before, remote])
             self.assertFalse(os.path.exists("remote.txt"))
             self.assertNotIn("remote.txt", self.git("ls-tree", "--name-only", joined).split())
-            self.assertEqual(sun.events()[-1]["edits"], [])
+            self.assertEqual(history.events()[-1]["edits"], [])
 
     def test_push_leaves_file_conflicts_to_git(self):
         with tempfile.TemporaryDirectory() as bare:
@@ -235,7 +320,7 @@ class ReliabilityTest(unittest.TestCase):
             base = self.sun_head()
             write("README.md", "remote\n")
             remote = self.plumbing_commit(base, ["README.md"])
-            self.git("push", "--no-verify", "origin", f"{remote}:{sun.shadow_ref()}")
+            self.git("push", "--no-verify", "origin", f"{remote}:{git_store.shadow_ref()}")
             write("README.md", "local\n")
             run("sync")
             local = self.sun_head()
@@ -244,11 +329,11 @@ class ReliabilityTest(unittest.TestCase):
             self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:], [local, remote])
             self.assertEqual(read("README.md"), "local\n")
             self.assertEqual(self.git("show", f"{joined}:README.md"), "local\n")
-            self.assertEqual(sun.events()[-1]["edits"], [])
+            self.assertEqual(history.events()[-1]["edits"], [])
             write("README.md", "resolved\n")  # resolved through normal Git, then observed by sync
             self.git("commit", "-am", "resolve")
             run("sync")
-            ev = sun.events()[-1]
+            ev = history.events()[-1]
             self.assertEqual(self.git("show", f"{self.sun_head()}:README.md"), "resolved\n")
             self.assertEqual((ev["type"], ev["actor"]), ("observe", "unknown"))
             self.assertEqual(ev["edits"][0]["attribution"]["method"], "observed")
@@ -260,8 +345,8 @@ class ReliabilityTest(unittest.TestCase):
                 os.chdir(path)
                 run("init", "--no-instructions")
                 self.tool_call("linked-agent", "linked.txt", "linked\n")
-                self.assertTrue(sun.sun_dir().endswith("/sun"))
-                self.assertEqual(sun.events()[-1]["actor"], sun.agent("linked-agent"))
+                self.assertTrue(git_store.sun_dir().endswith("/sun"))
+                self.assertEqual(history.events()[-1]["actor"], git_store.agent("linked-agent"))
             finally: os.chdir(self.dir)
 
     def test_native_codex_prompt_matches_tool_not_turn_number(self):
@@ -273,11 +358,11 @@ class ReliabilityTest(unittest.TestCase):
                      {"type": "event_msg", "payload": {"type": "item_completed", "item": {
                          "type": "FileChange", "id": tid}}}]
         write(tp, "\n".join(map(json.dumps, rows)))
-        self.assertEqual(len(sun.scan_codex_transcript(tp)), 2)
-        ev = {"actor": sun.agent("s", "codex"), "session_id": "s", "turn": "turn1"}
-        _, chunk = sun.operation_transcript(ev, "tool0")
-        self.assertEqual(sun.blame_context(chunk, "tool0"), ("new prompt", None, "apply_patch"))
-        self.assertFalse(sun.refs("refs/sun/sessions/"))
+        self.assertEqual(len(sessions.scan_codex_transcript(tp)), 2)
+        ev = {"actor": git_store.agent("s", "codex"), "session_id": "s", "turn": "turn1"}
+        _, chunk = sessions.operation_transcript(ev, "tool0")
+        self.assertEqual(sessions.blame_context(chunk, "tool0"), ("new prompt", None, "apply_patch"))
+        self.assertFalse(git_store.refs("refs/sun/sessions/"))
 
     def test_two_clones_same_identity_keep_all_operations(self):
         with tempfile.TemporaryDirectory() as remote, tempfile.TemporaryDirectory() as clone:
@@ -293,11 +378,11 @@ class ReliabilityTest(unittest.TestCase):
                 run("init", "--no-instructions")
                 write("b.txt", "b\n")
                 run("sync")
-                b = sun.events()[-1]["id"]
+                b = history.events()[-1]["id"]
                 os.chdir(self.dir)
                 write("a.txt", "a\n")
                 run("sync")
-                a = sun.events()[-1]["id"]
+                a = history.events()[-1]["id"]
                 run("push")
                 published = self.sun_head()
                 os.chdir(clone)
@@ -306,12 +391,12 @@ class ReliabilityTest(unittest.TestCase):
                 joined = self.sun_head()
                 self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:],
                                  [before, published])
-                self.assertEqual(self.git("--git-dir", remote, "rev-parse", sun.shadow_ref()).strip(), joined)
+                self.assertEqual(self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip(), joined)
                 self.assertTrue(self.git("--git-dir", remote, "for-each-ref", f"refs/sun/events/{b}"))
                 self.assertFalse(os.path.exists("a.txt"))
                 os.chdir(self.dir)
                 run("push")
-                evs = sun.events()
+                evs = history.events()
                 self.assertEqual(sum(e["id"] == a for e in evs), 1)
                 self.assertEqual(sum(e["id"] == b for e in evs), 1)
                 self.assertEqual(read("a.txt"), "a\n")
@@ -331,7 +416,7 @@ class ReliabilityTest(unittest.TestCase):
             hook("Stop")
             self.git("merge-base", "--is-ancestor", published, self.sun_head())
             run("push")
-            self.assertEqual(len([e for e in sun.events() if e.get("session_id")]), 2)
+            self.assertEqual(len([e for e in history.events() if e.get("session_id")]), 2)
 
 
 if __name__ == "__main__": unittest.main()

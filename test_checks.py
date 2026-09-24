@@ -1,7 +1,10 @@
 """Tests for rules, checks and coverage: judgments recorded over the operation history."""
 import json, os, shutil, subprocess, sys, tempfile, time, unittest
 import test_sun as fixtures
-from test_sun import run, hook, write, read, sun
+from sun import checks, cli, git_store, history, hooks, migration, output, sessions
+
+SUN_SOURCE = os.path.dirname(os.path.abspath(__file__))
+from test_sun import run, hook, write, read
 
 
 def terminal_env():  # an agent's shell, a judge, or Codex may be running these tests
@@ -31,9 +34,9 @@ class ChecksTest(unittest.TestCase):
         return next(r for r in commits[commit]["rules"] if r["rule"] == rule)
 
     def refused(self, *reqs, **fields):
-        before = sun.refs("refs/sun/checks/")
+        before = git_store.refs("refs/sun/checks/")
         with self.assertRaises(SystemExit) as raised: self.check(*reqs, **fields)
-        self.assertEqual(sun.refs("refs/sun/checks/"), before)  # nothing was written
+        self.assertEqual(git_store.refs("refs/sun/checks/"), before)  # nothing was written
         return str(raised.exception)
 
     def test_a_program_a_judge_and_a_person_write_the_same_shape(self):
@@ -42,12 +45,12 @@ class ChecksTest(unittest.TestCase):
                    cites=[{"at": tip, "file": "RULES", "lines": [2, 2]}], meta={"synthetic": True})
         self.check(rule="honest", verdict="supported", actor="agent:judge", cites=[{"at": tip}])
         self.assertIn("honest supported", run("check", "honest", "supported", "-m", "read it"))
-        stored = list(sun.checks().values())
+        stored = list(checks.checks().values())
         self.assertEqual({c["actor"] for c in stored}, {"emma/program:lean", "emma/agent:judge", "emma/local"})
         self.assertEqual({tuple(sorted(set(c) - {"note", "meta"})) for c in stored},
                          {("actor", "cites", "id", "rule", "rule_text", "timestamp", "type", "verdict", "via")})
         self.assertEqual({c["via"] for c in stored}, {"stdin", "terminal"})
-        self.assertTrue(all(ref.startswith("refs/sun/checks/emma/") for ref, _ in sun.refs("refs/sun/checks/")))
+        self.assertTrue(all(ref.startswith("refs/sun/checks/emma/") for ref, _ in git_store.refs("refs/sun/checks/")))
 
     def test_a_check_must_cite_recorded_state(self):
         tip, normal = self.sun_head(), self.git("rev-parse", "HEAD").strip()  # Sun never recorded `normal`
@@ -67,14 +70,14 @@ class ChecksTest(unittest.TestCase):
         first, = self.check(**req)
         time.sleep(1.1)  # a retry, a second later
         self.assertEqual(self.check(**req), [first])
-        self.assertEqual(len(sun.checks()), 1)
+        self.assertEqual(len(checks.checks()), 1)
 
     def test_layer_one_never_sees_checks(self):
         self.agent_turn("session12345", [("a.txt", "a\n")])
-        before = [run("log"), run("show", "HEAD"), run("export"), json.dumps(sun.events())]
+        before = [run("log"), run("show", "HEAD"), run("export"), json.dumps(history.events())]
         self.check(rule="tidy", verdict="pass", actor="program:t",
                    cites=[{"at": self.sun_head(), "file": "a.txt", "lines": [1, 1]}])
-        self.assertEqual([run("log"), run("show", "HEAD"), run("export"), json.dumps(sun.events())], before)
+        self.assertEqual([run("log"), run("show", "HEAD"), run("export"), json.dumps(history.events())], before)
 
     def test_a_check_written_mid_turn_lands_on_the_squashed_turn(self):
         hook("UserPromptSubmit")
@@ -84,7 +87,7 @@ class ChecksTest(unittest.TestCase):
         self.tool_call("session12345", "b.txt", "b\n", 1)
         hook("Stop")
         turn = self.sun_head()
-        self.assertNotIn(mid, self.git("rev-list", sun.shadow_ref()).split())  # the squash replaced it
+        self.assertNotIn(mid, self.git("rev-list", git_store.shadow_ref()).split())  # the squash replaced it
         self.assertEqual(self.row(turn)["status"], "pass")
         self.assertEqual(self.git("show", f"{mid}:a.txt"), "a\n")  # the cited state is still readable
 
@@ -118,7 +121,7 @@ class ChecksTest(unittest.TestCase):
         for n in range(1, 1100):  # deeper than Python's recursion limit; each hashes to its own ID
             c = {"type": "check", "actor": "emma/agent:a", "rule": "honest", "verdict": f"v{n}",
                  "cites": [{"check": last["id"]}]}
-            last = {**c, "id": sun.check_id(c)}
+            last = {**c, "id": checks.check_id(c)}
             write(os.path.join(files, last["id"]), json.dumps(last))
             chain.append(last["id"])
         blobs = subprocess.run(["git", "hash-object", "-w", "--stdin-paths"], text=True, check=True,
@@ -138,7 +141,7 @@ class ChecksTest(unittest.TestCase):
         hook("PostToolUse", **call)
         run("check", "honest", "fail", judge["id"][:8], "-m", "the receipt shows sorry")  # you review the judge
         self.assertEqual((self.row(turn)["status"], self.row(turn)["eyes"]), ("fail", "terminal"))
-        mine = next(c for c in sun.checks().values() if c["actor"] == "emma/local")
+        mine = next(c for c in checks.checks().values() if c["actor"] == "emma/local")
         self.check(verdict="pass", actor="agent:second", cites=[{"check": mine["id"]}])
         self.assertFalse(self.row(turn)["eyes"])  # your check was replaced, so it needs your eyes again
 
@@ -153,14 +156,14 @@ class ChecksTest(unittest.TestCase):
         turn = self.sun_head()
         real, = self.check(rule="honest", verdict="fail", actor="program:t", cites=[{"at": turn}])
         odd = {"rule": "honest", "verdict": "pass", "actor": "x/local", "cites": [{"at": []}]}  # hashes fine
-        odd["id"] = sun.check_id(odd)
-        self.git("update-ref", "refs/sun/checks/" + odd["id"], sun.blob(json.dumps(odd)))
+        odd["id"] = checks.check_id(odd)
+        self.git("update-ref", "refs/sun/checks/" + odd["id"], git_store.blob(json.dumps(odd)))
         for i, fake in enumerate(["not json", "[" * 100000, json.dumps({**real, "verdict": "pass"}), json.dumps([1])]):
-            self.git("update-ref", f"refs/sun/checks/emma/{i:032x}", sun.blob(fake))
-        stray = {**real, "actor": "ana/local"}; stray["id"] = sun.check_id(stray)  # pushed under the wrong name
-        self.git("update-ref", "refs/sun/checks/emma/" + stray["id"], sun.blob(json.dumps(stray)))
-        self.git("update-ref", sun.check_ref(real), sun.blob(json.dumps({**real, "verdict": "pass"})))
-        self.assertEqual(sun.checks(), {})
+            self.git("update-ref", f"refs/sun/checks/emma/{i:032x}", git_store.blob(fake))
+        stray = {**real, "actor": "ana/local"}; stray["id"] = checks.check_id(stray)  # pushed under the wrong name
+        self.git("update-ref", "refs/sun/checks/emma/" + stray["id"], git_store.blob(json.dumps(stray)))
+        self.git("update-ref", checks.check_ref(real), git_store.blob(json.dumps({**real, "verdict": "pass"})))
+        self.assertEqual(checks.checks(), {})
         self.assertEqual(self.row(turn)["status"], "unchecked")
 
     def test_checks_travel_and_never_block_history(self):
@@ -179,7 +182,7 @@ class ChecksTest(unittest.TestCase):
                 os.chdir(clone)
                 self.git("config", "user.name", "emma")  # the same person on a second machine
                 run("init", "--no-instructions")  # configures the fetch refspecs, then fetches
-                self.assertEqual(sun.checks()[mine["id"]], mine)
+                self.assertEqual(checks.checks()[mine["id"]], mine)
                 self.check(verdict="fail", actor="agent:second", cites=[{"check": mine["id"]}])
                 self.check(**twin)
                 run("push")
@@ -201,20 +204,20 @@ class ChecksTest(unittest.TestCase):
             self.check(**twin)  # the same check, recorded on two machines: one ID, two timestamps
             write("later.txt", "later\n"); run("sync")
             run("push")  # the remote keeps its copy of the twin, and history is still published
-            self.assertEqual(self.git("--git-dir", remote, "rev-parse", sun.shadow_ref()).strip(), self.sun_head())
-            self.git("fetch", "origin", *sun.refspecs())  # this clone ran init before origin existed
+            self.assertEqual(self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip(), self.sun_head())
+            self.git("fetch", "origin", *git_store.refspecs())  # this clone ran init before origin existed
             self.assertEqual(self.row(turn)["status"], "fail")
             self.assertIn(stranded["id"], [c["id"] for c in self.row(turn, "tidy")["checks"]])
 
     def test_a_slow_producer_does_not_hold_the_lock(self):
         req = json.dumps({"rule": "honest", "verdict": "pass", "actor": "program:t",
                           "cites": [{"at": self.sun_head()}]})
-        slow = subprocess.Popen([sys.executable, sun.__file__, "check"], stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE, text=True)
+        slow = subprocess.Popen([sys.executable, "-m", "sun", "check"], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, text=True, env={**os.environ, "PYTHONPATH": SUN_SOURCE})
         try:
             time.sleep(0.5)  # the checker is running and waiting on its input
-            subprocess.run([sys.executable, sun.__file__, "log"], stdout=subprocess.DEVNULL,
-                           check=True, timeout=10)  # a held lock would be a timeout, not a hang
+            subprocess.run([sys.executable, "-m", "sun", "log"], stdout=subprocess.DEVNULL,
+                           check=True, timeout=10, env={**os.environ, "PYTHONPATH": SUN_SOURCE})  # a held lock would be a timeout, not a hang
             self.assertIn("honest pass", slow.communicate(req, timeout=30)[0])
         finally:
             slow.kill(); slow.communicate()
@@ -267,7 +270,7 @@ class RulesTest(unittest.TestCase):
               "\n## Not a rule\ntext under a heading that is not a rule name\n")
 
     def test_rules_md_front_matter_and_legacy_rules(self):
-        config, rs = sun.read_rules()
+        config, rs = checks.read_rules()
         self.assertEqual(config, {"extract": "python3 extract.py"})
         self.assertEqual(sorted(rs), ["honest", "lowercase", "tidy"])
         self.assertEqual((rs["honest"]["runner"], rs["honest"]["command"], rs["honest"]["on"]), ("model", "python3 judge.py", "turn"))
@@ -276,9 +279,9 @@ class RulesTest(unittest.TestCase):
         self.assertEqual(rs["honest"]["text"], "The notes report what was measured.")
         before = rs["honest"]["hash"]
         write("RULES.md", read("RULES.md").replace("model: python3 judge.py", "agent: python3 judge.py"))
-        self.assertNotEqual(sun.read_rules()[1]["honest"]["hash"], before)  # the runner is part of the rule
+        self.assertNotEqual(checks.read_rules()[1]["honest"]["hash"], before)  # the runner is part of the rule
         os.remove("RULES.md"); write("RULES", "honest: The report lists what was proved.\n")
-        self.assertEqual(sun.rules(), {"honest": "The report lists what was proved."})
+        self.assertEqual(checks.rules(), {"honest": "The report lists what was proved."})
 
     def test_run_records_a_verdict_per_rule_and_fails_the_shell(self):
         write("notes.md", "Results: 12 points\n"); run("sync")
@@ -296,13 +299,13 @@ class RulesTest(unittest.TestCase):
     def test_a_crashing_runner_records_error_not_pass(self):
         write("RULES.md", "## broken\n---\nrun: exit 3\n---\nnever\n\n## silent\n---\nmodel: python3 -c pass\n---\nnothing\n")
         with self.assertRaisesRegex(SystemExit, "^1$"): run("check", "--run")
-        by = {c["rule"]: c for c in sun.checks().values()}
+        by = {c["rule"]: c for c in checks.checks().values()}
         self.assertEqual((by["broken"]["verdict"], by["silent"]["verdict"]), ("fail", "error"))
         self.assertIn("no verdict", by["silent"]["note"])
 
     def test_hooks_run_rules_only_after_trust(self):
         out = self.agent_turn("session12345", [("notes.md", "Results\n")])
-        self.assertEqual(sun.checks(), {})  # RULES.md changed after init: nothing runs, nothing breaks
+        self.assertEqual(checks.checks(), {})  # RULES.md changed after init: nothing runs, nothing breaks
         self.assertIn("2 rule commands", run("trust"))
         self.assertIn("extract verdicts", run("trust"))
         hook("UserPromptSubmit")
@@ -324,13 +327,13 @@ class RulesTest(unittest.TestCase):
 
     def test_trust_lapses_when_a_command_changes_and_is_a_persons_decision(self):
         self.assertIn("run `sun trust`", run("init", "--no-instructions"))  # init lists, never trusts
-        self.assertEqual(sun.checks(), {})
+        self.assertEqual(checks.checks(), {})
         run("trust")
         self.tool_call("session12345", "x.md", "X\n")
-        self.assertEqual(len(sun.checks()), 1)
+        self.assertEqual(len(checks.checks()), 1)
         write("RULES.md", read("RULES.md").replace("run: scripts/lowercase.sh", "run: scripts/lowercase.sh --strict"))
         self.tool_call("session12345", "y.md", "Y\n", 1)
-        self.assertEqual(len(sun.checks()), 1)  # a changed command runs no more until trusted again
+        self.assertEqual(len(checks.checks()), 1)  # a changed command runs no more until trusted again
         os.environ["CLAUDECODE"] = "1"
         try:
             with self.assertRaisesRegex(SystemExit, "person's decision"): run("trust")
@@ -358,19 +361,19 @@ class RulesTest(unittest.TestCase):
         self.assertIn("honest fail", first["reason"]); self.assertNotIn("quiet", first["reason"])
         self.tool_call("session12345", "a.txt", "aa\n", 1)
         self.assertEqual(hook("Stop", stop_hook_active=True), "")  # recorded, but the agent may stop now
-        self.assertEqual(len(sun.checks()), 4)
+        self.assertEqual(len(checks.checks()), 4)
         os.environ["SUN_CHECKING"] = "1"  # a judge's own session runs no rules
         try:
             self.tool_call("session12345", "a.txt", "aaa\n", 2)
             self.assertEqual(hook("Stop"), "")
         finally: del os.environ["SUN_CHECKING"]
-        self.assertEqual(len(sun.checks()), 4)
+        self.assertEqual(len(checks.checks()), 4)
 
     def test_text_only_turns_and_unmatched_files_run_nothing(self):
         run("trust")
         hook("UserPromptSubmit"); hook("Stop")
         self.tool_call("session12345", "code.py", "X = 1\n")  # `files: *.md` does not match
-        self.assertEqual(sun.checks(), {})
+        self.assertEqual(checks.checks(), {})
 
     def transcript(self, *records):
         tp = os.path.join(self.proj, "s.jsonl")
@@ -387,7 +390,7 @@ class RulesTest(unittest.TestCase):
         seen = self.sun_head()
         self.transcript(("assistant", "I wrote the notes."), ("user", "the notes look right, thanks. also nice work"))
         self.agent_turn("session12345", [("notes.md", "results: 2 points\n\n")], tpath=tp)
-        chat = [c for c in sun.checks().values() if c["actor"] == "emma/chat"]
+        chat = [c for c in checks.checks().values() if c["actor"] == "emma/chat"]
         self.assertEqual(len(chat), 1)
         c, = chat
         self.assertEqual((c["rule"], c["verdict"], c["note"], c["via"]), ("honest", "pass", "the notes look right", "extract"))
@@ -399,7 +402,7 @@ class RulesTest(unittest.TestCase):
         self.assertIn("recorded 0 verdicts", run("extract"))  # already read
         self.transcript(("assistant", "ok"), ("user", "there is a stray file"))  # a quote that is not her words is dropped
         self.assertIn("recorded 0 verdicts", run("extract", "--session", "session12345"))
-        self.assertEqual(len([c for c in sun.checks().values() if c["actor"] == "emma/chat"]), 1)
+        self.assertEqual(len([c for c in checks.checks().values() if c["actor"] == "emma/chat"]), 1)
         run("check", "honest", "pass", c["id"][:8], "-m", "confirmed")  # a terminal review promotes it
         self.assertEqual(self.row(seen)["eyes"], "terminal")
 
@@ -423,7 +426,7 @@ class RulesTest(unittest.TestCase):
                  {"type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "done"}]}},
                  {"type": "event_msg", "payload": {"type": "user_message", "message": "the notes look right"}}]
         write(tp, "".join(json.dumps(l) + "\n" for l in lines))
-        recs = sun.transcript_records(tp, "codex")
+        recs = checks.transcript_records(tp, "codex")
         self.assertEqual([(r["role"], r["text"]) for r in recs], [("user", "start"), ("assistant", "done"), ("user", "the notes look right")])
 
     def test_outdated_checks_stay_visible_and_a_review_refreshes_them(self):
@@ -466,7 +469,7 @@ class RulesTest(unittest.TestCase):
         finally: del os.environ["CLAUDECODE"]
         hook("PostToolUse", **call)
         self.assertIn("Self-checked by the agent that made the change:\n- lowercase", run("pr"))
-        mine = [c for c in sun.checks().values() if c.get("from")]
+        mine = [c for c in checks.checks().values() if c.get("from")]
         self.assertEqual({c["from"] for c in mine}, {"session12345"})
 
     def test_show_prints_a_check_by_id(self):
@@ -481,7 +484,7 @@ class SetupTest(unittest.TestCase):
 
     def on_path(self):  # the Git hook and adoption call `sun`; point them at this checkout
         bin_dir = tempfile.mkdtemp()
-        write(os.path.join(bin_dir, "sun"), f"#!/bin/sh\nexec {sys.executable} {sun.__file__} \"$@\"\n")
+        write(os.path.join(bin_dir, "sun"), f"#!/bin/sh\nPYTHONPATH={SUN_SOURCE} exec {sys.executable} -m sun \"$@\"\n")
         os.chmod(os.path.join(bin_dir, "sun"), 0o755)
         os.environ["PATH"] = bin_dir + os.pathsep + os.environ["PATH"]
         return bin_dir
@@ -496,7 +499,7 @@ class SetupTest(unittest.TestCase):
             self.git("add", "a.txt"); self.git("commit", "-q", "-m", "a")
             out = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True, check=True)
             self.assertNotIn("not published", out.stderr)
-            self.assertEqual(self.git("--git-dir", remote, "rev-parse", sun.shadow_ref()).strip(), self.sun_head())
+            self.assertEqual(self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip(), self.sun_head())
             no_sun = os.pathsep.join([os.path.dirname(shutil.which("git")), "/usr/bin", "/bin"])  # git, but no `sun`
             self.git("commit", "-q", "--allow-empty", "-m", "again")
             self.assertIn("not published", subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True,
@@ -513,15 +516,15 @@ class SetupTest(unittest.TestCase):
         self.git("worktree", "add", "-q", "-b", "feature", wt, base)
         os.chdir(wt)
         try:
-            sun._r.clear()
+            git_store._r.clear()
             self.assertIn("edits a.txt", run("log"))  # adopted without `sun init`, history inherited
-            self.assertEqual(sun.events()[-1]["actor"], "unknown")  # the missing a.txt is observed, not authored
-            self.assertEqual(sun.events()[-1]["type"], "observe")
+            self.assertEqual(history.events()[-1]["actor"], "unknown")  # the missing a.txt is observed, not authored
+            self.assertEqual(history.events()[-1]["type"], "observe")
             write("b.txt", "b\n"); run("sync")
-            self.assertEqual(sun.events()[-1]["actor"], "emma/local")
+            self.assertEqual(history.events()[-1]["actor"], "emma/local")
             self.assertTrue(os.path.isfile(os.path.join(self.dir, ".git", "worktrees", "wt", "sun", "config.json")))
         finally:
-            os.chdir(self.dir); sun._r.clear()
+            os.chdir(self.dir); git_store._r.clear()
         self.assertNotEqual(self.git("rev-parse", "refs/sun/heads/feature").strip(), self.git("rev-parse", f"refs/sun/heads/{base}").strip())
 
     def test_a_new_branch_continues_its_parent_history(self):
@@ -537,8 +540,8 @@ class SetupTest(unittest.TestCase):
         self.git("checkout", "-q", base); write("c.txt", "c\n"); self.git("add", "-A"); self.git("commit", "-q", "-m", "c")
         self.git("checkout", "-q", "-b", "later")  # after a commit Sun never saw
         self.assertIn("edits a.txt", run("log"))
-        self.assertEqual((sun.events()[-1]["type"], sun.events()[-1]["actor"]), ("observe", "unknown"))
-        self.assertIn("c.txt", json.dumps(sun.events()[-1]["edits"]))
+        self.assertEqual((history.events()[-1]["type"], history.events()[-1]["actor"]), ("observe", "unknown"))
+        self.assertIn("c.txt", json.dumps(history.events()[-1]["edits"]))
 
     def test_a_clone_with_committed_hooks_sets_itself_up_on_the_first_hook(self):
         self.on_path()
@@ -547,7 +550,7 @@ class SetupTest(unittest.TestCase):
         self.git("clone", "-q", self.dir, clone)
         os.chdir(clone)
         try:
-            sun._r.clear()
+            git_store._r.clear()
             subprocess.run(["git", "config", "user.name", "ana"], check=True)
             self.assertEqual(hook("SessionStart", sid="s2"), "")
             self.assertTrue(os.path.isdir(".git/sun"))
@@ -555,17 +558,17 @@ class SetupTest(unittest.TestCase):
             self.assertTrue(os.path.exists(".git/hooks/pre-push"))
             self.assertIn("initial state", run("log"))
         finally:
-            os.chdir(self.dir); sun._r.clear()
+            os.chdir(self.dir); git_store._r.clear()
         with tempfile.TemporaryDirectory() as plain:  # a repository nobody set up stays untouched
             subprocess.run(["git", "init", "-q", plain], check=True)
             os.chdir(plain)
             try:
-                sun._r.clear()
+                git_store._r.clear()
                 self.assertEqual(hook("SessionStart"), "")
                 self.assertFalse(os.path.isdir(".git/sun"))
                 with self.assertRaisesRegex(SystemExit, "sun init"): run("log")
             finally:
-                os.chdir(self.dir); sun._r.clear()
+                os.chdir(self.dir); git_store._r.clear()
 
 
 class MigrateTest(unittest.TestCase):
@@ -577,7 +580,7 @@ class MigrateTest(unittest.TestCase):
         self.T = [time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() + 60 * i)) for i in range(10)]
 
     def claude_transcript(self, sid, records):  # [(role, ts, payload)] -> a native transcript for this repo
-        d = os.path.join(self.proj, sun.enc(os.getcwd())); os.makedirs(d, exist_ok=True)
+        d = os.path.join(self.proj, sessions.enc(os.getcwd())); os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, sid + ".jsonl"), "a") as f:
             for role, ts, payload in records:
                 content = [payload] if isinstance(payload, dict) else [{"type": "text", "text": payload}]
@@ -610,7 +613,7 @@ class MigrateTest(unittest.TestCase):
         log = run("log")
         self.assertIn("turn 1 (1 tool calls)", log); self.assertIn("turn 2 (1 tool calls)", log)
         self.assertEqual(log.count("observed repository state"), 2)
-        evs = sun.events()
+        evs = history.events()
         self.assertEqual(evs[0]["type"], "init")
         replayed = [e for e in evs if e.get("edits") and e["edits"][0]["attribution"]["method"] == "replay"]
         self.assertEqual([(e["turn"], e["tool_calls"][0]["id"]) for e in replayed], [("turn1", "w1"), ("turn2", "e1")])
@@ -637,6 +640,6 @@ class MigrateTest(unittest.TestCase):
         write("n.md", "hello\nthere\n")  # as the agent left it on disk
         self.assertIn("replayed 2 tool calls", run("migrate"))
         self.assertEqual(self.git("show", f"{self.sun_head()}:n.md"), "hello\nthere\n")
-        replayed = [e for e in sun.events() if e["type"] == "edit"]
+        replayed = [e for e in history.events() if e["type"] == "edit"]
         self.assertEqual([e["tool_calls"][0]["id"] for e in replayed], ["p1", "p2"])
         self.assertEqual(replayed[0]["actor"], "emma/agent:codex/c1")

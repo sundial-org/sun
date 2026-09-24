@@ -285,6 +285,30 @@ transcript copies for later search, blame, and export. Prune only selects refs o
 Git user. Teammates' refs are left alone. Git may remove the now-unreferenced transcript objects
 during a later internal garbage collection.
 
+## Code map
+
+The `sun/` package separates the main jobs:
+
+| File | Responsibility |
+| --- | --- |
+| `cli.py` | Command arguments, initialization, hook installation, and updates |
+| `git_store.py` | Git objects, refs, snapshots, and local state files |
+| `history.py` | Branch history, events, turn squashing, publishing, undo, and restore |
+| `hooks.py` | Agent hooks and before/after tracking for tool calls |
+| `sessions.py` | Native transcripts and optional shared session storage |
+| `checks.py` | Rules, check runners, reviews, and coverage |
+| `migration.py` | Explicit reconstruction from Git and transcripts |
+| `output.py` | Log, show, blame, JSON, terminal, HTML, and training export |
+
+Run source checkouts with `python -m sun` instead of `python sun.py`. The installed
+`sun` command calls `sun.cli:main`. Modules use explicit imports so callers can
+see which part of Sun owns a function.
+
+Events are read from `refs/sun/events/`. The old `events.jsonl` and `refs/sun/log/`
+formats are no longer imported or used to reconnect branch history. Existing old
+data is left untouched; repositories that only have that data need an older Sun
+version to migrate it before upgrading.
+
 ## Demos & tests
 
 ```sh

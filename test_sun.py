@@ -178,7 +178,7 @@ class SunTest(unittest.TestCase):
         self.assertIn("open `/hooks`", out)
         self.assertIn("trust the Sun hooks", out)
         cfg = read_json(".codex/hooks.json")
-        for event in sun.CODEX_HOOK_EVENTS:
+        for event in sun.HARNESS_ADAPTERS["codex"]["events"]:
             self.assertIn("sun hook --harness codex",
                           [h["command"] for g in cfg["hooks"][event] for h in g["hooks"]])
         self.assertEqual(sun.configured_harnesses(), ["codex"])

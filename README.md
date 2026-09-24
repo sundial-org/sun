@@ -75,6 +75,14 @@ and run `sun sync --recover` to release abandoned calls and record uncertain edi
 Sun cannot detect a human typing into the same file during an
 agent write; use separate worktrees if precise ownership of overlapping edits is required.
 
+Hook events, config locations, and known tool capabilities live in Sun's per-harness
+adapters. Sun writes hook wiring to the Claude Code and Codex configs; capability
+policy stays in the adapters.
+Actual file changes come from before/after snapshots, including for unfamiliar tools.
+Unfamiliar tools are observed across the repository and their edits have unknown authorship
+and uncertain attribution; an input file path alone does not establish their write scope.
+Known read-only tools cannot claim concurrent file changes.
+
 ## Use the history
 
 | command | what it does |

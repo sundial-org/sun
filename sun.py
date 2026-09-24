@@ -70,14 +70,31 @@ class ActiveCall(TypedDict, total=False):
     all_files: bool
     overlap: List[str]
     ambiguous_actor: bool
+    unknown_tool: bool
     actor: str
 
 
-READ_TOOLS = {"Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch", "view_image"}
-HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse",
-               "PostToolUseFailure", "Stop", "SessionEnd")
-CODEX_HOOK_EVENTS = tuple(e for e in HOOK_EVENTS if e != "PostToolUseFailure") + (
-    "SubagentStart", "SubagentStop", "Interrupt")
+_COMMON_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd")
+# Names shared by the existing hook bridges. Capabilities inform attribution, not
+# whether changes are recorded: unfamiliar tools still get before/after snapshots.
+_BRIDGE_TOOLS = {
+    **dict.fromkeys(("Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch"), "read"),
+    **dict.fromkeys(("Edit", "Write", "MultiEdit", "NotebookEdit"), "file"),
+    "Bash": "shell",
+}
+HARNESS_ADAPTERS = {
+    "claude": {
+        "config": ".claude/settings.json", "command": "sun hook",
+        "events": _COMMON_EVENTS + ("PostToolUseFailure",),
+        "tools": dict(_BRIDGE_TOOLS),
+    },
+    "codex": {
+        "config": ".codex/hooks.json", "command": "sun hook --harness codex",
+        "events": _COMMON_EVENTS + ("SubagentStart", "SubagentStop", "Interrupt"),
+        "tools": {**_BRIDGE_TOOLS, "apply_patch": "patch", "view_image": "read",
+                  "exec_command": "shell", "write_stdin": "shell"},
+    },
+}
 CLAUDE_LINE = CODEX_LINE = (
     "Use `sun data` for attributed history and session paths. Your sessions stay in their "
     "native harness directories; only collaborators' shared sessions are cached in "
@@ -361,7 +378,6 @@ agent = lambda sid, harness="claude", u=None: f"{u or user()}/agent:{harness}/{s
 session_key = lambda sid, harness="claude": sid if harness == "claude" else f"{harness}/{sid}"
 call_key = lambda sid, payload, harness="claude": \
     f"{session_key(sid, harness)}/{payload.get('tool_use_id') or ''}"
-tool_file = lambda inp: inp.get("file_path") or inp.get("notebook_path")
 rel_to_root = lambda path: os.path.relpath(os.path.abspath(path), root())
 def patch_files(text):
     if not isinstance(text, str): return []
@@ -373,15 +389,19 @@ def patch_files(text):
               if p != "/dev/null"]
     cleaned = [p.strip().rstrip("\\\"'`,);") for p in paths]
     return list(dict.fromkeys(p for p in cleaned if p and p != "/dev/null"))
-def tool_files(tool, inp):
-    if not isinstance(inp, dict): return patch_files(inp)
-    f = tool_file(inp)
-    if f: return [f]
-    if tool == "apply_patch":
-        return patch_files(inp.get("command") or inp.get("patch") or inp.get("input") or "")
-    return []
-def relative_tool_files(tool, inp):
-    return [rel_to_root(f) for f in tool_files(tool, inp)]
+def normalize_tool(payload, harness):
+    """Map a harness's hook input to a capability and declared file paths."""
+    tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
+    if not isinstance(inp, dict): inp = {"input": inp}
+    capability = HARNESS_ADAPTERS[harness]["tools"].get(tool, "unknown")
+    files = []
+    if capability == "file":
+        path = inp.get("file_path") or inp.get("notebook_path")
+        if isinstance(path, str) and path: files = [path]
+    elif capability == "patch":
+        files = patch_files(inp.get("command") or inp.get("patch") or inp.get("input") or "")
+    # An unfamiliar tool's file_path may be an input, not its complete write scope.
+    return tool, inp, [rel_to_root(f) for f in files], capability
 edits_msg = lambda actor, files: (f"sun: {actor} edits " + ", ".join(files[:3])
                                   + (f" +{len(files) - 3} more" if len(files) > 3 else ""))
 def sync(exclude=(), method="sync"):  # record unclaimed file changes, without touching Git's index
@@ -438,14 +458,13 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     if not files:
         release()
         return
-    tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
-    paths = relative_tool_files(tool, inp)
+    tool, inp, paths, _ = normalize_tool(payload, harness)
     call_input = ({"file": paths[0]} if len(paths) == 1 else
                   {"files": paths} if paths else inp)
     call = {"id": payload.get("tool_use_id"), "tool": tool, "input": call_input}
     claimed = set(st["files"])
-    # Edit/Write only touch their own file -> the rest of the diff is a concurrent local
-    # overlay; for other tools (Bash, ...) the whole diff is the agent's
+    # File tools claim their declared paths. Shell and unfamiliar tools observe the
+    # whole repository; unfamiliar capabilities cannot establish an author.
     a_files = ([f for f in files if f in claimed] if claimed else
                files if st.get("all_files") else [])
     if not st.get("all_files") and any(s.get("all_files") for k, s in active.items() if k != key):
@@ -471,9 +490,10 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     entries = []
     if a_files:
         overlap = st.get("overlap", [])
-        uncertain = a_files if payload.get("hook_event_name") == "PostToolUseFailure" or "*" in overlap \
+        uncertain_call = st.get("unknown_tool") or payload.get("hook_event_name") == "PostToolUseFailure"
+        uncertain = a_files if uncertain_call or "*" in overlap \
             else [f for f in a_files if f in overlap]
-        unknown_actor = st.get("ambiguous_actor") or payload.get("hook_event_name") == "PostToolUseFailure"
+        unknown_actor = st.get("ambiguous_actor") or uncertain_call
         for owner, group, method in ((actor, [f for f in a_files if f not in uncertain], "hook"),
                                       ("unknown" if unknown_actor else actor, uncertain, "uncertain")):
             if group:
@@ -652,11 +672,10 @@ def handle_hook(a, payload):
                       "toffset": os.path.getsize(tp) if os.path.exists(tp) else 0}
         save_state("turns.json", turns)
     elif event == "PreToolUse":  # claim the file BEFORE the write exists
-        tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
+        _, _, files, capability = normalize_tool(payload, harness)
         key = call_key(sid, payload, harness)
         if key in active: return
-        files = relative_tool_files(tool, inp) if tool not in READ_TOOLS else []
-        broad = not files and tool not in READ_TOOLS
+        broad = not files and capability != "read"
         overlap, ambiguous_actor = set(), False
         for other_key, other in active.items():
             shared = set(files) & set(other["files"])
@@ -672,6 +691,7 @@ def handle_hook(a, payload):
                 other["ambiguous_actor"] = ambiguous_actor = True
         active[key] = {"files": files, "all_files": broad, "overlap": sorted(overlap),
                        "ambiguous_actor": ambiguous_actor,
+                       "unknown_tool": capability == "unknown",
                        "id": uuid.uuid4().hex,
                        "actor": agent(sid, harness),
                        "branch": shadow_ref(), "pre": history_head(), "before": snapshot_tree(),
@@ -924,25 +944,24 @@ def detect_harnesses():  # every harness with state on this machine (SUN_* overr
 def configured_harnesses():
     cfg = state("config.json", {})
     return cfg.get("harnesses") or [cfg.get("harness", "claude")]
-hook_file = lambda h: ".claude/settings.json" if h == "claude" else ".codex/hooks.json"
-hook_cmd = lambda h: "sun hook" if h == "claude" else "sun hook --harness codex"
 def install_hooks(harness="claude"):
-    rel = hook_file(harness)
+    adapter = HARNESS_ADAPTERS[harness]
+    rel = adapter["config"]
     path = os.path.join(root(), rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     cfg = jread(path, {})
     if not isinstance(cfg.setdefault("hooks", {}), dict):
         sys.exit(f"sun: unexpected 'hooks' format in {rel}")
-    command = hook_cmd(harness)
-    hook_events = HOOK_EVENTS if harness == "claude" else CODEX_HOOK_EVENTS
-    for event in hook_events:
+    command = adapter["command"]
+    for event in adapter["events"]:
         group = cfg["hooks"].setdefault(event, [])
         if not any(h.get("command") == command for g in group for h in g.get("hooks", [])):
             group.append({"hooks": [{"type": "command", "command": command}]})
     jwrite(path, cfg)
     return f"{harness} ({rel})"
 def remove_hooks(harness):  # a restrictive re-init un-installs the excluded harness's hook
-    path, command = os.path.join(root(), hook_file(harness)), hook_cmd(harness)
+    adapter = HARNESS_ADAPTERS[harness]
+    path, command = os.path.join(root(), adapter["config"]), adapter["command"]
     cfg = jread(path, {})
     if not isinstance(cfg.get("hooks"), dict): return
     for event in list(cfg["hooks"]):
@@ -1544,7 +1563,7 @@ def main(argv=None):
                             help="add agent instructions for finding shared sessions")
     ps["init"].add_argument("--no-instructions", "--no-claude-md", dest="instructions",
                             action="store_false", help="do not edit agent instruction files")
-    ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
+    ps["hook"].add_argument("--harness", choices=tuple(HARNESS_ADAPTERS), default="claude")
     ps["push"].add_argument("remote", nargs="?", default="origin")
     ps["push"].add_argument("branch", nargs="?", help="local branch (default: checked-out branch)")
     ps["sync"].add_argument("--recover", action="store_true",

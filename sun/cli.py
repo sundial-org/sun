@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 
+from . import branches
 from . import checks
 from . import git_store
 from . import history
@@ -102,57 +103,34 @@ def configure_sharing(share_sessions=False):
     for name, scripts in managed.items():
         path = git_store.git("rev-parse", "--git-path", "hooks/" + name).strip()
         if os.path.exists(path) and git_store.read_text(path) in scripts: os.remove(path)
-    install_push_hook()
-
-
-PRE_PUSH = """#!/bin/sh
-# sun: publish recorded Sun history for each pushed branch, without blocking the Git push
-while read local_ref local_oid remote_ref remote_oid; do
-  case "$local_ref" in
-    refs/heads/*) branch="${local_ref#refs/heads/}";;
-    HEAD) branch=$(git symbolic-ref -q --short HEAD) || continue;;
-    *) continue;;
-  esac
-  git rev-parse -q --verify "refs/sun/heads/$branch" >/dev/null 2>&1 || continue
-  sun push "$1" "$branch" || echo "sun: Sun history for $branch was not published; run: sun push $1 $branch" >&2
-done
-exit 0
-"""
-
-
-def install_push_hook():  # `git push` publishes Sun history too; a hook Sun did not write is left alone
-    if git_store.git("config", "--get", "core.hooksPath", check=False).strip():
-        print("sun: core.hooksPath is set; add `sun push` to your pre-push hook yourself", file=sys.stderr)
-        return False
-    path = git_store.git("rev-parse", "--git-path", "hooks/pre-push").strip()
-    if os.path.exists(path):
-        if git_store.read_text(path) == PRE_PUSH: return True
-        if "# sun:" not in git_store.read_text(path):
-            print(f"sun: {path} exists; run `sun push` yourself, or call it from that hook", file=sys.stderr)
-            return False
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    git_store.write_text(path, PRE_PUSH); os.chmod(path, 0o755)
-    return True
+    branches.install_hooks()
 
 
 def adopt():
     """A worktree or clone of a repository that already uses Sun sets itself up on first use."""
-    d = git_store.sun_dir(False)
-    if os.path.isdir(d): return True
-    common = git_store.git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()
-    shared = git_store.jread(os.path.join(common, "sun", "config.json"), {})
+    if git_store.initialized():
+        git_store.sun_dir()
+        return True
     hooked = [h for h in ("claude", "codex") if os.path.exists(os.path.join(git_store.root(), hook_file(h)))
               and hook_cmd(h) in git_store.read_text(os.path.join(git_store.root(), hook_file(h)))]
-    if not shared and not hooked: return False  # nobody ran `sun init` here: stay out of the way
+    if not hooked: return False  # nobody ran `sun init` here: stay out of the way
     with git_store.lock():
-        if os.path.isdir(d): return True
-        os.makedirs(d, exist_ok=True)
-        git_store.save_state("config.json", {"harnesses": hooked or shared.get("harnesses", ["claude"]),
-                                   "share_sessions": bool(shared.get("share_sessions"))})
-        configure_sharing(git_store.cfg_share_sessions())
+        if git_store.initialized():
+            git_store.sun_dir()
+            return True
+        git_store.save_state("config.json", {"harnesses": hooked, "share_sessions": False})
+        git_store.sun_dir()
+        configure_sharing()
         if "origin" in git_store.git("remote", check=False).split():
-            try: git_store.quiet("git", "fetch", "-q", "origin", *git_store.refspecs(git_store.cfg_share_sessions()), timeout=60)
+            try: git_store.quiet("git", "fetch", "-q", "origin", *git_store.refspecs(), timeout=60)
             except subprocess.TimeoutExpired: pass
+        # A fresh clone has a named upstream. Adopt only that fetched Sun lineage;
+        # local branch creation and worktree attachment use the Git lifecycle hooks.
+        upstream = git_store.git("rev-parse", "--symbolic-full-name", "@{upstream}", check=False).strip()
+        source = upstream.replace("refs/remotes/", "refs/sun/remotes/", 1) if upstream.startswith("refs/remotes/") else ""
+        tip = git_store.ref_oid(source) if source else ""
+        if tip and not git_store.history_head(False):
+            git_store.git("update-ref", git_store.shadow_ref(), tip)
     return True
 
 
@@ -204,17 +182,12 @@ def init_locked(a):
         agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
     fresh = False
     if not git_store.history_head(False):
-        normal, inherited = git_store.ref_oid("HEAD"), history.sibling_history(git_store.ref_oid("HEAD"))
-        if inherited:  # a new branch or worktree continues the history of the branch it came from
-            git_store.git("update-ref", git_store.shadow_ref(), inherited)
-            git_store.save_state("branch.json", {"ref": git_store.shadow_ref(), "git": normal, "observe": True})
-        else:
-            c = git_store.commit_files(["."], "sun: initial state", git_store.local())
-            remote, tree = git_store.ref_oid(git_store.remote_ref()), git_store.ref_oid(f"{c}^{{tree}}")
-            matches = [line.split()[0] for line in git_store.git("log", remote, "--format=%H %T").splitlines()
-                       if line.split()[1] == tree] if remote else []
-            if matches: git_store.git("update-ref", git_store.shadow_ref(), matches[0])
-            else: history.record(type="init", actor=git_store.local(), commit=c, edits=[]); fresh = True
+        c = git_store.commit_files(["."], "sun: initial state", git_store.local())
+        remote, tree = git_store.ref_oid(git_store.remote_ref()), git_store.ref_oid(f"{c}^{{tree}}")
+        matches = [line.split()[0] for line in git_store.git("log", remote, "--format=%H %T").splitlines()
+                   if line.split()[1] == tree] if remote else []
+        if matches: git_store.git("update-ref", git_store.shadow_ref(), matches[0])
+        else: history.record(type="init", actor=git_store.local(), commit=c, edits=[]); fresh = True
     history.ensure_branch()
     history.sync()
     print(f"sun: initialized {git_store.root()} (hooks: {installed}); {session_store.do_import(harnesses)}")
@@ -283,7 +256,10 @@ def main(argv=None):
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
-    sub._choices_actions = [choice for choice in sub._choices_actions if choice.dest != "hook"]
+    ps["git-hook"] = sub.add_parser("git-hook", help=argparse.SUPPRESS)
+    ps["git-hook"].add_argument("event", choices=("reference-transaction", "post-checkout"))
+    ps["git-hook"].add_argument("args", nargs="*")
+    sub._choices_actions = [choice for choice in sub._choices_actions if choice.dest not in ("hook", "git-hook")]
     ps["init"].add_argument("--claude", action="store_true",
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
@@ -363,13 +339,13 @@ def main(argv=None):
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
-        "init": cmd_init, "hook": hooks.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
+        "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
         "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
         "extract": checks.cmd_extract, "pr": checks.cmd_pr, "trust": checks.cmd_trust, "migrate": migration.cmd_migrate,
     }
-    if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
+    if a.cmd not in ("init", "hook", "git-hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
         if a.cmd == "check" and not a.args and not a.run:  # read stdin before the lock: a slow producer blocks nobody
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()

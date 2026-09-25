@@ -32,16 +32,35 @@ or the real index, and they do not appear in GitHub's branch history. Codex asks
 and trust new project hooks through `/hooks` before it runs them.
 
 Each Git branch has a corresponding Sun branch under `refs/sun/heads/<branch>`.
-A branch created at another branch's commit continues that branch's Sun history, whether by
-`git checkout -b`, `git worktree add`, or `sun init` there, and files that differ are observed
-rather than credited to you; subsequent edits stay on the new branch. Git commits do not rewrite Sun history. Git checkout/reset changes are observed
-as repository state, with unknown authorship rather than assigning imported edits to you.
-Detached HEAD is unsupported. Do not switch branches during a tool call.
+`sun init` installs Git branch-creation and checkout hooks for `git branch`, `git switch -c`,
+`git checkout -b`, and `git worktree add`. Creating a branch from a named
+local branch copies that branch's Sun pointer immediately, even if Sun is not run on the new
+branch until later. Creating it from `origin/main` copies `refs/sun/remotes/origin/main`
+instead. Subsequent edits advance only the selected branch. `main` and `master` work alike.
+Fetching updates remote Sun pointers without moving local Sun branches.
 
-`sun sync` and agent hooks record locally. Normal Git commits and merges do not invoke Sun or
-create checkpoints; a later sync observes the resulting files without changing the Git index or
-history. `git push` does publish: `sun init` installs a pre-push hook that runs `sun push` for each
-pushed branch that has Sun history, and a failed Sun push warns without blocking the Git push.
+Linked worktrees share branch history and repository settings. A new worktree needs no
+second `sun init`: checkout installs its agent hook configuration and creates private hook
+bookkeeping. Active calls, turns, and temporary indexes are never copied from another
+worktree. Removing a worktree leaves its branch history intact. Checkout differences are
+recorded as observed state with unknown authorship, before later edits are attributed.
+
+Inheritance uses the creation source recorded in Git's branch reflog. An explicit commit
+SHA has no unique Sun branch; it starts an independent history at that Git tree. If creation
+hooks or reflogs are disabled or bypassed, Sun cannot recover the exact source later. It
+reports the missing source and starts from the Git checkout instead of guessing from equal
+commit IDs or rebuilding from transcripts. Explicit reconstruction via `sun migrate` remains optional.
+Branching before the first Git commit requires Git 2.50 or newer, which reports symbolic
+HEAD transactions. With older Git, make an initial Git commit before branching.
+Git branch copy/rename commands are not covered by these creation hooks. Detached HEAD
+is unsupported. Do not switch branches during a tool call.
+
+Git hooks are dispatched from the common Git directory's `sun/hooks`; existing hooks,
+including a configured `core.hooksPath`, are delegated to without editing their files.
+`sun sync` and agent hooks record locally. Normal Git commits and merges do not record
+checkpoints. The dispatcher also publishes recorded Sun history for each branch pushed by
+`git push`; a failed Sun push warns without blocking the Git push. Use `sun init` again if you
+replace `core.hooksPath` and want to reconnect Sun.
 
 `sun push [remote] [branch]` publishes **already recorded Sun history only**, independently of
 Git commits. The default is origin/current branch. It does not run sync, require a clean worktree,
@@ -255,7 +274,8 @@ boundary.
 
 Checks are blobs under `refs/sun/checks/<git user>/`; a check stored under another user's name is
 ignored. `sun push` and the pre-push hook publish yours before the history, and `git fetch` brings
-in everyone's. A check cites recorded files, not tool output, because Sun stores none. A failing
+in everyone's. Rejected check uploads warn and show Git's error while history publication
+continues; checks remain local for retry. A check cites recorded files, not tool output, because Sun stores none. A failing
 check's note is shown to the agent as text; Sun truncates it and nothing more.
 
 ## Optional raw session sharing
@@ -314,5 +334,12 @@ version to migrate it before upgrading.
 ```sh
 python3 examples/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 examples/demo_fresh.py  # synthetic end-to-end story -> examples/demo.html
-python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks  # full test suite
+python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks test_check_collaboration test_branches  # full test suite
 ```
+
+Run `python3 -m unittest -v test_check_collaboration` for deterministic Layer 2
+collaboration scenarios. Each test creates Alice, Bob, and Carol clones with a local
+bare remote and CSV/report fixtures for totals, item counts, and TODO markers.
+Checks use fixed verdicts and timestamps; no model calls or network services are needed.
+The suite exercises sharing, reviews, retries, branch scope, turn squashing, concurrent
+submissions, and partial publication failures.

@@ -482,15 +482,7 @@ class SetupTest(unittest.TestCase):
     setUp, tearDown, git, sun_head = (fixtures.SunTest.setUp, fixtures.SunTest.tearDown,
                                       fixtures.SunTest.git, fixtures.SunTest.sun_head)
 
-    def on_path(self):  # the Git hook and adoption call `sun`; point them at this checkout
-        bin_dir = tempfile.mkdtemp()
-        write(os.path.join(bin_dir, "sun"), f"#!/bin/sh\nPYTHONPATH={SUN_SOURCE} exec {sys.executable} -m sun \"$@\"\n")
-        os.chmod(os.path.join(bin_dir, "sun"), 0o755)
-        os.environ["PATH"] = bin_dir + os.pathsep + os.environ["PATH"]
-        return bin_dir
-
     def test_git_push_publishes_sun_history(self):
-        self.on_path()
         with tempfile.TemporaryDirectory() as remote:
             self.git("init", "--bare", remote)
             self.git("remote", "add", "origin", remote)
@@ -502,16 +494,62 @@ class SetupTest(unittest.TestCase):
             self.assertEqual(self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip(), self.sun_head())
             no_sun = os.pathsep.join([os.path.dirname(shutil.which("git")), "/usr/bin", "/bin"])  # git, but no `sun`
             self.git("commit", "-q", "--allow-empty", "-m", "again")
-            self.assertIn("not published", subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True,
+            self.assertNotIn("not published", subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True,
                                                           env={**os.environ, "PATH": no_sun}).stderr)
             self.git("checkout", "-q", "-b", "nosun"); self.git("commit", "-q", "--allow-empty", "-m", "x")
             self.git("update-ref", "-d", "refs/sun/heads/nosun")
             subprocess.run(["git", "push", "origin", "nosun"], capture_output=True, text=True, check=True)  # no history: skipped quietly
 
+    def test_user_pre_push_receives_updates_and_can_reject_before_sun_publishes(self):
+        with tempfile.TemporaryDirectory() as remote:
+            self.git("init", "--bare", remote)
+            self.git("remote", "add", "origin", remote)
+            original = self.git("config", "sun.originalHooksPath").strip()
+            path = os.path.join(original, "pre-push")
+            log = os.path.join(git_store.sun_dir(), "user-push-input")
+            write(path, '#!/bin/sh\nprintf "%s\\n" "$1" > "' + log + '"\ncat >> "' + log + '"\n')
+            os.chmod(path, 0o755)
+            run("init", "--no-instructions")
+            write("note.txt", "first\n"); run("sync")
+            self.git("add", "."); self.git("commit", "-qm", "first")
+            self.git("push", "origin", "HEAD")
+            remote_name, update = read(log).splitlines()
+            self.assertEqual(remote_name, "origin")
+            self.assertEqual(update.split(), ["HEAD", self.git("rev-parse", "HEAD").strip(),
+                                             "refs/heads/" + base_branch(), "0" * 40])
+            published = self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip()
+            self.assertEqual(published, self.sun_head())
+            write(path, '#!/bin/sh\necho "user hook rejected push" >&2\nexit 1\n')
+            write("note.txt", "second\n"); run("sync")
+            self.git("add", "."); self.git("commit", "-qm", "second")
+            result = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("user hook rejected push", result.stderr)
+            self.assertEqual(self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip(), published)
+
+    def test_clone_adoption_uses_fetched_upstream_without_copying_worktree_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.git("add", "."); self.git("commit", "-qm", "track hooks")
+            write("note.txt", "recorded but not Git committed\n"); run("sync")
+            source = self.sun_head()
+            git_store.save_state("active.json", {"parent": {"files": ["note.txt"]}})
+            clone = os.path.join(tmp, "clone")
+            self.git("clone", self.dir, clone)
+            os.chdir(clone)
+            try:
+                hook("SessionStart", sid="clone")
+                self.git("merge-base", "--is-ancestor", source, self.sun_head())
+                self.assertEqual(git_store.state("active.json", {}), {})
+                self.assertFalse(git_store.cfg_share_sessions())
+                self.assertEqual(history.events()[-1]["actor"], "unknown")
+                self.assertFalse(os.path.exists("note.txt"))
+            finally:
+                os.chdir(self.dir)
+
     def test_a_worktree_sets_itself_up_and_inherits_history(self):
         write("a.txt", "a\n"); run("sync")  # recorded on the base branch, but not committed: the worktree will lack it
         base = base_branch()
-        self.git("branch", "aaa-sibling")  # alphabetically first, no Sun history of its own
+        self.git("branch", "aaa-sibling")  # alphabetically first: must not determine the source
         wt = os.path.join(tempfile.mkdtemp(), "wt")
         self.git("worktree", "add", "-q", "-b", "feature", wt, base)
         os.chdir(wt)
@@ -522,7 +560,8 @@ class SetupTest(unittest.TestCase):
             self.assertEqual(history.events()[-1]["type"], "observe")
             write("b.txt", "b\n"); run("sync")
             self.assertEqual(history.events()[-1]["actor"], "emma/local")
-            self.assertTrue(os.path.isfile(os.path.join(self.dir, ".git", "worktrees", "wt", "sun", "config.json")))
+            self.assertTrue(os.path.isfile(os.path.join(git_store.common_sun_dir(), "config.json")))
+            self.assertFalse(os.path.isfile(os.path.join(git_store.sun_dir(), "config.json")))
         finally:
             os.chdir(self.dir); git_store._r.clear()
         self.assertNotEqual(self.git("rev-parse", "refs/sun/heads/feature").strip(), self.git("rev-parse", f"refs/sun/heads/{base}").strip())
@@ -544,7 +583,6 @@ class SetupTest(unittest.TestCase):
         self.assertIn("c.txt", json.dumps(history.events()[-1]["edits"]))
 
     def test_a_clone_with_committed_hooks_sets_itself_up_on_the_first_hook(self):
-        self.on_path()
         self.git("add", "-A"); self.git("commit", "-q", "-m", "hooks")
         clone = os.path.join(tempfile.mkdtemp(), "clone")
         self.git("clone", "-q", self.dir, clone)
@@ -555,7 +593,7 @@ class SetupTest(unittest.TestCase):
             self.assertEqual(hook("SessionStart", sid="s2"), "")
             self.assertTrue(os.path.isdir(".git/sun"))
             self.assertIn("refs/sun/checks/*:refs/sun/checks/*", self.git("config", "--get-all", "remote.origin.fetch"))
-            self.assertTrue(os.path.exists(".git/hooks/pre-push"))
+            self.assertTrue(os.path.exists(self.git("rev-parse", "--git-path", "hooks/pre-push").strip()))
             self.assertIn("initial state", run("log"))
         finally:
             os.chdir(self.dir); git_store._r.clear()

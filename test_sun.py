@@ -56,6 +56,11 @@ class SunTest(unittest.TestCase):
         self.codex = tempfile.mkdtemp()  # stands in for ~/.codex/sessions
         os.environ["SUN_PROJECTS"] = self.proj
         os.environ["SUN_CODEX_SESSIONS"] = self.codex
+        # Subprocess Git hooks must import this checkout, not an installed Sun version.
+        source = os.path.dirname(os.path.abspath(__file__))
+        env = mock.patch.dict(os.environ, {"PYTHONPATH": source, "PYTHONDONTWRITEBYTECODE": "1"})
+        env.start()
+        self.addCleanup(env.stop)
         self.old_cwd = os.getcwd()
         os.chdir(self.dir)
         for k in ("GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
@@ -126,7 +131,9 @@ class SunTest(unittest.TestCase):
         self.assertEqual(history.events()[0]["actor"], "emma/local")
         self.assertFalse(git_store.cfg_share_sessions())
         self.assertFalse(os.path.exists(".git/sun/viz.html"))
-        self.assertTrue(os.path.exists(".git/hooks/pre-push"))
+        for name in ("post-commit", "post-merge"):
+            dispatcher = self.git("rev-parse", "--git-path", "hooks/" + name).strip()
+            self.assertNotIn("sun git-hook", read(dispatcher))
 
     def test_help_lists_public_workflows_without_internal_hook(self):
         out = io.StringIO()
@@ -159,11 +166,11 @@ class SunTest(unittest.TestCase):
         self.assertIn("refs/sun/ops/*:refs/sun/ops/*", specs)
         self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
         self.assertNotIn("refs/sun/sessions", specs)
-        self.assertNotIn("refs/sun/sessions", read(".git/hooks/pre-push"))
+        self.assertNotIn("refs/sun/sessions", read(self.git("rev-parse", "--git-path", "hooks/pre-push").strip()))
         run("init", "--share-sessions", "--no-claude-md")
         self.assertIn("+refs/sun/sessions/*:refs/sun/sessions/*",
                       self.git("config", "--get-all", "remote.origin.fetch"))
-        self.assertIn('sun push "$1"', read(".git/hooks/pre-push"))
+        self.assertIn('sun push "$1"', read(self.git("rev-parse", "--git-path", "hooks/pre-push").strip()))
         shutil.rmtree(bare, ignore_errors=True)
 
     def test_init_claude_md_flag(self):
@@ -278,7 +285,7 @@ class SunTest(unittest.TestCase):
             run("init", "--no-claude-md")
             specs = self.git("config", "--get-all", "remote.origin.fetch")
             self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
-            hook_text = read(".git/hooks/pre-push")
+            hook_text = read(self.git("rev-parse", "--git-path", "hooks/pre-push").strip())
             self.assertIn('sun push "$1"', hook_text)
             self.assertNotIn('|| true', hook_text)
             subprocess.run(["git", "push", "--no-verify", "origin",

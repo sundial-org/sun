@@ -69,10 +69,22 @@ def refs(prefix):  # [(refname, sha)]
     return [line.split("\t") for line in output.splitlines()]
 
 
+def common_sun_dir():
+    key = (os.getcwd(), "common-sun-dir")
+    if key not in _r:
+        _r[key] = os.path.join(git("rev-parse", "--path-format=absolute", "--git-common-dir").strip(), "sun")
+    return _r[key]
+
+
+def initialized():
+    return os.path.isfile(os.path.join(common_sun_dir(), "config.json"))
+
+
 def sun_dir(must=True):  # per-worktree hook state; shared history lives in Git refs
     key = (os.getcwd(), "sun-dir")
     if key not in _r: _r[key] = os.path.join(git("rev-parse", "--absolute-git-dir").strip(), "sun")
     d = _r[key]
+    if must and not os.path.isdir(d) and initialized(): os.makedirs(d, exist_ok=True)
     if must and not os.path.isdir(d): sys.exit("sun: not initialized here (run `sun init`)")
     return d
 
@@ -104,11 +116,13 @@ def write_text(path, text, mode="w"):
 
 
 def state(name, default):
-    return jread(os.path.join(sun_dir(), name), default)
+    return jread(os.path.join(common_sun_dir() if name == "config.json" else sun_dir(), name), default)
 
 
 def save_state(name, obj):
-    jwrite(os.path.join(sun_dir(), name), obj)
+    directory = common_sun_dir() if name == "config.json" else sun_dir()
+    os.makedirs(directory, exist_ok=True)
+    jwrite(os.path.join(directory, name), obj)
 
 
 def ref_oid(ref):

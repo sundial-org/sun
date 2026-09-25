@@ -56,6 +56,11 @@ class SunTest(unittest.TestCase):
         self.codex = tempfile.mkdtemp()  # stands in for ~/.codex/sessions
         os.environ["SUN_PROJECTS"] = self.proj
         os.environ["SUN_CODEX_SESSIONS"] = self.codex
+        # Subprocess Git hooks must import this checkout, not an installed Sun version.
+        source = os.path.dirname(os.path.abspath(__file__))
+        env = mock.patch.dict(os.environ, {"PYTHONPATH": source, "PYTHONDONTWRITEBYTECODE": "1"})
+        env.start()
+        self.addCleanup(env.stop)
         self.old_cwd = os.getcwd()
         os.chdir(self.dir)
         for k in ("GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
@@ -127,7 +132,8 @@ class SunTest(unittest.TestCase):
         self.assertFalse(git_store.cfg_share_sessions())
         self.assertFalse(os.path.exists(".git/sun/viz.html"))
         for name in ("pre-push", "post-commit", "post-merge"):
-            self.assertFalse(os.path.exists(self.git("rev-parse", "--git-path", "hooks/" + name).strip()))
+            dispatcher = self.git("rev-parse", "--git-path", "hooks/" + name).strip()
+            self.assertNotIn("sun git-hook", read(dispatcher))
 
     def test_help_lists_public_workflows_without_internal_hook(self):
         out = io.StringIO()

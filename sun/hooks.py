@@ -234,7 +234,7 @@ def cmd_hook(a):
     try: payload.get("cwd") and os.chdir(payload["cwd"])
     except OSError: return
     p = git_store.quiet("git", "rev-parse", "--show-toplevel")
-    if p.returncode or not os.path.isdir(git_store.sun_dir(False)):
+    if p.returncode or not git_store.initialized():
         return  # not a sun repo; hooks must never break the harness
     os.chdir(p.stdout.strip())
     with git_store.lock():  # serialize concurrent hooks (parallel sessions/subagents)

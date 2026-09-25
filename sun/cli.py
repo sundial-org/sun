@@ -12,6 +12,7 @@ import os
 import re
 import sys
 
+from . import branches
 from . import checks
 from . import git_store
 from . import history
@@ -140,6 +141,7 @@ def init_locked(a):
     if "origin" in git_store.git("remote", check=False).split():  # fresh clone: fetch team refs
         git_store.git("fetch", "-q", "origin", *git_store.refspecs(share_sessions))
     installed = ", ".join(install_hooks(h) for h in harnesses); configure_sharing(share_sessions)
+    branches.install_hooks()
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
     if share_sessions:
@@ -206,7 +208,10 @@ def main(argv=None):
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
-    sub._choices_actions = [choice for choice in sub._choices_actions if choice.dest != "hook"]
+    ps["git-hook"] = sub.add_parser("git-hook", help=argparse.SUPPRESS)
+    ps["git-hook"].add_argument("event", choices=("reference-transaction", "post-checkout"))
+    ps["git-hook"].add_argument("args", nargs="*")
+    sub._choices_actions = [choice for choice in sub._choices_actions if choice.dest not in ("hook", "git-hook")]
     ps["init"].add_argument("--claude", action="store_true",
                             help="set up Claude Code only (default: every detected harness)")
     ps["init"].add_argument("--codex", action="store_true",
@@ -274,12 +279,12 @@ def main(argv=None):
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
-        "init": cmd_init, "hook": hooks.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
+        "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
         "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
     }
-    if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
+    if a.cmd not in ("init", "hook", "git-hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
         if a.cmd == "check" and not a.args:  # read stdin before taking the lock, so a slow producer blocks nobody
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()

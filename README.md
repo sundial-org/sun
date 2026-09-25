@@ -23,14 +23,34 @@ or the real index, and they do not appear in GitHub's branch history. Codex asks
 and trust new project hooks through `/hooks` before it runs them.
 
 Each Git branch has a corresponding Sun branch under `refs/sun/heads/<branch>`.
-Creating a branch at the current checkout inherits its Sun history; subsequent edits stay
-on that branch. Git commits do not rewrite Sun history. Git checkout/reset changes are observed
-as repository state, with unknown authorship rather than assigning imported edits to you.
-Detached HEAD is unsupported. Do not switch branches during a tool call.
+`sun init` installs Git branch-creation and checkout hooks for `git branch`, `git switch -c`,
+`git checkout -b`, and `git worktree add`. Creating a branch from a named
+local branch copies that branch's Sun pointer immediately, even if Sun is not run on the new
+branch until later. Creating it from `origin/main` copies `refs/sun/remotes/origin/main`
+instead. Subsequent edits advance only the selected branch. `main` and `master` work alike.
+Fetching updates remote Sun pointers without moving local Sun branches.
 
-`sun sync` and agent hooks record locally. Normal Git commits and merges do not invoke Sun,
-create checkpoints, or publish Sun history. There are no Sun post-commit, post-merge, or pre-push
-hooks. A later sync observes the resulting files without changing the Git index or history.
+Linked worktrees share branch history and repository settings. A new worktree needs no
+second `sun init`: checkout installs its agent hook configuration and creates private hook
+bookkeeping. Active calls, turns, and temporary indexes are never copied from another
+worktree. Removing a worktree leaves its branch history intact. Checkout differences are
+recorded as observed state with unknown authorship, before later edits are attributed.
+
+Inheritance uses the creation source recorded in Git's branch reflog. An explicit commit
+SHA has no unique Sun branch; it starts an independent history at that Git tree. If creation
+hooks or reflogs are disabled or bypassed, Sun cannot recover the exact source later. It
+reports the missing source and starts from the Git checkout instead of guessing from equal
+commit IDs or rebuilding from transcripts. There is no legacy-history migration.
+Branching before the first Git commit requires Git 2.50 or newer, which reports symbolic
+HEAD transactions. With older Git, make an initial Git commit before branching.
+Git branch copy/rename commands are not covered by these creation hooks. Detached HEAD
+is unsupported. Do not switch branches during a tool call.
+
+Git hooks are dispatched from the common Git directory's `sun/hooks`; existing hooks,
+including a configured `core.hooksPath`, are delegated to without editing their files.
+`sun sync` and agent hooks record locally. Normal Git commits and merges do not record
+checkpoints or publish Sun history; the dispatcher only runs Sun for branch creation and
+checkout. Use `sun init` again if you replace `core.hooksPath` and want to reconnect Sun.
 
 `sun push [remote] [branch]` publishes **already recorded Sun history only**, independently of
 Git commits. The default is origin/current branch. It does not run sync, require a clean worktree,
@@ -213,7 +233,7 @@ version to migrate it before upgrading.
 ```sh
 python3 examples/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 examples/demo_fresh.py  # synthetic end-to-end story -> examples/demo.html
-python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks test_check_collaboration  # full test suite
+python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks test_check_collaboration test_branches  # full test suite
 ```
 
 Run `python3 -m unittest -v test_check_collaboration` for deterministic Layer 2

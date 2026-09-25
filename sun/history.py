@@ -58,24 +58,24 @@ def ensure_branch():
     ref, normal = git_store.shadow_ref(), git_store.ref_oid("HEAD")
     previous = git_store.state("branch.json", {})
     tip = git_store.history_head(False)
+    birth = git_store.state("branch-creation.json", {})
+    if birth.get("target") == ref:
+        # Also complete a committed unborn HEAD switch if a concurrent Sun writer
+        # acquires the lock before the committed Git hook. Publish before any edit.
+        source = git_store.ref_oid(birth["source"])
+        if not tip and source:
+            git_store.git("update-ref", ref, source, "0" * len(source))
+            tip = source
+        git_store.save_state("branch-creation.json", {})
     if not tip:
-        source = previous.get("ref")
-        # A normal commit may have happened since Sun last ran, before `git switch -c`.
-        at_source = source and normal == git_store.ref_oid(source.replace("refs/sun/heads/", "refs/heads/"))
-        tip = git_store.ref_oid(source) if source and (previous.get("git") == normal or at_source) else ""
-        if tip: git_store.git("update-ref", ref, tip)
-        else:
-            # A freshly cloned branch starts at its Git checkout, not the possibly newer
-            # remote Sun tree. Import the remote lineage only when the trees agree.
-            remote = git_store.ref_oid(git_store.remote_ref())
-            tree = git_store.ref_oid(f"{normal}^{{tree}}") if normal else git_store.git("mktree", input="").strip()
-            if remote and git_store.ref_oid(f"{remote}^{{tree}}") == tree:
-                git_store.git("update-ref", ref, remote)
-            else:
-                c = git_store.make_shadow_commit(tree, "sun: initial state", git_store.local())
-                record(type="init", actor=git_store.local(), commit=c, edits=[])
+        # Branch creation hooks pin inheritance immediately. A missing pointer has no
+        # reliable source: never infer it from a worktree's previous branch or equal SHAs.
+        print("sun: no recorded branch creation; starting Sun history at the Git checkout", file=sys.stderr)
+        tree = git_store.ref_oid(f"{normal}^{{tree}}") if normal else git_store.git("mktree", input="").strip()
+        c = git_store.make_shadow_commit(tree, "sun: initial state", git_store.local())
+        record(type="init", actor=git_store.local(), commit=c, edits=[])
     # A changed checkout is evidence of a new state, not evidence that this user authored it.
-    observe = previous.get("observe", False) or bool(previous and (
+    observe = previous.get("observe", False) or bool(tip and not previous) or bool(previous and (
         previous.get("ref") != ref or previous.get("git") != normal))
     git_store.save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
 
@@ -226,7 +226,11 @@ def cmd_push(a):
     # Protect operations even when an interrupted push has an unknown outcome.
     git_store.git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), tip)
     if git_store.refs("refs/sun/checks/"):  # separately, and fail-soft: checks never block history
-        git_store.quiet("git", "push", "--no-verify", "--", a.remote, "refs/sun/checks/*:refs/sun/checks/*")
+        result = git_store.quiet("git", "push", "--no-verify", "--", a.remote, "refs/sun/checks/*:refs/sun/checks/*")
+        if result.returncode:
+            print(f"sun: warning: check upload to {a.remote} failed; checks remain local. "
+                  "Continuing with history push; retry `sun push` after fixing the error.", file=sys.stderr)
+            if result.stderr.strip(): print(result.stderr.strip(), file=sys.stderr)
     git_store.git("push", "--atomic", "--", a.remote, *specs)
 
 

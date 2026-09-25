@@ -356,6 +356,11 @@ class CheckCollaborationTest(unittest.TestCase):
                 result = self.sun(self.alice, 'push', ok=False)
                 hook.unlink()
                 if rejected == 'checks':
+                    self.assertEqual(result.returncode, 0, result.stderr)  # Checks never block history.
+                    self.assertIn('warning: check upload to origin failed', result.stderr)
+                    self.assertIn('injected rejection', result.stderr)
+                    self.assertIn('retry `sun push`', result.stderr)
+                    self.assertEqual(self.stored(self.alice)[c['id']], c)
                     self.assertEqual(self.tip(self.remote), at)
                     self.assertNotIn(c['id'], self.stored(self.remote))
                 else:
@@ -367,14 +372,11 @@ class CheckCollaborationTest(unittest.TestCase):
                     self.assertNotIn(at, pending_rows)
                     self.assertNotIn(c['id'], {check['id'] for rows in pending_rows.values()
                                               for row in rows.values() for check in row['checks']})
-                self.sun(self.alice, 'push')
+                retry = self.sun(self.alice, 'push')
+                self.assertNotIn('warning: check upload', retry.stderr)
                 self.assertEqual(self.stored(self.remote)[c['id']], c)
                 self.sun(self.bob, 'push')
                 self.assert_row(self.bob, 'pass', [c], at=at)
-                # A partial publication must be visible to the caller, not silently reported as complete.
-                if rejected == 'checks':
-                    self.assertTrue(result.returncode or 'check' in (result.stdout + result.stderr).lower(),
-                                    'check publication was rejected without any diagnostic')
 
 
 if __name__ == '__main__':

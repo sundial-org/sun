@@ -158,10 +158,9 @@ def shadow_index():
     return os.path.join(sun_dir(), "shadow-index")
 
 
-def make_shadow_commit(tree, message, author, parents=(), when=None):
+def make_shadow_commit(tree, message, author, parents=()):
     ident = {**os.environ, "GIT_AUTHOR_NAME": author, "GIT_AUTHOR_EMAIL": "sun@sun",
              "GIT_COMMITTER_NAME": author, "GIT_COMMITTER_EMAIL": "sun@sun"}
-    if when: ident.update(GIT_AUTHOR_DATE=str(when), GIT_COMMITTER_DATE=str(when))  # migrated: the original time
     args = ["-c", "commit.gpgsign=false", "commit-tree", tree]
     for parent in parents: args += ["-p", parent]
     return git(*args, "-m", message, env=ident).strip()

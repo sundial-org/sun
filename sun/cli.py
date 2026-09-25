@@ -18,7 +18,6 @@ from . import checks
 from . import git_store
 from . import history
 from . import hooks
-from . import migration
 from . import output
 from . import sessions as session_store
 
@@ -192,8 +191,8 @@ def init_locked(a):
     history.sync()
     print(f"sun: initialized {git_store.root()} (hooks: {installed}); {session_store.do_import(harnesses)}")
     if fresh:
-        print("sun: recording starts now: earlier work is one initial snapshot (`sun migrate` rebuilds it from "
-              "your agent sessions), and agent sessions already running are recorded from their next restart")
+        print("sun: recording starts now: earlier work is one initial snapshot, "
+              "and agent sessions already running are recorded from their next restart")
     config, rs = checks.read_rules()
     if checks.runners_hash(config, rs) and not checks.trusted(config, rs):
         named = [f"{n}: {r['runner']}: {r['command']}" for n, r in sorted(rs.items()) if r["runner"]]
@@ -252,7 +251,6 @@ def main(argv=None):
         ("extract", "record the verdicts you gave your agents in conversation"),
         ("pr", "summarize checks for the pull request as Markdown, or update its description"),
         ("trust", "let hooks on this machine run the commands RULES.md names"),
-        ("migrate", "rebuild this branch's history from existing agent sessions and Git commits"),
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
@@ -330,8 +328,6 @@ def main(argv=None):
     ps["pr"].add_argument("--json", action="store_true", help="print the coverage of the pull request as JSON")
     ps["pr"].add_argument("--update", action="store_true",
                           help="write the section into the open pull request's description with gh")
-    ps["migrate"].add_argument("--since", metavar="DATE", help="replay tool calls from this day on (YYYY-MM-DD)")
-    ps["migrate"].add_argument("--dry-run", action="store_true", help="say what would be replayed, without writing")
     ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
                                 help="maximum commits (default: 30; 0 for all)")
     ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")
@@ -343,7 +339,7 @@ def main(argv=None):
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
         "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
-        "extract": checks.cmd_extract, "pr": checks.cmd_pr, "trust": checks.cmd_trust, "migrate": migration.cmd_migrate,
+        "extract": checks.cmd_extract, "pr": checks.cmd_pr, "trust": checks.cmd_trust,
     }
     if a.cmd not in ("init", "hook", "git-hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir

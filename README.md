@@ -18,12 +18,7 @@ cd your-repo && sun init   # sets up every harness it detects (Claude Code, Code
 subagents are included. Raw transcripts remain in their existing local directories by default.
 Existing commits stay untracked because sun did not observe them: work done before `sun init` is
 one initial snapshot, and agent sessions already running are recorded from their next restart,
-since a harness reads its hooks when a session starts. `sun migrate`, run right after `sun init`,
-rebuilds that snapshot from what the transcripts prove: it replays every recorded `Write`, `Edit`,
-and Codex `apply_patch` onto a shadow tree, one turn commit per agent turn with per-call snapshots,
-and records each Git commit's remaining difference as observed state with an unknown author. Shell
-commands and edits that no longer apply are never guessed; their effects stay observed. From then
-on, hooks keep an
+since a harness reads its hooks when a session starts. From then on, hooks keep an
 independent Sun history current: one visible commit per turn, containing one operation per
 agent tool call. Each operation keeps a hidden Git snapshot for exact replay and undo. Human
 edits observed during a turn remain separately attributed operations inside that turn commit.
@@ -49,7 +44,7 @@ Inheritance uses the creation source recorded in Git's branch reflog. An explici
 SHA has no unique Sun branch; it starts an independent history at that Git tree. If creation
 hooks or reflogs are disabled or bypassed, Sun cannot recover the exact source later. It
 reports the missing source and starts from the Git checkout instead of guessing from equal
-commit IDs or rebuilding from transcripts. Explicit reconstruction via `sun migrate` remains optional.
+commit IDs or rebuilding from transcripts.
 Branching before the first Git commit requires Git 2.50 or newer, which reports symbolic
 HEAD transactions. With older Git, make an initial Git commit before branching.
 Git branch copy/rename commands are not covered by these creation hooks. Detached HEAD
@@ -130,7 +125,6 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun extract` | record the verdicts you gave your agents in conversation |
 | `sun pr [--update]` | summarize checks for the pull request as Markdown, or write it into the PR |
 | `sun trust` | let hooks on this machine run the commands `RULES.md` names |
-| `sun migrate [--since DATE]` | rebuild this branch's history from existing agent sessions and Git commits |
 | `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
 | `sun update` | update a Sun installation made from this repository with uv |
 
@@ -317,7 +311,6 @@ The `sun/` package separates the main jobs:
 | `hooks.py` | Agent hooks and before/after tracking for tool calls |
 | `sessions.py` | Native transcripts and optional shared session storage |
 | `checks.py` | Rules, check runners, reviews, and coverage |
-| `migration.py` | Explicit reconstruction from Git and transcripts |
 | `output.py` | Log, show, blame, JSON, terminal, HTML, and training export |
 
 Run source checkouts with `python -m sun` instead of `python sun.py`. The installed

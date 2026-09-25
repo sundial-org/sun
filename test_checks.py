@@ -1,7 +1,7 @@
 """Tests for rules, checks and coverage: judgments recorded over the operation history."""
 import json, os, shutil, subprocess, sys, tempfile, time, unittest
 import test_sun as fixtures
-from sun import checks, cli, git_store, history, hooks, migration, output, sessions
+from sun import checks, cli, git_store, history, hooks, output, sessions
 
 SUN_SOURCE = os.path.dirname(os.path.abspath(__file__))
 from test_sun import run, hook, write, read
@@ -607,77 +607,3 @@ class SetupTest(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, "sun init"): run("log")
             finally:
                 os.chdir(self.dir); git_store._r.clear()
-
-
-class MigrateTest(unittest.TestCase):
-    """sun migrate: history rebuilt from the sessions and commits that predate sun init."""
-    tearDown, git, sun_head = fixtures.SunTest.tearDown, fixtures.SunTest.git, fixtures.SunTest.sun_head
-
-    def setUp(self):
-        fixtures.SunTest.setUp(self)  # the baseline commit is now; the sessions and commits below come after it
-        self.T = [time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() + 60 * i)) for i in range(10)]
-
-    def claude_transcript(self, sid, records):  # [(role, ts, payload)] -> a native transcript for this repo
-        d = os.path.join(self.proj, sessions.enc(os.getcwd())); os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, sid + ".jsonl"), "a") as f:
-            for role, ts, payload in records:
-                content = [payload] if isinstance(payload, dict) else [{"type": "text", "text": payload}]
-                f.write(json.dumps({"type": role, "timestamp": ts, "uuid": ts, "cwd": os.getcwd(),
-                                    "message": {"role": role, "content": content}}) + "\n")
-
-    def commit_at(self, ts, message):
-        env = {**os.environ, "GIT_AUTHOR_DATE": ts, "GIT_COMMITTER_DATE": ts}
-        subprocess.run(["git", "add", "-A"], check=True)
-        subprocess.run(["git", "commit", "-q", "-m", message], check=True, env=env)
-
-    def test_migrate_replays_edits_and_observes_the_rest(self):
-        self.commit_at(self.T[0], "hooks")  # what sun init wrote, committed before the sessions
-        a = os.path.abspath("a.txt")
-        self.claude_transcript("s1", [
-            ("user", self.T[1], "write a"),
-            ("assistant", self.T[1], {"type": "tool_use", "id": "w1", "name": "Write", "input": {"file_path": a, "content": "one\n"}}),
-            ("user", self.T[3], "now edit it"),
-            ("assistant", self.T[3], {"type": "tool_use", "id": "e1", "name": "Edit",
-                                     "input": {"file_path": a, "old_string": "one", "new_string": "two"}}),
-            ("assistant", self.T[4], {"type": "tool_use", "id": "e2", "name": "Edit",
-                                     "input": {"file_path": a, "old_string": "gone", "new_string": "x"}}),  # never applied
-            ("assistant", self.T[5], {"type": "tool_use", "id": "b1", "name": "Bash", "input": {"command": "echo three >> a.txt"}}),
-        ])
-        write("a.txt", "one\n"); write("b.txt", "b\n"); self.commit_at(self.T[2], "a and b")  # between the calls
-        write("a.txt", "two\nthree\n"); self.commit_at(self.T[6], "after the shell")
-        self.assertIn("would replay 3 tool calls from 1 sessions across 2 Git commits", run("migrate", "--dry-run"))
-        out = run("migrate")
-        self.assertIn("replayed 2 tool calls", out); self.assertIn("could not replay 1", out)
-        log = run("log")
-        self.assertIn("turn 1 (1 tool calls)", log); self.assertIn("turn 2 (1 tool calls)", log)
-        self.assertEqual(log.count("observed repository state"), 2)
-        evs = history.events()
-        self.assertEqual(evs[0]["type"], "init")
-        replayed = [e for e in evs if e.get("edits") and e["edits"][0]["attribution"]["method"] == "replay"]
-        self.assertEqual([(e["turn"], e["tool_calls"][0]["id"]) for e in replayed], [("turn1", "w1"), ("turn2", "e1")])
-        self.assertTrue(all(e["actor"] == "emma/agent:claude/s1" for e in replayed))
-        observed = [e for e in evs if e["type"] == "observe"]
-        self.assertEqual([sorted(d["file"] for d in e["edits"]) for e in observed], [["b.txt"], ["a.txt"]])  # b.txt, then the shell's line
-        self.assertEqual(observed[0]["git_author"], "emma")
-        self.assertEqual(self.git("show", f"{self.sun_head()}:a.txt"), "two\nthree\n")
-        self.assertIn("emma/agent:claude/s1 turn2  op", run("blame", "a.txt", "1"))
-        self.assertIn("author unknown", run("blame", "a.txt", "2"))
-        with self.assertRaisesRegex(SystemExit, "before anything is recorded"): run("migrate")
-
-    def test_migrate_replays_codex_patches(self):
-        rollout = os.path.join(self.codex, "2026", "01", "01", "rollout-2026-01-01T00-00-00-c1.jsonl")
-        os.makedirs(os.path.dirname(rollout))
-        patch = "*** Begin Patch\n*** Add File: n.md\n+hello\n+world\n*** End Patch"
-        patch2 = "*** Begin Patch\n*** Update File: n.md\n@@\n hello\n-world\n+there\n*** End Patch"
-        lines = [{"type": "session_meta", "timestamp": self.T[1], "payload": {"id": "c1", "cwd": os.getcwd()}},
-                 {"type": "event_msg", "timestamp": self.T[1], "payload": {"type": "user_message", "message": "go"}},
-                 {"type": "response_item", "timestamp": self.T[1], "payload": {"type": "custom_tool_call", "name": "apply_patch", "call_id": "p1", "input": patch}},
-                 {"type": "response_item", "timestamp": self.T[2], "payload": {"type": "function_call", "name": "shell", "call_id": "p2",
-                                                                              "arguments": json.dumps({"command": ["apply_patch", patch2]})}}]
-        write(rollout, "".join(json.dumps(l) + "\n" for l in lines))
-        write("n.md", "hello\nthere\n")  # as the agent left it on disk
-        self.assertIn("replayed 2 tool calls", run("migrate"))
-        self.assertEqual(self.git("show", f"{self.sun_head()}:n.md"), "hello\nthere\n")
-        replayed = [e for e in history.events() if e["type"] == "edit"]
-        self.assertEqual([e["tool_calls"][0]["id"] for e in replayed], ["p1", "p2"])
-        self.assertEqual(replayed[0]["actor"], "emma/agent:codex/c1")

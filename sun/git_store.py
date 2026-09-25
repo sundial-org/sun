@@ -178,6 +178,21 @@ def tree_changes(before, after):
     return [f for f in git("diff", "--no-renames", "--name-only", "-z", before, after).split("\0") if f]
 
 
+def ref_blobs(prefix):  # [(refname, blob bytes)] for a whole ref namespace, in one cat-file
+    entries = refs(prefix)
+    if not entries: return []
+    data = subprocess.run(["git", "cat-file", "--batch"],
+                          input="".join(sha + "\n" for _, sha in entries).encode(),
+                          capture_output=True, check=True).stdout
+    out, pos = [], 0
+    for ref, _ in entries:
+        end = data.index(b"\n", pos)
+        size = int(data[pos:end].split()[-1])
+        out.append((ref, data[end + 1:end + 1 + size]))
+        pos = end + size + 2
+    return out
+
+
 def lock():
     common = git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()
     lk = open(os.path.join(common, "sun.lock"), "a")
@@ -216,7 +231,7 @@ def configured_harnesses():
 
 def refspecs(share_sessions=False, remote="origin"):
     specs = ["refs/sun/events/*:refs/sun/events/*", "refs/sun/ops/*:refs/sun/ops/*",
-             f"+refs/sun/heads/*:refs/sun/remotes/{remote}/*"]
+             "refs/sun/checks/*:refs/sun/checks/*", f"+refs/sun/heads/*:refs/sun/remotes/{remote}/*"]
     return specs + (["+refs/sun/sessions/*:refs/sun/sessions/*"] if share_sessions else [])
 
 

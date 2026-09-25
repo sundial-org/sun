@@ -12,10 +12,11 @@ import os
 import re
 import sys
 
-from . import hooks
-from . import output
+from . import checks
 from . import git_store
 from . import history
+from . import hooks
+from . import output
 from . import sessions as session_store
 
 
@@ -200,6 +201,8 @@ def main(argv=None):
         ("restore", "restore files to a Sun commit and record the restoration"),
         ("sessions", "manage explicitly shared agent transcripts"),
         ("push", "publish recorded Sun history independently of Git commits"),
+        ("check", "record a verdict on a rule, citing the recorded state it read"),
+        ("coverage", "show which commits were checked against each rule, and by whom"),
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
@@ -260,6 +263,13 @@ def main(argv=None):
                            help="maximum commits to load (default: all)")
     ps["export"].add_argument("-o", "--output", default=None,
                               help="output path (default: stdout)")
+    ps["check"].add_argument("args", nargs="*", metavar="RULE VERDICT [REV|CHECK]",
+                             help="your own check or review; without arguments, read JSON checks from stdin")
+    ps["check"].add_argument("-m", metavar="NOTE", help="why, in a sentence")
+    ps["check"].add_argument("--json", action="store_true", help="print the stored checks as JSON")
+    ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
+                                help="maximum commits (default: 30; 0 for all)")
+    ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
@@ -267,10 +277,12 @@ def main(argv=None):
         "init": cmd_init, "hook": hooks.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
-        "export": output.cmd_export, "blame": output.cmd_blame,
+        "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
     }
     if a.cmd not in ("init", "hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
+        if a.cmd == "check" and not a.args:  # read stdin before taking the lock, so a slow producer blocks nobody
+            a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(git_store.root())
         git_store.sun_dir()
         if a.cmd in ("viz", "data"):

@@ -2,7 +2,6 @@
 
 import json
 import re
-import subprocess
 import sys
 import time
 import uuid
@@ -82,21 +81,13 @@ def ensure_branch():
 
 
 def events(include_unreachable=False, scope=None) -> List[Event]:
-    entries = git_store.refs("refs/sun/events/")
-    if not entries: return []
-    data = subprocess.run(["git", "cat-file", "--batch"],
-                          input="".join(sha + "\n" for _, sha in entries).encode(),
-                          capture_output=True, check=True).stdout
-    evs, pos = [], 0
-    while pos < len(data):
-        end = data.index(b"\n", pos)
-        size = int(data[pos:end].split()[-1])
-        ev = json.loads(data[end + 1:end + 1 + size])
-        if not re.fullmatch(r"[0-9a-f]{8}|[0-9a-f]{32}", ev.get("id", "")) or \
-                entries[len(evs)][0] != f"refs/sun/events/{ev['id']}":
+    evs = []
+    for ref, raw in git_store.ref_blobs("refs/sun/events/"):
+        ev = json.loads(raw)
+        if not re.fullmatch(r"[0-9a-f]{8}|[0-9a-f]{32}", ev.get("id", "")) or ref != f"refs/sun/events/{ev['id']}":
             sys.exit("sun: invalid operation ID in fetched history")
         evs.append(ev)
-        pos = end + size + 2
+    if not evs: return []
     scope = git_store.history_refs() if scope is None else scope
     order = {c: i for i, c in enumerate(git_store.git("rev-list", "--topo-order", "--reverse",
                                             *scope).split())} if scope else {}
@@ -234,6 +225,8 @@ def cmd_push(a):
                   if r.rsplit("/", 1)[-1] in sessions]
     # Protect operations even when an interrupted push has an unknown outcome.
     git_store.git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), tip)
+    if git_store.refs("refs/sun/checks/"):  # separately, and fail-soft: checks never block history
+        git_store.quiet("git", "push", "--no-verify", "--", a.remote, "refs/sun/checks/*:refs/sun/checks/*")
     git_store.git("push", "--atomic", "--", a.remote, *specs)
 
 

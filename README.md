@@ -90,6 +90,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun undo --dry-run` | check whether the latest reversal can apply without changing anything |
 | `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
 | `sun push [remote] [branch]` | publish the selected Sun history, separately from normal Git |
+| `sun check`, `sun coverage` | record verdicts on rules and see what has been checked ([below](#check-the-history)) |
 | `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
 | `sun update` | update a Sun installation made from this repository with uv |
 
@@ -112,6 +113,50 @@ Undo can target any stored operation or ordinary single-parent Sun commit, not o
 one. It stops without changing files if the reverse patch no longer applies cleanly. Restore is
 the safer way to return the whole worktree to an earlier point: it preserves the existing log and
 adds a restoration commit. Neither command rewrites or deletes history.
+
+## Check the history
+
+The operation history is what happened. Rules, checks, and coverage are what someone concluded
+about it. They are kept apart on purpose: a check can be wrong, so it never edits the history.
+
+A **rule** is a `name: text` line in a `RULES` file at the repository root, committed like any other file:
+
+```
+report-what-you-did: The report lists every lemma it proved and nothing else.
+```
+
+A **check** is one verdict on one rule. It must cite the recorded state it read: a Sun commit or
+tool-call snapshot, optionally a file and lines in it. A judge model, a test script, and a person
+all write the same shape. Sun runs none of them. It records what they submit.
+
+```sh
+sun check report-what-you-did fail -m "claims L017, receipt shows sorry"   # you, at a terminal
+echo '{"rule": "report-what-you-did", "verdict": "contradicted", "actor": "program:lean",
+       "cites": [{"at": "8b31c0d", "file": "receipts/a3.json", "lines": [1, 1]}],
+       "note": "sorryAx via L003"}' | sun check                             # a program
+```
+
+The verdict is any short word the task needs. `actor` is required on stdin and stored as
+`<git user>/<actor>`; only the terminal form is stored as `<git user>/local`. `note` is free
+text and `meta` is any JSON. Stdin takes one object or an array, validated as a whole and written
+in one Git transaction. A check's ID is the hash of its content, so recording the same check
+again returns the original. `sun check` and `sun push` never overwrite a recorded check.
+
+A **review** is a check that cites another check, `{"cites": [{"check": ID}]}`, and replaces it
+in coverage. At a terminal, give the printed ID: `sun check report-what-you-did fail 0286c3a1`.
+
+`sun coverage [-n COUNT] [--json]` folds checks onto Sun commits. Each commit and rule is
+`unchecked`, the verdict, or `mixed` when checkers disagree, and `needs eyes` until a person's
+check from their terminal is one that counts. A declared actor such as `human:ana` never counts
+as a person. A check written during a turn lands on that turn's commit once the turn is squashed.
+Coverage is computed when you ask and stored nowhere.
+
+Checks are blobs under `refs/sun/checks/`. `sun push` publishes them after the history and
+`git fetch` brings them in. No other Sun command reads them. Limits: a check cites recorded
+files, not tool output, because Sun stores none. Coverage follows Sun commits, not normal Git
+commits. A fetch trusts the remote, so a fetched check is only as trustworthy as whoever pushed
+it, like the rest of `refs/sun/`. Without harness hooks Sun cannot tell an agent's shell from
+yours.
 
 ## Optional raw session sharing
 
@@ -151,6 +196,7 @@ The `sun/` package separates the main jobs:
 | `history.py` | Branch history, events, turn squashing, publishing, undo, and restore |
 | `hooks.py` | Agent hooks and before/after tracking for tool calls |
 | `sessions.py` | Native transcripts and optional shared session storage |
+| `checks.py` | Rules, recorded checks, and coverage |
 | `output.py` | Log, show, blame, JSON, terminal, HTML, and training export |
 
 Run source checkouts with `python -m sun` instead of `python sun.py`. The installed
@@ -167,5 +213,12 @@ version to migrate it before upgrading.
 ```sh
 python3 examples/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 examples/demo_fresh.py  # synthetic end-to-end story -> examples/demo.html
-python3 -m unittest test_sun test_reliability.ReliabilityTest  # full test suite
+python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks test_check_collaboration  # full test suite
 ```
+
+Run `python3 -m unittest -v test_check_collaboration` for deterministic Layer 2
+collaboration scenarios. Each test creates Alice, Bob, and Carol clones with a local
+bare remote and CSV/report fixtures for totals, item counts, and TODO markers.
+Checks use fixed verdicts and timestamps; no model calls or network services are needed.
+The suite exercises sharing, reviews, retries, branch scope, turn squashing, concurrent
+submissions, and partial publication failures.

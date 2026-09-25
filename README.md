@@ -213,5 +213,12 @@ version to migrate it before upgrading.
 ```sh
 python3 examples/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 examples/demo_fresh.py  # synthetic end-to-end story -> examples/demo.html
-python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks  # full test suite
+python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks test_check_collaboration  # full test suite
 ```
+
+Run `python3 -m unittest -v test_check_collaboration` for deterministic Layer 2
+collaboration scenarios. Each test creates Alice, Bob, and Carol clones with a local
+bare remote and CSV/report fixtures for totals, item counts, and TODO markers.
+Checks use fixed verdicts and timestamps; no model calls or network services are needed.
+The suite exercises sharing, reviews, retries, branch scope, turn squashing, concurrent
+submissions, and partial publication failures.

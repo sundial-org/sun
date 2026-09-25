@@ -171,9 +171,11 @@ check from their terminal is one that counts. A declared actor such as `human:an
 as a person. A check written during a turn lands on that turn's commit once the turn is squashed.
 Coverage is computed when you ask and stored nowhere.
 
-Checks are blobs under `refs/sun/checks/`. `sun push` publishes them after the history and
-`git fetch` brings them in. No other Sun command reads them. Limits: a check cites recorded
-files, not tool output, because Sun stores none. Coverage follows Sun commits, not normal Git
+Checks are blobs under `refs/sun/checks/`. `sun push` publishes them separately from history and
+`git fetch` brings them in. A rejected check upload prints a warning and Git's error; history
+publication continues, and the checks remain local for retry. No other Sun command reads them.
+Limits: a check cites recorded files, not tool output, because Sun stores none.
+Coverage follows Sun commits, not normal Git
 commits. A fetch trusts the remote, so a fetched check is only as trustworthy as whoever pushed
 it, like the rest of `refs/sun/`. Without harness hooks Sun cannot tell an agent's shell from
 yours.

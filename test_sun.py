@@ -131,7 +131,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(history.events()[0]["actor"], "emma/local")
         self.assertFalse(git_store.cfg_share_sessions())
         self.assertFalse(os.path.exists(".git/sun/viz.html"))
-        for name in ("pre-push", "post-commit", "post-merge"):
+        for name in ("post-commit", "post-merge"):
             dispatcher = self.git("rev-parse", "--git-path", "hooks/" + name).strip()
             self.assertNotIn("sun git-hook", read(dispatcher))
 
@@ -166,11 +166,11 @@ class SunTest(unittest.TestCase):
         self.assertIn("refs/sun/ops/*:refs/sun/ops/*", specs)
         self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
         self.assertNotIn("refs/sun/sessions", specs)
-        self.assertFalse(os.path.exists(".git/hooks/pre-push"))
+        self.assertNotIn("refs/sun/sessions", read(self.git("rev-parse", "--git-path", "hooks/pre-push").strip()))
         run("init", "--share-sessions", "--no-claude-md")
         self.assertIn("+refs/sun/sessions/*:refs/sun/sessions/*",
                       self.git("config", "--get-all", "remote.origin.fetch"))
-        self.assertFalse(os.path.exists(".git/hooks/pre-push"))
+        self.assertIn('sun push "$1"', read(self.git("rev-parse", "--git-path", "hooks/pre-push").strip()))
         shutil.rmtree(bare, ignore_errors=True)
 
     def test_init_claude_md_flag(self):
@@ -285,12 +285,14 @@ class SunTest(unittest.TestCase):
             run("init", "--no-claude-md")
             specs = self.git("config", "--get-all", "remote.origin.fetch")
             self.assertIn("+refs/sun/heads/*:refs/sun/remotes/origin/*", specs)
-            self.git("push", "origin", "HEAD")
-            self.assertEqual(self.git("--git-dir", bare, "for-each-ref", "refs/sun/"), "")
-            run("push")
-            self.assertEqual(self.git("--git-dir", bare, "rev-parse", git_store.shadow_ref()).strip(),
-                             self.sun_head())
-            self.git("fetch", "origin")  # use the installed refspecs, not explicit ones
+            hook_text = read(self.git("rev-parse", "--git-path", "hooks/pre-push").strip())
+            self.assertIn('sun push "$1"', hook_text)
+            self.assertNotIn('|| true', hook_text)
+            subprocess.run(["git", "push", "--no-verify", "origin",
+                            f"{git_store.shadow_ref()}:{git_store.shadow_ref()}"], check=True,
+                           capture_output=True)
+            subprocess.run(["git", "fetch", "-q", "origin",
+                            "+refs/sun/heads/*:refs/sun/remotes/origin/*"], check=True)
             self.assertEqual(self.git("rev-parse", git_store.remote_ref()),
                              self.git("rev-parse", git_store.shadow_ref()))
         finally:
@@ -1460,8 +1462,9 @@ class SunTest(unittest.TestCase):
     # ------------------------------------------------------------ edge cases
 
     def test_hook_ignores_uninitialized_repo(self):
-        shutil.rmtree(".git/sun")
-        hook("PreToolUse")  # must not raise
+        shutil.rmtree(".git/sun"); shutil.rmtree(".claude"); shutil.rmtree(".codex", ignore_errors=True)
+        hook("PreToolUse")  # must not raise, and must not set up a repository nobody initialized
+        self.assertFalse(os.path.exists(".git/sun"))
         os.makedirs(".git/sun")
 
     def test_sessionstart_only_prints_context_when_sharing(self):

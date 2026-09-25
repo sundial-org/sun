@@ -4,8 +4,10 @@ import difflib
 import fcntl
 import json
 import os
+import re
 import sys
 
+from . import checks
 from . import git_store
 from . import history
 from . import sessions as session_store
@@ -60,7 +62,12 @@ def cmd_log(a):
 
 
 def cmd_show(a):
-    history.maybe_sync(); H = git_store.resolve_history_rev(a.commit)
+    history.maybe_sync()
+    if re.fullmatch(r"[0-9a-f]{8,32}", a.commit) and git_store.quiet("git", "rev-parse", "-q", "--verify",
+                                                             a.commit + "^{commit}").returncode:
+        hits = [c for i, c in checks.checks().items() if i.startswith(a.commit)]
+        if len(hits) == 1: return print(json.dumps(hits[0], indent=2))
+    H = git_store.resolve_history_rev(a.commit)
     print(git_store.git("show", "--stat", "--pretty=format:commit %h  %ad%n%s%n", "--date=short", H))
     evs = [e for e in history.events(True) if H in (e.get("commit"), e.get("snapshot"))]
     if not evs:  # squash-merge/rebase moved the sha: match events by patch-id instead

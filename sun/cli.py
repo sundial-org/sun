@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 
 from . import branches
@@ -56,8 +57,12 @@ def install_hooks(harness="claude"):
     hook_events = hooks.HOOK_EVENTS if harness == "claude" else hooks.CODEX_HOOK_EVENTS
     for event in hook_events:
         group = cfg["hooks"].setdefault(event, [])
-        if not any(h.get("command") == command for g in group for h in g.get("hooks", [])):
-            group.append({"hooks": [{"type": "command", "command": command}]})
+        ours = [h for g in group for h in g.get("hooks", []) if h.get("command") == command]
+        if not ours:
+            ours = [{"type": "command", "command": command}]
+            group.append({"hooks": ours})
+        if harness == "claude" and event in ("PostToolUse", "Stop"):  # judges take longer than the harness default
+            for h in ours: h.setdefault("timeout", 2 * checks.CHECK_TIMEOUT)
     git_store.jwrite(path, cfg)
     return f"{harness} ({rel})"
 
@@ -97,6 +102,35 @@ def configure_sharing(share_sessions=False):
     for name, scripts in managed.items():
         path = git_store.git("rev-parse", "--git-path", "hooks/" + name).strip()
         if os.path.exists(path) and git_store.read_text(path) in scripts: os.remove(path)
+    branches.install_hooks()
+
+
+def adopt():
+    """A worktree or clone of a repository that already uses Sun sets itself up on first use."""
+    if git_store.initialized():
+        git_store.sun_dir()
+        return True
+    hooked = [h for h in ("claude", "codex") if os.path.exists(os.path.join(git_store.root(), hook_file(h)))
+              and hook_cmd(h) in git_store.read_text(os.path.join(git_store.root(), hook_file(h)))]
+    if not hooked: return False  # nobody ran `sun init` here: stay out of the way
+    with git_store.lock():
+        if git_store.initialized():
+            git_store.sun_dir()
+            return True
+        git_store.save_state("config.json", {"harnesses": hooked, "share_sessions": False})
+        git_store.sun_dir()
+        configure_sharing()
+        if "origin" in git_store.git("remote", check=False).split():
+            try: git_store.quiet("git", "fetch", "-q", "origin", *git_store.refspecs(), timeout=60)
+            except subprocess.TimeoutExpired: pass
+        # A fresh clone has a named upstream. Adopt only that fetched Sun lineage;
+        # local branch creation and worktree attachment use the Git lifecycle hooks.
+        upstream = git_store.git("rev-parse", "--symbolic-full-name", "@{upstream}", check=False).strip()
+        source = upstream.replace("refs/remotes/", "refs/sun/remotes/", 1) if upstream.startswith("refs/remotes/") else ""
+        tip = git_store.ref_oid(source) if source else ""
+        if tip and not git_store.history_head(False):
+            git_store.git("update-ref", git_store.shadow_ref(), tip)
+    return True
 
 
 def agent_instructions(harnesses, choice, flags=""):  # one prompt covering every harness file
@@ -141,21 +175,30 @@ def init_locked(a):
     if "origin" in git_store.git("remote", check=False).split():  # fresh clone: fetch team refs
         git_store.git("fetch", "-q", "origin", *git_store.refspecs(share_sessions))
     installed = ", ".join(install_hooks(h) for h in harnesses); configure_sharing(share_sessions)
-    branches.install_hooks()
     for h in ("claude", "codex"):
         if explicit and h not in explicit: remove_hooks(h)
     if share_sessions:
         agent_instructions(harnesses, a.instructions, "".join(" --" + h for h in explicit))
+    fresh = False
     if not git_store.history_head(False):
         c = git_store.commit_files(["."], "sun: initial state", git_store.local())
         remote, tree = git_store.ref_oid(git_store.remote_ref()), git_store.ref_oid(f"{c}^{{tree}}")
         matches = [line.split()[0] for line in git_store.git("log", remote, "--format=%H %T").splitlines()
                    if line.split()[1] == tree] if remote else []
         if matches: git_store.git("update-ref", git_store.shadow_ref(), matches[0])
-        else: history.record(type="init", actor=git_store.local(), commit=c, edits=[])
+        else: history.record(type="init", actor=git_store.local(), commit=c, edits=[]); fresh = True
     history.ensure_branch()
     history.sync()
     print(f"sun: initialized {git_store.root()} (hooks: {installed}); {session_store.do_import(harnesses)}")
+    if fresh:
+        print("sun: recording starts now: earlier work is one initial snapshot, "
+              "and agent sessions already running are recorded from their next restart")
+    config, rs = checks.read_rules()
+    if checks.runners_hash(config, rs) and not checks.trusted(config, rs):
+        named = [f"{n}: {r['runner']}: {r['command']}" for n, r in sorted(rs.items()) if r["runner"]]
+        named += [f"extract: {config['extract']}"] if config.get("extract") else []
+        print("sun: RULES.md names commands for hooks to run; review them and run `sun trust` to allow that:\n  "
+              + "\n  ".join(named))
     if "codex" in harnesses:
         print("sun: Codex requires separate hook approval; open `/hooks`, review "
               "`.codex/hooks.json`, and trust the Sun hooks before testing")
@@ -203,8 +246,11 @@ def main(argv=None):
         ("restore", "restore files to a Sun commit and record the restoration"),
         ("sessions", "manage explicitly shared agent transcripts"),
         ("push", "publish recorded Sun history independently of Git commits"),
-        ("check", "record a verdict on a rule, citing the recorded state it read"),
+        ("check", "record a verdict on a rule, or run the rules that name a command, model, or agent"),
         ("coverage", "show which commits were checked against each rule, and by whom"),
+        ("extract", "record the verdicts you gave your agents in conversation"),
+        ("pr", "summarize checks for the pull request as Markdown, or update its description"),
+        ("trust", "let hooks on this machine run the commands RULES.md names"),
         ("export", "export operations as fine-tuning JSONL"),
         ("update", "upgrade the uv-installed Sun CLI")]}
     ps["hook"] = sub.add_parser("hook", help=argparse.SUPPRESS)
@@ -272,6 +318,16 @@ def main(argv=None):
                              help="your own check or review; without arguments, read JSON checks from stdin")
     ps["check"].add_argument("-m", metavar="NOTE", help="why, in a sentence")
     ps["check"].add_argument("--json", action="store_true", help="print the stored checks as JSON")
+    ps["check"].add_argument("--run", action="store_true",
+                             help="run the named rules (default: every rule with run:, model: or agent:)")
+    ps["check"].add_argument("--at", metavar="REV", help="recorded state to check (default: the current one)")
+    ps["check"].add_argument("--since", metavar="REV",
+                             help="base for the diff (default: the turn start when an agent call is in flight, else the parent)")
+    ps["extract"].add_argument("--session", metavar="ID", help="one session (default: every session seen here)")
+    ps["pr"].add_argument("--base", metavar="BRANCH", help="base branch (default: origin's HEAD, else main)")
+    ps["pr"].add_argument("--json", action="store_true", help="print the coverage of the pull request as JSON")
+    ps["pr"].add_argument("--update", action="store_true",
+                          help="write the section into the open pull request's description with gh")
     ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
                                 help="maximum commits (default: 30; 0 for all)")
     ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")
@@ -283,14 +339,18 @@ def main(argv=None):
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
         "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
+        "extract": checks.cmd_extract, "pr": checks.cmd_pr, "trust": checks.cmd_trust,
     }
     if a.cmd not in ("init", "hook", "git-hook", "update"):  # hook locates its repo from the payload
         if a.cmd == "blame": a.file = os.path.abspath(a.file)  # resolve before the chdir
-        if a.cmd == "check" and not a.args:  # read stdin before taking the lock, so a slow producer blocks nobody
+        if a.cmd == "check" and not a.args and not a.run:  # read stdin before the lock: a slow producer blocks nobody
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(git_store.root())
-        git_store.sun_dir()
+        if not adopt(): git_store.sun_dir()  # exits with the `sun init` hint
         if a.cmd in ("viz", "data"):
+            commands[a.cmd](a)
+        elif a.cmd in ("extract", "pr") or a.cmd == "check" and a.run:  # may start a judge, whose hooks need the lock
+            with git_store.lock(): history.ensure_branch()
             commands[a.cmd](a)
         else:
             with git_store.lock():

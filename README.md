@@ -1,7 +1,9 @@
 # sun
 
 Sun is an operation log on top of git. It records who made every change, whether that was you
-or a specific agent session. Raw conversations stay local unless you explicitly share them.
+or a specific agent session. Rules in `RULES.md` say what should hold for the work, and checks
+record who verified what, so a pull request can say what a person, a program, or a model has
+looked at. Raw conversations stay local unless you explicitly share them.
 
 ![the sun operation log: attributed commits on the left, one commit's events on the right](examples/viz.png)
 
@@ -14,7 +16,9 @@ cd your-repo && sun init   # sets up every harness it detects (Claude Code, Code
 
 `sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
 subagents are included. Raw transcripts remain in their existing local directories by default.
-Existing commits stay untracked because sun did not observe them. From then on, hooks keep an
+Existing commits stay untracked because sun did not observe them: work done before `sun init` is
+one initial snapshot, and agent sessions already running are recorded from their next restart,
+since a harness reads its hooks when a session starts. From then on, hooks keep an
 independent Sun history current: one visible commit per turn, containing one operation per
 agent tool call. Each operation keeps a hidden Git snapshot for exact replay and undo. Human
 edits observed during a turn remain separately attributed operations inside that turn commit.
@@ -40,7 +44,7 @@ Inheritance uses the creation source recorded in Git's branch reflog. An explici
 SHA has no unique Sun branch; it starts an independent history at that Git tree. If creation
 hooks or reflogs are disabled or bypassed, Sun cannot recover the exact source later. It
 reports the missing source and starts from the Git checkout instead of guessing from equal
-commit IDs or rebuilding from transcripts. There is no legacy-history migration.
+commit IDs or rebuilding from transcripts.
 Branching before the first Git commit requires Git 2.50 or newer, which reports symbolic
 HEAD transactions. With older Git, make an initial Git commit before branching.
 Git branch copy/rename commands are not covered by these creation hooks. Detached HEAD
@@ -49,8 +53,9 @@ is unsupported. Do not switch branches during a tool call.
 Git hooks are dispatched from the common Git directory's `sun/hooks`; existing hooks,
 including a configured `core.hooksPath`, are delegated to without editing their files.
 `sun sync` and agent hooks record locally. Normal Git commits and merges do not record
-checkpoints or publish Sun history; the dispatcher only runs Sun for branch creation and
-checkout. Use `sun init` again if you replace `core.hooksPath` and want to reconnect Sun.
+checkpoints. The dispatcher also publishes recorded Sun history for each branch pushed by
+`git push`; a failed Sun push warns without blocking the Git push. Use `sun init` again if you
+replace `core.hooksPath` and want to reconnect Sun.
 
 `sun push [remote] [branch]` publishes **already recorded Sun history only**, independently of
 Git commits. The default is origin/current branch. It does not run sync, require a clean worktree,
@@ -78,8 +83,12 @@ Interleaved turns may also remain separate commits. Atomic pushes require server
 are never retried non-atomically. A concurrent push rejection can be retried: Sun fetches and
 joins the additional history without changing your files. Recorded attempts and undone edits
 remain part of published history; Sun is not a secret-redaction tool.
-`sun log`, `sun show`, `sun blame`, and `sun viz` read this history. A repository must be
-initialized with Sun on each machine because Git does not clone local hook or refspec settings.
+`sun log`, `sun show`, `sun blame`, and `sun viz` read this history. Only the first person in a
+repository runs `sun init`: it writes the harness hook configuration, which is committed. Every
+clone and worktree of a repository with that configuration sets up its own state, fetch refspecs,
+and pre-push hook on its first Sun command or hook, and a new worktree's branch inherits the Sun
+history of the branch it was created from, observing any differing files rather than crediting them
+to you. An agent never has to edit `.claude/settings.json`.
 
 Operations have full unique IDs and separate refs under `refs/sun/events/`, so two computers
 using the same Git identity cannot overwrite each other's event logs. Operation metadata and
@@ -110,7 +119,12 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun undo --dry-run` | check whether the latest reversal can apply without changing anything |
 | `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
 | `sun push [remote] [branch]` | publish the selected Sun history, separately from normal Git |
-| `sun check`, `sun coverage` | record verdicts on rules and see what has been checked ([below](#check-the-history)) |
+| `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |
+| `sun check --run [RULE ...]` | run the rules that name a command, model, or agent, and record their verdicts |
+| `sun coverage [-n COUNT] [--json]` | see which commits were checked against each rule, and by whom |
+| `sun extract` | record the verdicts you gave your agents in conversation |
+| `sun pr [--update]` | summarize checks for the pull request as Markdown, or write it into the PR |
+| `sun trust` | let hooks on this machine run the commands `RULES.md` names |
 | `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
 | `sun update` | update a Sun installation made from this repository with uv |
 
@@ -139,46 +153,124 @@ adds a restoration commit. Neither command rewrites or deletes history.
 The operation history is what happened. Rules, checks, and coverage are what someone concluded
 about it. They are kept apart on purpose: a check can be wrong, so it never edits the history.
 
-A **rule** is a `name: text` line in a `RULES` file at the repository root, committed like any other file:
+The flow, end to end: the team writes `RULES.md`; `sun init` installs the hooks, and a person runs
+`sun trust` once to let them run the commands it names. A person prompts and the agent works for hours: rules marked `on: call` run
+after each edit and rules marked `on: turn` run when the agent stops, failures go back to the
+agent once per turn, and the agent can run `sun check --run` itself before it stops. The person
+reads the result and replies; at the end of that turn, `extract:` turns explicit judgments in the
+reply into checks that cite the state the person saw, and `sun check RULE VERDICT` records a
+terminal verdict. `sun coverage` shows the table, and `sun pr --update` puts a section in the pull
+request saying what was checked, by whom, at which granularity, and what nobody has looked at.
 
+A **rule** is a `## name` section of `RULES.md` at the repository root, committed like any other
+file. Its text says what should hold for the work. A rule may also say what runs it, in a `---`
+block right under the heading:
+
+```markdown
+---
+extract: haiku          # optional: at the end of each turn, read your reply for verdicts
+---
+## use-current-results
+Every result cited in the paper agrees with the latest corrected experiment.
+
+## lowercase
+---
+run: scripts/lowercase.sh     # a command: exit 0 is pass, anything else is fail
+on: call                      # run it after every agent tool call that changed a matching file
+files: "*.md"
+---
+Every sentence starts with a lowercase character.
+
+## code-style
+---
+agent: haiku                  # an agent with read-only tools and a fresh context
+on: turn                      # run it at the end of every agent turn that changed matching files
+files: "src/**/*.py"
+---
+Code follows docs/style.md.
 ```
-report-what-you-did: The report lists every lemma it proved and nothing else.
-```
+
+`run:` names a command. Sun runs it in the repository root with `SUN_AT` (the Sun commit being
+checked), `SUN_SINCE` (the base of the diff), `SUN_FILES` (the changed files, one per line), and
+`SUN_RULE`. Its exit status is the verdict and its output the note, unless the last line is a JSON
+object `{"verdict": ..., "note": ..., "cites": [{"file": ..., "lines": [a, b]}]}`. `model:` names
+one model call with no tools: Sun writes the rule, the diff, and the changed files on its stdin and
+reads a JSON verdict from the reply. `agent:` is the same contract for an agent with read-only
+tools and a fresh context. A bare name such as `haiku` runs through your harness CLI (`claude -p
+--model haiku` or `codex exec -m haiku`); a value with a space is a command of your own. A rule
+that names none of these is prose: people check it, or programs pipe checks for it.
+`feedback: false` keeps a failing verdict from being sent back to the agent. A legacy `RULES` file
+of `name: text` lines still works.
 
 A **check** is one verdict on one rule. It must cite the recorded state it read: a Sun commit or
-tool-call snapshot, optionally a file and lines in it. A judge model, a test script, and a person
-all write the same shape. Sun runs none of them. It records what they submit.
+tool-call snapshot, optionally a file and lines in it. A judge model, a program, and a person all
+write the same shape:
 
 ```sh
-sun check report-what-you-did fail -m "claims L017, receipt shows sorry"   # you, at a terminal
-echo '{"rule": "report-what-you-did", "verdict": "contradicted", "actor": "program:lean",
-       "cites": [{"at": "8b31c0d", "file": "receipts/a3.json", "lines": [1, 1]}],
-       "note": "sorryAx via L003"}' | sun check                             # a program
+sun check --run                                # every rule that names a command, model, or agent
+sun check --run code-style --since HEAD~3      # some of them, against a range of Sun commits
+sun check use-current-results fail -m "notes report 12 points; corrected result is 2"   # you, at a terminal
+echo '{"rule": "use-current-results", "verdict": "fail", "actor": "program:cite",
+       "cites": [{"at": "4e02d88", "file": "notes/results.md", "lines": [1, 2]}]}' | sun check   # a program
 ```
 
-The verdict is any short word the task needs. `actor` is required on stdin and stored as
-`<git user>/<actor>`; only the terminal form is stored as `<git user>/local`. `note` is free
-text and `meta` is any JSON. Stdin takes one object or an array, validated as a whole and written
-in one Git transaction. A check's ID is the hash of its content, so recording the same check
-again returns the original. `sun check` and `sun push` never overwrite a recorded check.
+`sun check --run` prints one line per rule and exits 1 when a verdict is not `pass`, so an agent
+can run it before it stops and fix what failed. Rules with `on: call` or `on: turn` also run from
+the harness hooks, and a failing verdict goes back to the agent once per turn as the hook's reason,
+so it keeps working. A later run of the same rule in the same turn replaces the earlier verdict
+rather than leaving the turn `mixed`; a rerun replaces only a verdict from the same turn whose
+files it covered. Hooks, and agents' shells, run the commands in `RULES.md` only after a person
+runs `sun trust` on that machine, and again after those commands change, so a commit from someone
+else cannot start programs or spend model credits there; `sun init` lists what `RULES.md` would
+run instead of trusting it for you. A judge runs outside Sun's lock with `SUN_CHECKING` set, so
+its own hooks record it but run no rules, and an `agent:` judge gets read-only tools.
 
-A **review** is a check that cites another check, `{"cites": [{"check": ID}]}`, and replaces it
-in coverage. At a terminal, give the printed ID: `sun check report-what-you-did fail 0286c3a1`.
+The verdict is any short word the task needs. `actor` is required on stdin and stored as
+`<git user>/<actor>`; `local`, `chat`, and harness session actors are Sun's own and cannot be
+declared. Every check also records `via` (`terminal`, `stdin`, `run`, `hook:Stop`, `hook:PostToolUse`,
+or `extract`) and, when an agent tool call was in flight, `from`, the session that recorded it.
+A check's ID is the hash of its content, so recording the same check again returns the original,
+and `sun check` never overwrites one. A **review** is a check that cites another check,
+`{"cites": [{"check": ID}]}`, and replaces it in coverage. At a terminal, give the printed ID:
+`sun check use-current-results fail 0286c3a1`.
+
+`extract: MODEL` in the front matter turns your replies into checks. At the end of each turn, one
+model call reads the reply that started it, the agent's last message before it, and the rules, and
+reports only explicit verdicts, quoting your words. Sun records each as `<git user>/chat`, citing
+the state you were looking at when you replied, and drops anything that is not a verbatim quote.
+`sun extract` does the same on demand for every session seen in this checkout, and `sun pr` reads
+unread replies first when the model is trusted. What a harness or a hook injected into the
+conversation is never read as the person's words. `sun show <check id>` prints one check.
 
 `sun coverage [-n COUNT] [--json]` folds checks onto Sun commits. Each commit and rule is
-`unchecked`, the verdict, or `mixed` when checkers disagree, and `needs eyes` until a person's
-check from their terminal is one that counts. A declared actor such as `human:ana` never counts
-as a person. A check written during a turn lands on that turn's commit once the turn is squashed.
-Coverage is computed when you ask and stored nowhere.
+`unchecked`, the verdict, `mixed` when checkers disagree, or `outdated` when the rule changed since.
+A row says `needs eyes` until a person's verdict counts, `chat only` when that verdict came from a
+reply, and nothing when one came from a terminal, so a terminal review of a chat verdict promotes
+it. A check written during a turn lands on that turn's commit once the turn is squashed. Coverage
+is computed when you ask and stored nowhere.
 
-Checks are blobs under `refs/sun/checks/`. `sun push` publishes them separately from history and
-`git fetch` brings them in. A rejected check upload prints a warning and Git's error; history
-publication continues, and the checks remain local for retry. No other Sun command reads them.
-Limits: a check cites recorded files, not tool output, because Sun stores none.
-Coverage follows Sun commits, not normal Git
-commits. A fetch trusts the remote, so a fetched check is only as trustworthy as whoever pushed
-it, like the rest of `refs/sun/`. Without harness hooks Sun cannot tell an agent's shell from
-yours.
+`sun pr [--base BRANCH]` prints a Markdown section for the pull request: per rule, what was
+checked on which Sun commits and by whom; then what a person checked at a terminal, what was said
+in chat and not yet confirmed (with the quote and the command that confirms it), what the agent
+checked on its own work, what only programs and models checked, what was checked before a rule
+changed, and what nobody has checked. `sun pr --update` writes it into the open pull request with
+`gh`. The section names who generated it, including an agent that generated it from its own shell.
+
+What a line there means. `emma (terminal)` means a check with actor `emma/local` was recorded on a
+machine whose git user is emma while no agent tool call was in flight and no agent shell was
+detected; it does not prove Emma read the diff. `emma (in chat)` means a model read a reply in a
+transcript and Sun kept the quote; confirm it at a terminal before relying on it. `model` and
+`agent` lines are one model's opinion in a fresh context, `program` lines are a script's exit
+status, and `self-check` means the session that made the change ran the check itself. Anything
+fetched from a remote was written by whoever could push there. Sun records these claims and keeps
+them from being overwritten; it cannot verify who made them. It is a record, not a security
+boundary.
+
+Checks are blobs under `refs/sun/checks/<git user>/`; a check stored under another user's name is
+ignored. `sun push` and the pre-push hook publish yours before the history, and `git fetch` brings
+in everyone's. Rejected check uploads warn and show Git's error while history publication
+continues; checks remain local for retry. A check cites recorded files, not tool output, because Sun stores none. A failing
+check's note is shown to the agent as text; Sun truncates it and nothing more.
 
 ## Optional raw session sharing
 
@@ -218,7 +310,7 @@ The `sun/` package separates the main jobs:
 | `history.py` | Branch history, events, turn squashing, publishing, undo, and restore |
 | `hooks.py` | Agent hooks and before/after tracking for tool calls |
 | `sessions.py` | Native transcripts and optional shared session storage |
-| `checks.py` | Rules, recorded checks, and coverage |
+| `checks.py` | Rules, check runners, reviews, and coverage |
 | `output.py` | Log, show, blame, JSON, terminal, HTML, and training export |
 
 Run source checkouts with `python -m sun` instead of `python sun.py`. The installed

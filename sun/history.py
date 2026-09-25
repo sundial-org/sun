@@ -231,7 +231,7 @@ def cmd_push(a):
             print(f"sun: warning: check upload to {a.remote} failed; checks remain local. "
                   "Continuing with history push; retry `sun push` after fixing the error.", file=sys.stderr)
             if result.stderr.strip(): print(result.stderr.strip(), file=sys.stderr)
-    git_store.git("push", "--atomic", "--", a.remote, *specs)
+    git_store.git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
 
 
 def cmd_sync(a):

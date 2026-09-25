@@ -149,8 +149,8 @@ def history_refs():
     return [shadow_ref()] if history_head(False) else []
 
 
-def resolve_history_rev(rev):
-    if rev == "HEAD": rev = shadow_ref()
+def resolve_history_rev(rev):  # HEAD, HEAD~2, HEAD^ name the Sun branch, not the Git checkout
+    if rev == "HEAD" or rev.startswith(("HEAD~", "HEAD^")): rev = shadow_ref() + rev[4:]
     return git("rev-parse", rev).strip()
 
 

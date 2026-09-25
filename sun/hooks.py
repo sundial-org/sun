@@ -7,6 +7,8 @@ import sys
 import uuid
 from typing import Dict, List, TypedDict
 
+from . import checks
+from . import cli
 from . import git_store
 from . import history
 from . import sessions as session_store
@@ -165,6 +167,8 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     if entries: entries[0]["id"] = st["id"]
     history.record_batch(c, entries)
     release()
+    start = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("start") or pre
+    return {"at": c, "since": pre, "turn": start, "in_turn": True, "files": a_files} if a_files else None
 
 
 def prompt_boundary(sid, payload, harness="claude"):
@@ -228,18 +232,34 @@ def subagent_chunk(sid, payload):
     session_store.store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": git_store.read_text(tp, errors="replace")})
 
 
+def turn_unit(sid, harness, t):
+    """The session's own work in a turn, for rules and extraction: {at, since, turn, files, in_turn}."""
+    tip = git_store.history_head(False)
+    if not (t.get("start") and tip and t.get("branch") == git_store.shadow_ref()): return None
+    n, mine = t.get("n"), []
+    for e in history.events():  # after the squash, the turn's events sit on the turn commit
+        if e.get("session_id") == sid and e.get("turn") == f"turn{n}" and e["actor"] == git_store.agent(sid, harness):
+            mine.append(e)
+    files = sorted({d["file"] for e in mine for d in e.get("edits") or []})
+    at = mine[-1]["commit"] if mine and git_store.quiet("git", "merge-base", "--is-ancestor", mine[-1]["commit"], tip).returncode == 0 else tip
+    return {"at": at, "since": t["start"], "turn": t["start"], "in_turn": True, "files": files}
+
+
 def cmd_hook(a):
     try: payload = json.load(sys.stdin)
     except (ValueError, OSError): payload = {}
     try: payload.get("cwd") and os.chdir(payload["cwd"])
     except OSError: return
     p = git_store.quiet("git", "rev-parse", "--show-toplevel")
-    if p.returncode or not git_store.initialized():
-        return  # not a sun repo; hooks must never break the harness
+    if p.returncode: return  # not a Git repo; hooks must never break the harness
     os.chdir(p.stdout.strip())
+    if not cli.adopt(): return  # not a Sun repo
     with git_store.lock():  # serialize concurrent hooks (parallel sessions/subagents)
         history.ensure_branch()
-        handle_hook(a, payload)
+        unit = handle_hook(a, payload)
+    if unit and not os.environ.get("SUN_CHECKING"):  # rules run outside the lock: a judge has hooks of its own
+        try: checks.hook_checks(a, payload, unit)
+        except (SystemExit, Exception) as exc: print(f"sun: {exc}", file=sys.stderr)
 
 
 def handle_hook(a, payload):
@@ -319,10 +339,14 @@ def handle_hook(a, payload):
         git_store.git("update-ref", "refs/sun/pending/" + active[key]["id"], active[key]["before"])
         git_store.save_state("active.json", active)
     elif event in ("PostToolUse", "PostToolUseFailure"):
-        finish_call(sid, active, payload, harness)
+        return finish_call(sid, active, payload, harness)
     elif event == "Stop":  # a queued prompt may end in a text-only turn: no PreToolUse
+        before = dict(git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {})
         prompt_boundary(sid, payload, harness)
         history.squash_turn(sid, harness)
         stop_chunk(sid, payload, harness)
+        t = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {}
+        if before.get("n") and t.get("n") != before.get("n"): t = before  # a queued prompt already opened the next turn
+        return turn_unit(sid, harness, t)
     elif event == "SubagentStop":
         subagent_chunk(sid, payload)

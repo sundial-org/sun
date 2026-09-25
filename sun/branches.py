@@ -30,7 +30,7 @@ def install_hooks():
     command = shlex.join([sys.executable, "-I", "-c", launch])
     for name in GIT_HOOKS:
         script = '#!/bin/sh\n# sun: Git lifecycle dispatcher\noriginal=' + shlex.quote(os.path.join(original, name)) + '\n'
-        if name in ("reference-transaction", "post-checkout"):
+        if name in ("reference-transaction", "post-checkout", "pre-push"):
             script += 'run_sun() { ' + command + ' "$@"; }\n'
         if name == "reference-transaction":
             # A Sun ref update recursively invokes this hook. Filter in the shell,
@@ -59,6 +59,22 @@ exit "$status"
 if [ -x "$original" ]; then "$original" "$@" || status=$?; fi
 run_sun git-hook post-checkout "$@"
 exit "$status"
+'''
+        elif name == "pre-push":
+            script += '''input=$(cat)
+if [ -x "$original" ]; then
+    printf '%s\\n' "$input" | "$original" "$@" || exit $?
+fi
+printf '%s\\n' "$input" | while read -r local_ref local_oid remote_ref remote_oid; do
+    case "$local_ref" in
+        refs/heads/*) branch="${local_ref#refs/heads/}";;
+        HEAD) branch=$(git symbolic-ref -q --short HEAD) || continue;;
+        *) continue;;
+    esac
+    git rev-parse -q --verify "refs/sun/heads/$branch" >/dev/null 2>&1 || continue
+    run_sun push "$1" "$branch" || echo "sun: Sun history for $branch was not published; run: sun push $1 $branch" >&2
+done
+exit 0
 '''
         else:
             script += 'if [ -x "$original" ]; then exec "$original" "$@"; fi\n'

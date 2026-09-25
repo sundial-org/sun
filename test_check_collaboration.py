@@ -36,7 +36,7 @@ class CheckCollaborationTest(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
         self.remote = self.root / 'remote.git'
-        self.env = {k: v for k, v in os.environ.items() if not k.startswith(('GIT_', 'SUN_'))}
+        self.env = {k: v for k, v in os.environ.items() if k != 'CLAUDECODE' and not k.startswith(('GIT_', 'SUN_', 'CODEX_SANDBOX'))}
         self.env.update(HOME=str(self.root), GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull,
                         GIT_AUTHOR_DATE='2026-09-20T12:00:00+0000',
                         GIT_COMMITTER_DATE='2026-09-20T12:00:00+0000',
@@ -117,7 +117,7 @@ class CheckCollaborationTest(unittest.TestCase):
         for p in publishers: self.sun(p, 'push')
         for p in self.clones: self.git(p, 'fetch', 'origin')
 
-    def assert_row(self, repo, status, records, eyes=False, at=None, rule='correct-total'):
+    def assert_row(self, repo, status, records, eyes=None, at=None, rule='correct-total'):
         row = self.row(repo, at, rule)
         self.assertEqual((row['status'], row['eyes']), (status, eyes))
         self.assertEqual({c['id']: c for c in row['checks']}, {c['id']: c for c in records})
@@ -148,7 +148,7 @@ class CheckCollaborationTest(unittest.TestCase):
         self.share(self.alice)
         b = json.loads(self.sun(self.bob, 'check', 'correct-total', 'pass', a['id'], '--json').stdout)['checks'][0]
         self.share(self.bob)
-        for p in self.clones: self.assert_row(p, 'pass', [a, b], eyes=True)
+        for p in self.clones: self.assert_row(p, 'pass', [a, b], eyes='terminal')
         c = self.submit(self.carol, dict(rule='correct-total', verdict='fail', actor='agent:scripted',
                                          cites=[{'check': b['id']}]))
         self.share(self.carol)
@@ -308,8 +308,8 @@ class CheckCollaborationTest(unittest.TestCase):
                json.dumps({**c, 'cites': [{'at': []}]})]
         for n, raw in enumerate(bad):
             sha = self.git(self.remote, 'hash-object', '-w', '--stdin', stdin=raw)
-            self.git(self.remote, 'update-ref', f'refs/sun/checks/{n:032x}', sha)
-        self.git(self.remote, 'update-ref', 'refs/sun/checks/' + 'f' * 32, self.initial)  # commit, not JSON blob
+            self.git(self.remote, 'update-ref', f'refs/sun/checks/alice/{n:032x}', sha)
+        self.git(self.remote, 'update-ref', 'refs/sun/checks/alice/' + 'f' * 32, self.initial)  # commit, not JSON blob
         self.git(self.bob, 'fetch', 'origin')
         self.assert_row(self.bob, 'pass', [c])
 

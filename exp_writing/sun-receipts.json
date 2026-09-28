@@ -1,0 +1,52 @@
+{
+  "experiment": {
+    "repository": "/Users/bmo/sun-sundial-desktop/sun/exp_writing",
+    "commit": "3e70e7d07ad96a2d4df8e43430743f8871be6cf3",
+    "event": "af111680e3f9429f82f0509e7d8ee8b2",
+    "files": [
+      "analyze.py",
+      "archive_checkpoints.py",
+      "audit.py",
+      "data.py",
+      "record.py",
+      "run_experiment.py",
+      "style.py",
+      "supervisor.py",
+      "test_experiment.py",
+      "verify_run.py",
+      "README.md",
+      "PROTOCOL.md",
+      "AMENDMENTS.md",
+      "requirements.txt",
+      "editor-smoke-test.md",
+      "results.tex",
+      "results.pdf",
+      "learning_curve.pdf",
+      "results-preview.png",
+      ".gitignore"
+    ]
+  },
+  "run": {
+    "repository": "/Users/bmo/sun-sundial-desktop/sun/exp_writing/runs/ten-writers-20260926-inkling",
+    "commit": "816a192effce1217cb668c47fa6903a881b33be3",
+    "event": "5231bcc4e315493d90b88280b7697a41",
+    "files": [
+      "completion.json",
+      "analysis.json",
+      "audit.json",
+      "integrity.json",
+      "training_manifest.json",
+      "archive_manifest.json",
+      "status.json",
+      "progress.jsonl",
+      "costs.jsonl",
+      "freeze.json",
+      "prompts.json",
+      "prefix-validation.json",
+      "rendering-amendment.json",
+      "transport-amendment.json",
+      "scheduling-amendment.json",
+      "controls-amendment.json"
+    ]
+  }
+}

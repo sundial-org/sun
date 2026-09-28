@@ -1,0 +1,8 @@
+{
+  "reason": "parallel independent matched control families",
+  "unix_time": 1790395996.105506,
+  "live_rounds_complete": 4,
+  "early_checkpoints_complete": true,
+  "ranking_complete": true,
+  "extra_endpoint_seed_started": false
+}

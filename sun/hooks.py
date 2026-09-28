@@ -24,7 +24,7 @@ class TurnState(TypedDict, total=False):
     seen: int  # Nonzero once the starting prompt has been encountered.
     stopped: bool
     squashed: bool
-    deferred: bool  # the parent stopped while its subagents ran: squash when the last one stops
+    deferred: int  # turn whose Stop came while subagents ran: squash it once they are done
     branch: str
 
 
@@ -241,6 +241,7 @@ def prompt_boundary(sid, payload, harness="claude"):
             t.update(n=t["n"] + 1, start=git_store.history_head(), toffset=boundary)
             t.pop("stopped", None)
             t.pop("squashed", None)
+            t.pop("deferred", None)
     t.update(soffset=end, seen=1 if boundaries else seen + len(prompts))
     turns[git_store.session_key(sid, harness)] = t
     git_store.save_state("turns.json", turns)
@@ -259,10 +260,11 @@ def stop_chunk(sid, payload, harness="claude"):
     t.update(toffset=os.path.getsize(tp), stopped=True); git_store.save_state("turns.json", turns)
 
 
-def subagent_chunk(sid, payload):
+def subagent_chunk(sid, payload, harness="claude"):  # the same chunks `sun sessions import` stores
     tp, sub = payload.get("agent_transcript_path"), agent_of(payload)
     if not (tp and sub and os.path.exists(tp) and git_store.cfg_share_sessions()): return
-    session_store.store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": git_store.read_text(tp, errors="replace")})
+    session_store.store_chunks(sid, {f"subagents/{sub}/turn-{i:04d}.jsonl": c for i, c in
+                                     enumerate(session_store.scan_transcript(tp, harness), 1)})
 
 
 def turn_unit(sid, harness, t):
@@ -312,41 +314,76 @@ def record_paths(sid, payload, harness):
     git_store.save_state("session-paths.json", paths)
 
 
-running_subagents = lambda sid, harness="claude": \
-    git_store.state("subagents.json", {}).get(git_store.session_key(sid, harness), {})
+def alive(payload, running):
+    """The running subagents the harness still reports. Claude's Stop and SubagentStop list the
+    session's background tasks: background subagents by id, workflows as a whole."""
+    tasks = payload.get("background_tasks")
+    if not isinstance(tasks, list): return running  # not reported: keep what the hooks saw
+    live = [t for t in tasks if isinstance(t, dict) and t.get("status", "running") == "running"]
+    ids = {agent_of({"agent_id": t.get("id")}) for t in live if t.get("type") != "workflow"}
+    workflow = any(t.get("type") == "workflow" for t in live)
+    return {a: kind for a, kind in running.items() if a in ids or workflow and kind == "workflow-subagent"}
 
 
-def release_stale(event, sid, payload, harness, active: Dict[str, ActiveCall]):
-    """Release claims whose tool call can no longer complete, scoped to who stopped.
+def busy(payload, running):  # background work that will still report to this session
+    tasks = payload.get("background_tasks")
+    if not isinstance(tasks, list): return bool(running)
+    return any(isinstance(t, dict) and t.get("status", "running") == "running"
+               and t.get("id") != payload.get("agent_id") for t in tasks)
 
-    A session start or end releases the whole session. A subagent's stop releases its own calls.
-    The main thread's Stop or prompt releases its own calls and those of subagents not known to
-    be running: workflow and background subagents keep working across the parent's turns."""
+
+def whole_session(event, payload):
+    return event in ("SessionEnd", "Interrupt") or event == "SessionStart" and payload.get("source") != "compact"
+
+
+def track_subagents(event, sid, payload, harness):
+    """Update and return the session's running subagents {agent id: agent type}. Any hook from a
+    subagent marks it running (a resumed one may send no SubagentStart); its SubagentStop, a
+    session boundary, or the harness no longer listing it ends it."""
     session, sub = git_store.session_key(sid, harness), agent_of(payload)
     lanes = git_store.state("subagents.json", {})
-    running = lanes.get(session, {})
-    whole = event in ("SessionEnd", "Interrupt") or event == "SessionStart" and payload.get("source") != "compact"
+    running = dict(lanes.get(session, {}))
+    if whole_session(event, payload): running = {}
+    elif sub and event == "SubagentStop": running.pop(sub, None)
+    elif sub: running.setdefault(sub, payload.get("agent_type") or "")
+    if event == "SubagentStop" or event == "Stop" and not sub: running = alive(payload, running)
+    if running != lanes.get(session, {}):
+        if running: lanes[session] = running
+        else: lanes.pop(session, None)
+        git_store.save_state("subagents.json", lanes)
+    return running
+
+
+def release_stale(event, sid, payload, harness, active: Dict[str, ActiveCall], running):
+    """Release claims whose tool call can no longer complete, scoped to who stopped.
+
+    A session start or end releases the whole session. A subagent's start or stop releases its
+    own calls. The main thread's Stop or prompt releases its own calls and those of subagents no
+    longer running: workflow and background subagents keep working across the parent's turns."""
+    session, sub = git_store.session_key(sid, harness), agent_of(payload)
+    if event in ("SubagentStart", "SubagentStop") and not sub: return  # no agent to scope it to
+    whole = whole_session(event, payload)
     stale = [key for key, claim in active.items() if claim_session(key, claim) == session and (
-        whole or (claim.get("agent") == sub if sub else claim.get("agent") not in running))]
+        whole or ((claim.get("agent") == sub or event == "SubagentStop" and claim.get("agent") and
+                   claim.get("agent") not in running) if sub else claim.get("agent") not in running))]
     for key in stale:
         claim = active.pop(key)
         if claim.get("id"): git_store.git("update-ref", "-d", "refs/sun/pending/" + claim["id"])
     if stale:
         git_store.save_state("active.json", active)
         history.sync(method="uncertain")
-    if whole and session in lanes or sub and event in ("SubagentStart", "SubagentStop"):
-        if whole: running = {}
-        elif event == "SubagentStart": running[sub] = payload.get("agent_type") or ""
-        else: running.pop(sub, None)
-        if running: lanes[session] = running
-        else: lanes.pop(session, None)
-        git_store.save_state("subagents.json", lanes)
+
+
+def finish_deferred(sid, harness):  # a turn whose squash waited for its subagents
+    t = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {}
+    if t.get("deferred") and t.get("deferred") == t.get("n"): history.squash_turn(sid, harness)
 
 
 def handle_hook(a, payload):
     event, sid, harness = (payload.get("hook_event_name", ""),
                            payload.get("session_id", "?"), a.harness)
     record_paths(sid, payload, harness)
+    running = track_subagents(event, sid, payload, harness)
     active: Dict[str, ActiveCall] = git_store.state("active.json", {})
     # Old-format claims cannot identify a live call or provide a before snapshot.
     obsolete = [key for key, claim in active.items() if not claim.get("id") or not claim.get("branch")]
@@ -356,7 +393,8 @@ def handle_hook(a, payload):
         history.sync(method="uncertain")
     if event in ("SessionStart", "UserPromptSubmit", "Stop", "SubagentStart", "SubagentStop",
                  "SessionEnd", "Interrupt"):
-        release_stale(event, sid, payload, harness, active)
+        release_stale(event, sid, payload, harness, active, running)
+    if whole_session(event, payload): finish_deferred(sid, harness)
     if event == "UserPromptSubmit":  # Stop never fired, or left the squash to running subagents:
         stopped = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("stopped")
         history.squash_turn(sid, harness)  # squash the turn + store its transcript slice
@@ -418,17 +456,17 @@ def handle_hook(a, payload):
         prompt_boundary(sid, payload, harness)
         # Workflow and background subagents outlive the parent's turn: their calls join the
         # turn commit when the last one stops, or at the next prompt.
-        if not running_subagents(sid, harness): history.squash_turn(sid, harness)
+        if not busy(payload, running): history.squash_turn(sid, harness)
         else:
             turns = git_store.state("turns.json", {})
-            if git_store.session_key(sid, harness) in turns:
-                turns[git_store.session_key(sid, harness)]["deferred"] = True
+            t = turns.get(git_store.session_key(sid, harness))
+            if t and not t.get("squashed"):
+                t["deferred"] = t.get("n")
                 git_store.save_state("turns.json", turns)
         stop_chunk(sid, payload, harness)
         t = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {}
         if before.get("n") and t.get("n") != before.get("n"): t = before  # a queued prompt already opened the next turn
         return turn_unit(sid, harness, t)
     elif event == "SubagentStop":
-        subagent_chunk(sid, payload)
-        t = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {}
-        if t.get("deferred") and not running_subagents(sid, harness): history.squash_turn(sid, harness)
+        subagent_chunk(sid, payload, harness)
+        if not busy(payload, running): finish_deferred(sid, harness)

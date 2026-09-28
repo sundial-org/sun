@@ -99,7 +99,8 @@ Concurrent branches have no implied total chronological order.
 Hooks support concurrent writes to different files. Overlapping writes, failed partial writes,
 and edits recovered after an interrupted call are marked uncertain instead of assigned to an
 agent by guesswork. Stop, session end, or a new prompt releases abandoned claims; a running
-subagent's claims last until that subagent stops. Re-running a completion hook is safe. If a process disappears without any closing hook, stop the agents
+subagent's claims last until it stops, or until the parent's Stop no longer lists it (or its
+workflow) among the session's background tasks. Re-running a completion hook is safe. If a process disappears without any closing hook, stop the agents
 and run `sun sync --recover` to release abandoned calls and record uncertain edits.
 Sun cannot detect a human typing into the same file during an
 agent write; use separate worktrees if precise ownership of overlapping edits is required.
@@ -107,8 +108,9 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 Claude Code subagents, started by the Agent tool or by an ultracode workflow, are their own
 actors: `<user>/agent:claude/<session>/<agent id>`. Their operations keep the parent's
 `session_id` and turn, and a turn commit squashes them together with the parent's calls; when
-workflow or background subagents outlive the parent's turn, the squash waits until the last one
-stops or the next prompt arrives. The delegating Agent or Workflow call claims no files, since
+workflow or background subagents outlive the parent's turn, the squash waits until no background
+work remains, the next prompt arrives, or the session ends. Rules that run `on: turn` still run at
+the parent's Stop, before late subagent calls land. The delegating Agent or Workflow call claims no files, since
 each subagent's hooks report its own calls. When sibling subagents' calls overlap, a file that one call names (Write, Edit) stays
 with that call and is marked uncertain; two calls naming the same file, or two concurrent shell
 commands, are credited to the parent session, uncertain, rather than to a guessed subagent.

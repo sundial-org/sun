@@ -225,7 +225,7 @@ class SubagentTest(unittest.TestCase):
         # Hook configurations from before SubagentStart was installed: fall back to the old release.
         self.pre("a1", "r.txt", "t1")
         write("r.txt", "abandoned\n")
-        hook("Stop", SID)
+        hook("Stop", SID, background_tasks=[])  # Claude lists what still runs: nothing
         self.assertEqual(git_store.state("active.json", {}), {})
         self.assertEqual(self.changes()["r.txt"], ("unknown", "uncertain"))
 
@@ -271,7 +271,7 @@ class SubagentTest(unittest.TestCase):
         hook("UserPromptSubmit", SID)
         for i, agent in enumerate(("a1", "a2")):
             self.sub_call(agent, f"{agent}.txt", "x\n", f"t{i}")
-        hook("Stop", SID)
+        hook("Stop", SID, background_tasks=[])
         self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (2 tool calls)")
 
     def test_turn_waits_for_running_subagents_before_squashing(self):
@@ -298,6 +298,113 @@ class SubagentTest(unittest.TestCase):
         self.assertNotIn(" turn 2 ", self.head_subject())
         hook("Stop", SID)
         self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 2 (1 tool calls)")
+
+    def test_interrupted_foreground_subagent_is_released_at_the_parents_stop(self):
+        # Esc during a foreground Agent call: no PostToolUse, no SubagentStop.
+        hook("UserPromptSubmit", SID)
+        sub_hook("SubagentStart", "a1", agent_type="general-purpose")
+        self.pre("a1", None, "sh", tool="Bash")
+        write("x.txt", "partial\n")
+        hook("UserPromptSubmit", SID)
+        self.tool_call(SID, "p.txt", "p\n", 1)
+        hook("Stop", SID, background_tasks=[])
+        self.assertEqual(git_store.state("active.json", {}), {})
+        self.assertFalse(git_store.refs("refs/sun/pending/"))
+        self.assertEqual(git_store.state("subagents.json", {}), {})
+        self.assertEqual(self.changes()["x.txt"], ("unknown", "uncertain"))
+        run("undo", "--dry-run")
+
+    def test_listed_background_work_keeps_its_subagents_running(self):
+        tasks = [{"id": "w1", "type": "workflow", "status": "running"},
+                 {"id": "bg", "type": "subagent", "status": "running"}]
+        sub_hook("SubagentStart", "wf1")
+        sub_hook("SubagentStart", "bg", agent_type="general-purpose")
+        sub_hook("SubagentStart", "fg", agent_type="general-purpose")
+        for agent in ("wf1", "bg", "fg"): self.pre(agent, agent + ".txt", "t-" + agent, agent_type=None)
+        hook("Stop", SID, background_tasks=tasks)
+        self.assertEqual(self.claim_lanes(), [SID + "/bg", SID + "/wf1"])  # fg was not listed
+        hook("Stop", SID, background_tasks=[{"id": "bg", "type": "subagent", "status": "running"}])
+        self.assertEqual(self.claim_lanes(), [SID + "/bg"])  # the workflow ended
+
+    def test_subagent_without_start_hook_is_still_running(self):
+        # A subagent resumed by SendMessage may send no SubagentStart.
+        self.pre("a1", "two.txt", "t2")
+        hook("Stop", SID, background_tasks=[{"id": "a1", "type": "subagent", "status": "running"}])
+        write("two.txt", "resumed\n")
+        self.post("a1", "two.txt", "t2")
+        self.assertEqual(self.changes()["two.txt"], (PARENT + "/a1", "hook"))
+
+    def test_start_or_stop_without_an_agent_id_releases_nothing(self):
+        hook("PreToolUse", SID, tool_name="Write", tool_use_id="p", tool_input={"file_path": os.path.abspath("m.txt")})
+        hook("SubagentStop", SID)
+        hook("SubagentStart", SID)
+        self.assertEqual(self.claim_lanes(), [SID])
+
+    def test_subagent_call_without_tool_use_id(self):
+        inp = {"file_path": os.path.abspath("noid.txt")}
+        sub_hook("PreToolUse", "a1", tool_name="Write", tool_input=inp)
+        write("noid.txt", "x\n")
+        sub_hook("PostToolUse", "a1", tool_name="Write", tool_input=inp, tool_use_id="late-id")
+        self.assertEqual(self.changes()["noid.txt"], (PARENT + "/a1", "hook"))
+        self.assertEqual(git_store.state("active.json", {}), {})
+
+    def test_sequential_workflow_phases_squash_once_the_workflow_ends(self):
+        wf = [{"id": "w1", "type": "workflow", "status": "running"}]
+        hook("UserPromptSubmit", SID)
+        sub_hook("SubagentStart", "a1")
+        hook("Stop", SID, background_tasks=wf)
+        self.sub_call("a1", "one.txt", "x\n", "t1")
+        sub_hook("SubagentStop", "a1", background_tasks=wf)  # the workflow still has phase 2
+        sub_hook("SubagentStart", "a2")
+        self.sub_call("a2", "two.txt", "x\n", "t2")
+        sub_hook("SubagentStop", "a2", background_tasks=wf)
+        self.assertNotIn(" turn 1 ", self.head_subject())
+        hook("UserPromptSubmit", SID)  # the workflow's completion notification
+        self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (2 tool calls)")
+
+    def test_background_subagent_stop_finishes_the_deferred_squash(self):
+        me = [{"id": "a1", "type": "subagent", "status": "running"}]
+        hook("UserPromptSubmit", SID)
+        sub_hook("SubagentStart", "a1", agent_type="general-purpose")
+        hook("Stop", SID, background_tasks=me)
+        self.sub_call("a1", "bg.txt", "x\n", "t1", agent_type="general-purpose")
+        sub_hook("SubagentStop", "a1", agent_type="general-purpose", background_tasks=me)  # lists itself
+        self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (1 tool calls)")
+
+    def test_session_end_finishes_a_deferred_squash(self):
+        hook("UserPromptSubmit", SID)
+        sub_hook("SubagentStart", "a1")
+        self.tool_call(SID, "p.txt", "p\n", 1)
+        hook("Stop", SID)
+        self.sub_call("a1", "s.txt", "x\n", "t1")
+        hook("SessionEnd", SID)
+        self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (2 tool calls)")
+
+    def test_deferral_does_not_follow_a_queued_prompt_into_the_next_turn(self):
+        tp = os.path.join(self.project(), SID + ".jsonl")
+        prompt = lambda text: json.dumps({"type": "user", "message": {"role": "user", "content": text}}) + "\n"
+        write(tp, "")
+        hook("UserPromptSubmit", SID, transcript_path=tp)
+        with open(tp, "a") as f: f.write(prompt("first"))  # the harness writes it after the hook
+        sub_hook("SubagentStart", "bg", transcript_path=tp)
+        self.tool_call(SID, "p0.txt", "0\n", 0)
+        hook("Stop", SID, transcript_path=tp)  # deferred: bg runs
+        with open(tp, "a") as f: f.write(prompt("queued"))
+        hook("PreToolUse", SID, transcript_path=tp, tool_name="Write", tool_use_id="p1",
+             tool_input={"file_path": os.path.abspath("p1.txt")})  # opens turn 2
+        write("p1.txt", "1\n")
+        hook("PostToolUse", SID, transcript_path=tp, tool_name="Write", tool_use_id="p1",
+             tool_input={"file_path": os.path.abspath("p1.txt")})
+        sub_hook("SubagentStop", "bg", transcript_path=tp)
+        self.assertNotIn(" turn 2 ", self.head_subject())  # turn 2 is still going
+        self.tool_call(SID, "p2.txt", "2\n", 2)
+        hook("Stop", SID, transcript_path=tp, background_tasks=[])
+        self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 2 (2 tool calls)")
+
+    def test_recover_forgets_running_subagents(self):
+        sub_hook("SubagentStart", "a1")
+        run("sync", "--recover")
+        self.assertEqual(git_store.state("subagents.json", {}), {})
 
     def test_in_flight_session_counts_subagent_calls_as_the_session(self):
         hook("PreToolUse", SID, tool_name="Bash", tool_use_id="p", tool_input={})
@@ -370,11 +477,18 @@ class SubagentTest(unittest.TestCase):
         parent, child = self.workflow_transcripts()
         sub_hook("SubagentStop", "a1", transcript_path=parent, agent_transcript_path=child)
         names = self.git("ls-tree", "-r", "--name-only", f"refs/sun/sessions/emma/{SID}").split()
-        self.assertEqual(names, ["subagents/a1/transcript.jsonl"])
+        self.assertEqual(names, ["subagents/a1/turn-0001.jsonl"])
         run("sessions", "import")
         names = self.git("ls-tree", "-r", "--name-only", f"refs/sun/sessions/emma/{SID}").split()
         self.assertNotIn("journal", " ".join(names))
         self.assertIn("subagents/a1/turn-0001.jsonl", names)
+        # A teammate's copy holds the transcript once, keyed by the hook's agent id.
+        sessions.store_chunks(SID, {"subagents/a1/turn-0001.jsonl": read(child),
+                                    "subagents/agent-b2/turn-0001.jsonl": "{}\n",
+                                    "subagents/journal/turn-0001.jsonl": "{}\n"}, u="zoe")
+        team = next(e for e in sessions.session_data() if e["user"] == "zoe")
+        self.assertEqual(sorted(team["subagents"]), ["a1", "b2"])
+        self.assertEqual(read(team["subagents"]["a1"]), read(child))
 
 
 if __name__ == "__main__":

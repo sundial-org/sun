@@ -238,6 +238,7 @@ def cmd_sync(a):
         for claim in git_store.state("active.json", {}).values():
             if claim.get("id"): git_store.git("update-ref", "-d", "refs/sun/pending/" + claim["id"])
         git_store.save_state("active.json", {})
+        git_store.save_state("subagents.json", {})  # stopped agents' subagents are not running
     ev = sync(method="uncertain" if a.recover else "sync")
     print(f"sun: recorded edits as op {ev['id']}" if ev else "sun: nothing to sync")
 

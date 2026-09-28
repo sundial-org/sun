@@ -228,10 +228,12 @@ def session_data():
         subs = {}
         for sub in sorted({n.split("/")[1] for n in git_store.git("ls-tree", "-r", "--name-only", ref)
                            .splitlines() if n.startswith("subagents/")}):
+            if sub == "journal": continue  # a workflow's ledger, stored by earlier imports
+            name = sub[6:] if sub.startswith("agent-") else sub  # earlier imports kept the prefix
             subdir = os.path.join(dest, sid, "subagents")
             os.makedirs(subdir, exist_ok=True)
-            subs[sub] = os.path.join(subdir, sub + ".jsonl")
-            git_store.write_text(subs[sub], session_text(ref, sub))
+            subs[name] = os.path.join(subdir, name + ".jsonl")
+            git_store.write_text(subs[name], session_text(ref, sub))
         idx.append({"id": sid, "user": u, "harness": None, "path": fp,
                     "subagents": subs, "agents": {}, "origin": "team", "ref": ref})
     return idx

@@ -257,6 +257,7 @@ class SubagentTest(unittest.TestCase):
         self.tool_call(SID, "parent.txt", "p\n", 1)
         sub_hook("SubagentStart", "a1")
         self.sub_call("a1", "child.txt", "c\n", "t1")
+        sub_hook("SubagentStop", "a1")  # a foreground Agent call returns before the parent stops
         hook("Stop", SID)
         self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (2 tool calls)")
         head = self.git("rev-parse", git_store.shadow_ref()).strip()
@@ -272,6 +273,31 @@ class SubagentTest(unittest.TestCase):
             self.sub_call(agent, f"{agent}.txt", "x\n", f"t{i}")
         hook("Stop", SID)
         self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (2 tool calls)")
+
+    def test_turn_waits_for_running_subagents_before_squashing(self):
+        hook("UserPromptSubmit", SID)
+        sub_hook("SubagentStart", "a1")
+        self.tool_call(SID, "parent.txt", "p\n", 1)
+        hook("Stop", SID)  # the workflow keeps running after the parent's turn ends
+        self.sub_call("a1", "late.txt", "x\n", "t1")
+        self.assertNotIn(" turn 1 ", self.head_subject())
+        sub_hook("SubagentStop", "a1")
+        self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (2 tool calls)")
+        self.assertEqual(hooks.turn_unit(SID, "claude", git_store.state("turns.json", {})[SID])["files"],
+                         ["late.txt", "parent.txt"])
+
+    def test_next_prompt_squashes_a_turn_left_open_for_subagents(self):
+        hook("UserPromptSubmit", SID)
+        sub_hook("SubagentStart", "a1")
+        self.sub_call("a1", "one.txt", "x\n", "t1")
+        hook("Stop", SID)
+        hook("UserPromptSubmit", SID)  # a background task notification while a1 still runs
+        self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 1 (1 tool calls)")
+        self.sub_call("a1", "two.txt", "x\n", "t2")
+        sub_hook("SubagentStop", "a1")  # the parent's turn 2 is still going: no squash yet
+        self.assertNotIn(" turn 2 ", self.head_subject())
+        hook("Stop", SID)
+        self.assertEqual(self.head_subject(), f"sun: {PARENT} turn 2 (1 tool calls)")
 
     def test_in_flight_session_counts_subagent_calls_as_the_session(self):
         hook("PreToolUse", SID, tool_name="Bash", tool_use_id="p", tool_input={})

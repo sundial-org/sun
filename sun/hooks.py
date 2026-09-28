@@ -24,6 +24,7 @@ class TurnState(TypedDict, total=False):
     seen: int  # Nonzero once the starting prompt has been encountered.
     stopped: bool
     squashed: bool
+    deferred: bool  # the parent stopped while its subagents ran: squash when the last one stops
     branch: str
 
 
@@ -311,6 +312,10 @@ def record_paths(sid, payload, harness):
     git_store.save_state("session-paths.json", paths)
 
 
+running_subagents = lambda sid, harness="claude": \
+    git_store.state("subagents.json", {}).get(git_store.session_key(sid, harness), {})
+
+
 def release_stale(event, sid, payload, harness, active: Dict[str, ActiveCall]):
     """Release claims whose tool call can no longer complete, scoped to who stopped.
 
@@ -352,10 +357,10 @@ def handle_hook(a, payload):
     if event in ("SessionStart", "UserPromptSubmit", "Stop", "SubagentStart", "SubagentStop",
                  "SessionEnd", "Interrupt"):
         release_stale(event, sid, payload, harness, active)
-    if event == "UserPromptSubmit" and not git_store.state("turns.json", {}).get(
-            git_store.session_key(sid, harness), {}).get("stopped"):  # Stop never fired:
+    if event == "UserPromptSubmit":  # Stop never fired, or left the squash to running subagents:
+        stopped = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("stopped")
         history.squash_turn(sid, harness)  # squash the turn + store its transcript slice
-        stop_chunk(sid, payload, harness)
+        if not stopped: stop_chunk(sid, payload, harness)
     elif event == "PreToolUse": prompt_boundary(sid, payload, harness)
     if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
         history.sync(method="hook")  # everything dirty before an agent tool runs is local
@@ -411,10 +416,19 @@ def handle_hook(a, payload):
     elif event == "Stop":  # a queued prompt may end in a text-only turn: no PreToolUse
         before = dict(git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {})
         prompt_boundary(sid, payload, harness)
-        history.squash_turn(sid, harness)
+        # Workflow and background subagents outlive the parent's turn: their calls join the
+        # turn commit when the last one stops, or at the next prompt.
+        if not running_subagents(sid, harness): history.squash_turn(sid, harness)
+        else:
+            turns = git_store.state("turns.json", {})
+            if git_store.session_key(sid, harness) in turns:
+                turns[git_store.session_key(sid, harness)]["deferred"] = True
+                git_store.save_state("turns.json", turns)
         stop_chunk(sid, payload, harness)
         t = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {}
         if before.get("n") and t.get("n") != before.get("n"): t = before  # a queued prompt already opened the next turn
         return turn_unit(sid, harness, t)
     elif event == "SubagentStop":
         subagent_chunk(sid, payload)
+        t = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness)) or {}
+        if t.get("deferred") and not running_subagents(sid, harness): history.squash_turn(sid, harness)

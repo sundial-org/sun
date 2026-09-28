@@ -106,9 +106,10 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 
 Claude Code subagents, started by the Agent tool or by an ultracode workflow, are their own
 actors: `<user>/agent:claude/<session>/<agent id>`. Their operations keep the parent's
-`session_id` and turn, and a turn commit squashes them together with the parent's calls. The
-delegating Agent or Workflow call claims no files, since each subagent's hooks report its own
-calls. When sibling subagents' calls overlap, a file that one call names (Write, Edit) stays
+`session_id` and turn, and a turn commit squashes them together with the parent's calls; when
+workflow or background subagents outlive the parent's turn, the squash waits until the last one
+stops or the next prompt arrives. The delegating Agent or Workflow call claims no files, since
+each subagent's hooks report its own calls. When sibling subagents' calls overlap, a file that one call names (Write, Edit) stays
 with that call and is marked uncertain; two calls naming the same file, or two concurrent shell
 commands, are credited to the parent session, uncertain, rather than to a guessed subagent.
 Installations from before subagent tracking should re-run `sun init` to add the

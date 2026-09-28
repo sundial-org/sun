@@ -7,12 +7,12 @@ Checked 2026-09-28. The container's network policy blocked arxiv.org, huggingfac
 | Claim | Source |
 | --- | --- |
 | Lean held-out traces: 113/120 E4 only, 0 proved; the exit-code rule gives 0.996, equal to every LoRA; crossover withdrawn | `exp/lean:exp_lean/audit/curve-audit.md` |
-| Live Lean facts: A0 90/480 proved, 18 E5; A2 33 proved, 77 partial, 170 E5 | `exp/lean:exp_lean/audit/pre-correction/analysis.json` (`live`) |
-| Lean rows: 120 rows, 2.31M tokens over 4 epochs (about 4.8k per row), max 14,708 tokens, 32 steps, `LAST_ASSISTANT_MESSAGE` | same file, `training` |
-| Lean reviewer (DeepSeek-V3.1): corrected headers matched the scorer on 90.6%; 384/480 targets had no prose | `exp/lean:exp_lean/README.md` |
+| Live Lean facts: A0 90/480 proved, 18 E5; A2 33 proved, 77 partial, 170 E5. A2 round 1 still ran the base model and the adapter was applied at every turn, so this is spillover, not a measured effect | `exp/lean:exp_lean/audit/pre-correction/analysis.json` (`live`) |
+| Lean rows (first checkpoint; later 240-480 rows, 3 epochs, 45-90 steps, LR 4e-4): 120 rows, 2.31M tokens over 4 epochs (about 4.8k per row), max 14,708 tokens, 32 steps, `LAST_ASSISTANT_MESSAGE` | same file, `training` |
+| Lean reviewer (DeepSeek-V3.1): corrected headers matched the scorer on 90.6% of 1,440 live sessions (all arms); 384/480 targets had no prose | `exp/lean:exp_lean/README.md` |
 | Sun analyst: recall 0.583 vs 0.792 for transcripts; 1 cross-session case | `exp/lean:exp_lean/results.tex` |
 | Writing: base 57.1; at 15 edits, weights 90.4% vs context 74.2% of rules on valid stories; final gap -1.2 [-4.0, +1.5]; shared pool +13.7; editor-specific +80.3/+83.1; best-of-4 by Kept +3.6 vs oracle +10.3 | `exp/writing:exp_writing/results.tex`, `runs/.../analysis.json` |
-| Writing weights validity 0.83-0.97, mostly `too_short`; mean words 137-165 vs base 165 | `analysis.json` `diagnostics` |
+| Writing weights validity 0.83-0.97, with `too_short` the largest failure type overall (220/416), but `missing_anchor` dominant at 60, 240, 360 and in one endpoint seed; mean words 137-165 vs base 165 | `analysis.json` `diagnostics` |
 | The Qwen non-thinking renderer does not preserve prefixes across a whole multi-turn transcript, so datums are split per action | `exp/writing:exp_writing/AMENDMENTS.md` |
 
 ## Model and platform
@@ -58,7 +58,7 @@ Checked 2026-09-28. The container's network policy blocked arxiv.org, huggingfac
 | Model critics hallucinate bugs and nitpicks | [McAleese 2024](https://arxiv.org/abs/2407.00215) (**S**) |
 | Self-correction without external feedback fails; self-improvement saturates in 2-3 rounds | [Huang 2024](https://arxiv.org/abs/2310.01798), [Song 2025](https://arxiv.org/abs/2412.02674) (**S**) |
 | Impossible tasks surface cheating; an abort option cuts it | [ImpossibleBench](https://arxiv.org/abs/2510.20270) (**S**) |
-| LLM editors over-edit, even when told to make minimal edits | [LAMP](https://arxiv.org/abs/2409.14509) (**S**) |
+| LLM text idiosyncrasies and professional edits (LAMP). The over-editing claim is not established by this paper; check Beemo (arXiv 2411.04032) | [LAMP](https://arxiv.org/abs/2409.14509) (**S**) |
 | Lean comparator: same statement, permitted axioms, kernel replay | [comparator](https://github.com/leanprover/comparator) |
 | Paired, clustered evaluation statistics | [Miller 2024](https://www.anthropic.com/research/statistical-approach-to-model-evals) |
 
@@ -68,3 +68,7 @@ Checked 2026-09-28. The container's network policy blocked arxiv.org, huggingfac
 - Gröner & Chiou 2026 compares simulated *participants*, not editors.
 - Misra et al.: NeurIPS 2025 with a Jan 2026 arXiv id is consistent (posted after the conference).
 - LeanMarathon uses Mathlib and Codex agents, so it is not comparable to core-only Lean.
+
+## Adversarial check applied (2026-09-28)
+
+Fixed: the playbook writer never sees the secret rules; the primary gap is defined as SFT minus playbook; checkpoints below 120 exist in the pool only; Lean context retrieves reports only (a record is about 5k tokens, max 14.7k); loss is on the corrected turn; the GRPO defaults match the Tinker tutorial (LR 1e-5, group 4, KL 0.05); the 20% unprovable share is our own choice; the live Lean proof rate is labelled unconfirmed.

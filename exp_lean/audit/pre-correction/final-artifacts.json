@@ -1,0 +1,16 @@
+{
+  "files": {
+    "results.tex": "fddc38bdb426f426fd0da03fb55567a88e0292e65d4158e6b0970b1e08ad1f9c",
+    "results.pdf": "4551359a2eef900068f3f5732e1ee703236ab72c00fb38ee6d7d0cbe4b77dbe4",
+    "results-curve.pdf": "37448899f193172147569094950f754ff4f32edb50f08d2e904c71cc93e7e0f6",
+    "README.md": "d3f5b2ac10d8f3cb6b6d39b524e58fbf72260d312c04283b7f54f8d8285e8a42",
+    "requirements-report.txt": "de950d3b75e4ad1a760c121533e06390c84574f7dd0b53c0eaa742ab6d5c2f38"
+  },
+  "pdf_pages": 1,
+  "visual_review": "passed",
+  "latex_warnings": 0,
+  "credential_supervisor": "stopped",
+  "adapters_exported": 4,
+  "human_smoke_test": "pending",
+  "time": 1790395850.983266
+}

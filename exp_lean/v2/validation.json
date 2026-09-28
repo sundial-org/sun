@@ -1,0 +1,33 @@
+{
+  "status": "methods_revised_not_executed",
+  "time": 1790398536.810831,
+  "unit_tests": {
+    "passed": 7,
+    "failed": 0
+  },
+  "legacy_diagnostic": {
+    "passed": false,
+    "failed_or_missing_checks": 16,
+    "expected_exit_code": 2
+  },
+  "pdf_pages": 1,
+  "visual_review": "passed",
+  "latex_warnings": 0,
+  "new_model_calls": 0,
+  "old_run_evidence_modified": false,
+  "files_sha256": {
+    "v2/METHODS.md": "4952faac9e26e2606438fb17d1aacd1a258f7c270aacb65c6951a259c184c26f",
+    "v2/README.md": "55c2bf425e9c5233d05888e18e39cf5d225442ff4d98c1b32dbf79fbb14552d7",
+    "v2/design.json": "f20ca447876c133c6755217bc13b4e23896dd507e3be4aebd4b88d985cb17d63",
+    "v2/methods.pdf": "e4e22184069afbb22010bb5d3d6c0a4a1a27825ff8a3eb9109a657112450e41e",
+    "v2/methods.tex": "594ae16ae30b14a9860992783c80f232a0d58099cac42d770bb53ab348a71e68",
+    "v2/readiness-legacy.json": "028c271290edaac71466921205406027145f39b285d4dc1cc584166fbdffb9e5",
+    "v2/readiness.py": "26b321ccec2179d5d8d26ccbca617d98acffcd6abe515bef708faaf95aa0cab1",
+    "v2/test_readiness.py": "5ad78d68c452565abf80b09a7dc016569cefae09d1a28d5c669cb692078ebe94"
+  },
+  "limits": [
+    "Retrospective gate diagnostic only; not integrated into a v2 runner.",
+    "No new model results or power calibration.",
+    "All prerequisites are enumerated in design.json."
+  ]
+}

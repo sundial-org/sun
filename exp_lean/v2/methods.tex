@@ -1,0 +1,86 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[margin=0.68in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,booktabs,microtype,amsmath}
+\usepackage[hidelinks]{hyperref}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\begin{document}
+{\Large\bfseries Ten Provers: revised experimental methods}
+\hfill {\small v2 draft}
+\vspace{3pt}\hrule
+
+\textbf{Status.} The first run is a failed calibration study: 113/120 frozen
+traces were failures and none was proved or partial. Its crossover claim is
+withdrawn. This revision specifies a new study; it contains no new model results.
+
+\textbf{Keep the core experiment.} Ten Qwen3-8B workers per arm, four rounds of
+120 sessions per arm, three compiler calls per session, a frozen stronger
+reviewer, and a deterministic scorer. Context and LoRA use the same cumulative
+base-arm review pool. Only the corrected final report carries training loss.
+The other arms' live reviews are retained; live proving effects are descriptive.
+
+\textbf{Question A: learning to report.} Primary outcome: exact status-and-event
+header agreement on fixed natural base-prover trajectories, weights minus
+context at 480 reviews. The context arm has an 8,000-token cap, so this is a
+practical comparison under that limit. Publish retrieved example counts and
+tokens. A separate control gives context and LoRA the same complete examples
+and evidence. Do not call the primary comparison equal exposure.
+
+\textbf{Gate the task distribution.} Split whole template families and connected
+dependencies, not numeric variants. Development starts with 20 groups and 120
+sessions: require 20--70\% proved, at least 20\% unproved, no truth pattern above
+75\%, exit-rule score at most 0.85, and tool/path/no-compile failure rates at most
+2\% each. Repair path examples and repeated seeds. After tuning and sample-size
+planning, generate sealed traces once: at least 60 groups/240 traces, at least
+15\% proved and 15\% unproved, no pattern above 80\%, and exit-rule score at most
+0.90. Failure ends the confirmatory study; never replenish the sealed set to
+improve its results. These are proposed design floors, not power guarantees.
+
+\textbf{Make the target auditable.} One mutually exclusive status (proved,
+partial, unproved), E1--E6 events, and a nonempty explanation with receipt
+references. Validate event semantics with independent Lean fixtures; E6 requires
+actual dependency use, not merely two \texttt{sorryAx} lists. Keep a separate,
+constructed challenge set with at least 20 positive/negative groups per event.
+Qualify the reviewer on development evidence: complete targets, at least 95\%
+exact headers and 90\% precision/recall per event. Complete the requested human
+smoke test on 30 blinded cases. Scorer labels never become training targets.
+
+\textbf{Controls and schedule.} Show constant-report and exit-code baselines;
+run self-report and shuffled-target SFT controls plus the identical-example
+pair. Checkpoints: 0, 15, 30, 60, 120, 240, 360, 480 reviews. Retrain from base
+with three fixed seeds and one development-selected recipe. Report optimizer
+steps and token budgets. Five sampled reports per trace estimate report
+variability, not five independent problem instances. Prose presence is checked;
+semantic explanation quality requires a separate blind audit.
+
+\textbf{Inference and allowable claims.} Plan sample size on development paired
+differences for a 0.05 exact-match effect and 80\% power; simulate null coverage
+and correlation sensitivity before freeze. Bootstrap complete independent
+group vectors, averaging within groups and over the three registered training
+seeds. Report conditional intervals and every seed's effect. Use one final
+primary test and simultaneous 95\% bands across the curve. A crossover is the
+first \emph{measured} sustained positive lower band; no interpolation and no
+``never'' from nonsignificance. Correction-specific claims require beating the
+self-report and shuffled controls under a separate multiplicity correction.
+
+\textbf{Question B: does Sun help review?} Primary contrast: Sun versus ordinary
+Git with equivalent underlying receipts, diffs, attribution, and history.
+Transcripts alone are secondary. Freeze snapshots before the target session's
+review. Use at least 30 E3-positive, 30 E6-positive, and 60 clean independent
+groups, with power planning; report natural and constructed strata separately.
+Each analyst gets 15 calls and 24,000 returned-tool tokens. Require improved
+recall without more than a five-point false-positive increase. Retain incomplete
+episodes and repeat with three analyst seeds.
+
+{\footnotesize\textbf{Before execution.} Implement v2 scorer fixtures, interfaces,
+catalogues and runner enforcement; qualify the reviewer, complete human checks,
+calibrate power, and estimate cost. Freeze all source/data/prompt hashes and
+initialize Sun for the new run and arms. The implemented retrospective rejection
+checks do not certify a v2 launch. Full methods: \texttt{v2/METHODS.md}.
+Methodological references:
+\href{https://arxiv.org/abs/2305.16938}{Mosbach et al. (2023)},
+\href{https://arxiv.org/abs/2411.00640}{Miller (2024)},
+\href{https://aclanthology.org/P18-1128/}{Dror et al. (2018)}.}
+\end{document}

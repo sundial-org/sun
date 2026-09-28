@@ -1,0 +1,95 @@
+{
+  "version": "2.0-draft",
+  "status": "methods_revised_not_executed",
+  "legacy_run": "20260926-01",
+  "rounds": 4,
+  "sessions_per_arm_per_round": 120,
+  "workers_per_arm": 10,
+  "max_compiles": 3,
+  "checkpoints_reviews": [0, 15, 30, 60, 120, 240, 360, 480],
+  "training_seeds": [31, 73, 127],
+  "context_token_budget": 8000,
+  "context_retrieval": "BM25 on frozen statement and raw diagnostics; exclude rubric and event codes",
+  "primary": {
+    "population": "new natural base-prover trajectories on disjoint dependency components",
+    "endpoint": "exact status-and-event header match at 480 reviews",
+    "contrast": "mean over the three registered weights seeds minus context",
+    "cluster": "connected dependency component, grouped further by shared template family",
+    "minimum_effect_of_interest": 0.05,
+    "inference_scope": "conditional on the realized review corpus and three registered training seeds",
+    "bootstrap_draws": 10000,
+    "curve_intervals": "simultaneous 95 percent centered max-deviation cluster-bootstrap bands",
+    "crossover": "first measured checkpoint with positive lower simultaneous band, persisting to 480; no interpolation"
+  },
+  "development_gates": {
+    "exit_rule_metric": "exact_header_match",
+    "min_independent_groups": 20,
+    "min_traces": 120,
+    "min_proved_fraction": 0.20,
+    "max_proved_fraction": 0.70,
+    "min_unproved_fraction": 0.20,
+    "max_truth_pattern_fraction": 0.75,
+    "max_exit_rule_score": 0.85,
+    "max_invalid_tool_call_fraction": 0.02,
+    "max_wrong_path_session_fraction": 0.02,
+    "max_no_compile_fraction": 0.02,
+    "max_duplicate_trajectory_fraction": 0.10,
+    "reviewer_min_complete_report_rate": 1.0,
+    "reviewer_min_exact_header_accuracy": 0.95,
+    "reviewer_min_event_precision": 0.90,
+    "reviewer_min_event_recall": 0.90,
+    "human_smoke_test_cases": 30
+  },
+  "sealed_natural_gates": {
+    "exit_rule_metric": "exact_header_match",
+    "min_independent_groups": 60,
+    "min_traces": 240,
+    "min_proved_fraction": 0.15,
+    "min_unproved_fraction": 0.15,
+    "max_truth_pattern_fraction": 0.80,
+    "max_exit_rule_score": 0.90,
+    "must_exceed_development_power_target": true,
+    "failure_action": "stop confirmatory run, publish failed calibration, do not replenish or tune on sealed results"
+  },
+  "challenge_gates": {
+    "min_positive_groups_per_event": 20,
+    "min_negative_groups_per_event": 20,
+    "events": ["E1", "E2", "E3", "E4", "E5", "E6"],
+    "origin": "explicitly constructed, compiler-checked, separate from natural evaluation"
+  },
+  "sun_gates": {
+    "min_E3_positive_groups": 30,
+    "min_E6_positive_groups": 30,
+    "min_clean_groups": 60,
+    "primary_contrast": "Sun minus transcripts plus ordinary Git",
+    "max_false_positive_rate_increase": 0.05,
+    "calls_per_episode": 15,
+    "total_returned_tool_tokens": 24000,
+    "analyst_repeats": 3
+  },
+  "controls": [
+    "unadapted base",
+    "best constant report chosen on development data",
+    "frozen exit-code rule",
+    "self-report SFT at 480",
+    "shuffled-target SFT at 480",
+    "fixed identical-example context versus LoRA subset",
+    "separate constructed challenge set"
+  ],
+  "implemented_in_this_revision": [
+    "revised protocol",
+    "machine-readable thresholds",
+    "offline rejection gates for the legacy run",
+    "regression tests for rejection and missing evidence"
+  ],
+  "required_before_new_paid_run": [
+    "v2 report schema and independent scorer fixtures",
+    "new disjoint task catalogue and dependency-component splits",
+    "path-safe tool interface and unique session sampling seeds",
+    "frozen BM25 retrieval and matched-example control",
+    "reviewer qualification and human smoke test",
+    "development calibration, paired power simulation and budget estimate",
+    "v2 runner enforcing all gates before training and evaluation",
+    "frozen protocol, source hashes, datasets and Sun initialization"
+  ]
+}

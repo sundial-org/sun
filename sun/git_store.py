@@ -226,7 +226,14 @@ def user():  # the git user on whose machine the change happened; owns every eve
 local = lambda u=None: f"{u or user()}/local"
 
 
-agent = lambda sid, harness="claude", u=None: f"{u or user()}/agent:{harness}/{sid}"
+# A subagent (Claude's Agent tool, a workflow agent) runs inside its parent's session and adds
+# its own id: <user>/agent:<harness>/<parent session>/<agent id>.
+agent = lambda sid, harness="claude", u=None, sub=None: \
+    f"{u or user()}/agent:{harness}/{sid}" + (f"/{sub}" if sub else "")
+
+
+in_session = lambda actor, sid, harness="claude": \
+    actor == agent(sid, harness) or actor.startswith(agent(sid, harness) + "/")  # or its subagents
 
 
 session_key = lambda sid, harness="claude": sid if harness == "claude" else f"{harness}/{sid}"
@@ -255,7 +262,9 @@ def actor_info(actor):
     owner, source = (actor.split("/", 1) + [""])[:2]
     if source.startswith("agent:"):
         harness, _, session = source[6:].partition("/")
+        session, _, sub = session.partition("/")
         return {"id": actor, "user": owner, "kind": "agent", "harness": harness,
-                "session": session}
+                "session": session, "agent": sub or None,
+                "parent": f"{owner}/agent:{harness}/{session}" if sub else None}
     return {"id": actor, "user": owner, "kind": "unknown" if actor == "unknown" else "human", "harness": None,
-            "session": None}
+            "session": None, "agent": None, "parent": None}

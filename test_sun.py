@@ -1289,7 +1289,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(commit["git_author"]["name"], AGENT)
         self.assertEqual(commit["attribution"]["actors"][0], {
             "id": AGENT, "user": "emma", "kind": "agent", "harness": "claude",
-            "session": "session12345"})
+            "session": "session12345", "agent": None, "parent": None})
         operation = commit["operations"][0]
         self.assertEqual(operation["actor"], AGENT)
         self.assertEqual(operation["session_id"], "session12345")

@@ -37,23 +37,48 @@ class ActiveCall(TypedDict, total=False):
     turn: int
     all_files: bool
     overlap: List[str]
-    ambiguous_actor: bool
+    ambiguous_actor: bool  # overlaps another session's call: the edit's actor is unknown
+    ambiguous_agent: bool  # overlaps a sibling subagent's call: credit the session, not one agent
     actor: str
+    session: str  # session key
+    lane: str  # session key, plus /<agent id> for a subagent's call
+    agent: str  # subagent id, or None in the session's main thread
 
 
-READ_TOOLS = {"Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch", "view_image"}
+# Tools that never write to the repository: their calls claim no files.
+READ_TOOLS = {"Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch", "view_image",
+              "ToolSearch", "TodoWrite", "TaskCreate", "TaskGet", "TaskList", "TaskUpdate",
+              "TaskOutput", "TaskStop", "SendMessage", "ListAgents", "AskUserQuestion", "Skill"}
+
+
+# Tools that start subagents. The subagents' own tool calls carry their agent_id and are
+# attributed to them, so the delegating call claims nothing (a claim would span the whole run).
+DELEGATING_TOOLS = {"Agent", "Task", "Workflow"}
 
 
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse",
-               "PostToolUseFailure", "Stop", "SessionEnd")
+               "PostToolUseFailure", "Stop", "SubagentStart", "SubagentStop", "SessionEnd")
 
 
-CODEX_HOOK_EVENTS = tuple(e for e in HOOK_EVENTS if e != "PostToolUseFailure") + (
-    "SubagentStart", "SubagentStop", "Interrupt")
+CODEX_HOOK_EVENTS = tuple(e for e in HOOK_EVENTS if e != "PostToolUseFailure") + ("Interrupt",)
+
+
+def agent_of(payload):  # the subagent a hook fires in; None in the session's main thread
+    sub = payload.get("agent_id")
+    return re.sub(r"[^\w-]", "_", str(sub))[:80] if sub else None  # one safe path segment
+
+
+lane_key = lambda sid, payload, harness="claude": \
+    git_store.session_key(sid, harness) + (f"/{agent_of(payload)}" if agent_of(payload) else "")
 
 
 call_key = lambda sid, payload, harness="claude": \
-    f"{git_store.session_key(sid, harness)}/{payload.get('tool_use_id') or ''}"
+    f"{lane_key(sid, payload, harness)}/{payload.get('tool_use_id') or ''}"
+
+
+# Claims recorded before subagent lanes carry neither field: their key is <session>/<call>.
+claim_session = lambda key, claim: claim.get("session") or key.rsplit("/", 1)[0]
+claim_lane = lambda key, claim: claim.get("lane") or key.rsplit("/", 1)[0]
 
 
 tool_file = lambda inp: inp.get("file_path") or inp.get("notebook_path")
@@ -87,8 +112,9 @@ def relative_tool_files(tool, inp):
 # Attribution covers the observed pre/post hook interval. Background writes after
 # completion, or writes without paired hooks, cannot reliably belong to this call.
 def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
+    if payload.get("tool_name") in DELEGATING_TOOLS: return  # never claimed
     key = call_key(sid, payload, harness)
-    if key not in active: key = call_key(sid, {}, harness)
+    if key not in active: key = call_key(sid, {"agent_id": payload.get("agent_id")}, harness)
     st = active.get(key)
     if not st: return  # duplicate completion, or no observed pre-call boundary
     others = {f for k, s in active.items() if k != key for f in s["files"]}
@@ -111,8 +137,12 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
     after, tip = git_store.snapshot_tree(), git_store.history_head()
     recorded = set(git_store.tree_changes(st["pre"], tip))
     dirty = set(git_store.tree_changes(tip, after))
+    # An unknown-scope call never absorbs a file its own session's sibling call names: that
+    # call is live and records it. Another session's claim may be abandoned, so share it.
+    siblings = {f for k, s in active.items() if k != key and claim_session(k, s) == claim_session(key, st)
+                for f in s["files"]} if st.get("all_files") else set()
     files = [f for f in git_store.tree_changes(st["before"], after)
-             if (f not in others or f in st.get("overlap", []) or "*" in st.get("overlap", []))
+             if (f not in others or f not in siblings and (f in st.get("overlap", []) or "*" in st.get("overlap", [])))
              and (f not in recorded or f in dirty)]
     if not files:
         release()
@@ -153,8 +183,10 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
         uncertain = a_files if payload.get("hook_event_name") == "PostToolUseFailure" or "*" in overlap \
             else [f for f in a_files if f in overlap]
         unknown_actor = st.get("ambiguous_actor") or payload.get("hook_event_name") == "PostToolUseFailure"
+        session_actor = actor.rsplit("/", 1)[0] if st.get("agent") else actor
         for owner, group, method in ((actor, [f for f in a_files if f not in uncertain], "hook"),
-                                      ("unknown" if unknown_actor else actor, uncertain, "uncertain")):
+                                      ("unknown" if unknown_actor else session_actor if st.get("ambiguous_agent")
+                                       else actor, uncertain, "uncertain")):
             if group:
                 entries.append(dict(type="edit", actor=owner, session_id=sid, turn=f"turn{turn}",
                        patch_id=git_store.patch_id(c), tool_calls=[call], edits=[
@@ -227,7 +259,7 @@ def stop_chunk(sid, payload, harness="claude"):
 
 
 def subagent_chunk(sid, payload):
-    tp, sub = payload.get("agent_transcript_path"), payload.get("agent_id")
+    tp, sub = payload.get("agent_transcript_path"), agent_of(payload)
     if not (tp and sub and os.path.exists(tp) and git_store.cfg_share_sessions()): return
     session_store.store_chunks(sid, {f"subagents/{sub}/transcript.jsonl": git_store.read_text(tp, errors="replace")})
 
@@ -238,7 +270,7 @@ def turn_unit(sid, harness, t):
     if not (t.get("start") and tip and t.get("branch") == git_store.shadow_ref()): return None
     n, mine = t.get("n"), []
     for e in history.events():  # after the squash, the turn's events sit on the turn commit
-        if e.get("session_id") == sid and e.get("turn") == f"turn{n}" and e["actor"] == git_store.agent(sid, harness):
+        if e.get("session_id") == sid and e.get("turn") == f"turn{n}" and git_store.in_session(e["actor"], sid, harness):
             mine.append(e)
     files = sorted({d["file"] for e in mine for d in e.get("edits") or []})
     at = mine[-1]["commit"] if mine and git_store.quiet("git", "merge-base", "--is-ancestor", mine[-1]["commit"], tip).returncode == 0 else tip
@@ -262,18 +294,54 @@ def cmd_hook(a):
         except (SystemExit, Exception) as exc: print(f"sun: {exc}", file=sys.stderr)
 
 
+def record_paths(sid, payload, harness):
+    # Claude hooks inside a subagent carry the parent's session_id and transcript_path plus
+    # agent_id; only SubagentStop names the subagent's own transcript, so look for it earlier.
+    tp, sub, subpath = payload.get("transcript_path"), agent_of(payload), payload.get("agent_transcript_path")
+    if not (tp or (sub and subpath)): return
+    paths = git_store.state("session-paths.json", {})
+    entry = paths.setdefault(git_store.session_key(sid, harness),
+                             {"id": sid, "harness": harness, "path": None, "subagents": {}})
+    if tp: entry["path"] = os.path.abspath(tp)
+    if sub:
+        known = entry.setdefault("subagents", {})
+        found = subpath or (sub not in known and tp and session_store.subagent_transcript(tp, sub))
+        if found: known[sub] = os.path.abspath(found)
+        if payload.get("agent_type"): entry.setdefault("agents", {}).setdefault(sub, {})["type"] = payload["agent_type"]
+    git_store.save_state("session-paths.json", paths)
+
+
+def release_stale(event, sid, payload, harness, active: Dict[str, ActiveCall]):
+    """Release claims whose tool call can no longer complete, scoped to who stopped.
+
+    A session start or end releases the whole session. A subagent's stop releases its own calls.
+    The main thread's Stop or prompt releases its own calls and those of subagents not known to
+    be running: workflow and background subagents keep working across the parent's turns."""
+    session, sub = git_store.session_key(sid, harness), agent_of(payload)
+    lanes = git_store.state("subagents.json", {})
+    running = lanes.get(session, {})
+    whole = event in ("SessionEnd", "Interrupt") or event == "SessionStart" and payload.get("source") != "compact"
+    stale = [key for key, claim in active.items() if claim_session(key, claim) == session and (
+        whole or (claim.get("agent") == sub if sub else claim.get("agent") not in running))]
+    for key in stale:
+        claim = active.pop(key)
+        if claim.get("id"): git_store.git("update-ref", "-d", "refs/sun/pending/" + claim["id"])
+    if stale:
+        git_store.save_state("active.json", active)
+        history.sync(method="uncertain")
+    if whole and session in lanes or sub and event in ("SubagentStart", "SubagentStop"):
+        if whole: running = {}
+        elif event == "SubagentStart": running[sub] = payload.get("agent_type") or ""
+        else: running.pop(sub, None)
+        if running: lanes[session] = running
+        else: lanes.pop(session, None)
+        git_store.save_state("subagents.json", lanes)
+
+
 def handle_hook(a, payload):
     event, sid, harness = (payload.get("hook_event_name", ""),
                            payload.get("session_id", "?"), a.harness)
-    tp = payload.get("transcript_path")
-    sub, subpath = payload.get("agent_id"), payload.get("agent_transcript_path")
-    if tp or (sub and subpath):
-        paths = git_store.state("session-paths.json", {})
-        entry = paths.setdefault(git_store.session_key(sid, harness),
-                                 {"id": sid, "harness": harness, "path": None, "subagents": {}})
-        if tp: entry["path"] = os.path.abspath(tp)
-        if sub and subpath: entry["subagents"][sub] = os.path.abspath(subpath)
-        git_store.save_state("session-paths.json", paths)
+    record_paths(sid, payload, harness)
     active: Dict[str, ActiveCall] = git_store.state("active.json", {})
     # Old-format claims cannot identify a live call or provide a before snapshot.
     obsolete = [key for key, claim in active.items() if not claim.get("id") or not claim.get("branch")]
@@ -281,15 +349,9 @@ def handle_hook(a, payload):
         for key in obsolete: active.pop(key)
         git_store.save_state("active.json", active)
         history.sync(method="uncertain")
-    if event in ("SessionStart", "UserPromptSubmit", "Stop", "SessionEnd", "Interrupt"):
-        prefix = git_store.session_key(sid, harness) + "/"
-        stale = [key for key in active if key.startswith(prefix)]
-        for key in stale:
-            claim = active.pop(key)
-            if claim.get("id"): git_store.git("update-ref", "-d", "refs/sun/pending/" + claim["id"])
-        if stale:
-            git_store.save_state("active.json", active)
-            history.sync(method="uncertain")
+    if event in ("SessionStart", "UserPromptSubmit", "Stop", "SubagentStart", "SubagentStop",
+                 "SessionEnd", "Interrupt"):
+        release_stale(event, sid, payload, harness, active)
     if event == "UserPromptSubmit" and not git_store.state("turns.json", {}).get(
             git_store.session_key(sid, harness), {}).get("stopped"):  # Stop never fired:
         history.squash_turn(sid, harness)  # squash the turn + store its transcript slice
@@ -313,11 +375,12 @@ def handle_hook(a, payload):
         git_store.save_state("turns.json", turns)
     elif event == "PreToolUse":  # claim the file BEFORE the write exists
         tool, inp = payload.get("tool_name", "?"), payload.get("tool_input") or {}
-        key = call_key(sid, payload, harness)
+        if tool in DELEGATING_TOOLS: return
+        key, lane, sub = call_key(sid, payload, harness), lane_key(sid, payload, harness), agent_of(payload)
         if key in active: return
         files = relative_tool_files(tool, inp) if tool not in READ_TOOLS else []
         broad = not files and tool not in READ_TOOLS
-        overlap, ambiguous_actor = set(), False
+        overlap, ambiguous_actor, ambiguous_agent = set(), False, False
         for other_key, other in active.items():
             shared = set(files) & set(other["files"])
             if broad: shared.update(other["files"])
@@ -327,13 +390,18 @@ def handle_hook(a, payload):
             if broad and other.get("all_files"):
                 other["overlap"] = ["*"]
                 overlap.add("*")
-            if (shared or broad and other.get("all_files")) and not other_key.startswith(
-                    git_store.session_key(sid, harness) + "/"):
+            if not (shared or broad and other.get("all_files")): continue
+            if claim_session(other_key, other) != git_store.session_key(sid, harness):
                 other["ambiguous_actor"] = ambiguous_actor = True
+            # Sibling subagents: a named file stays with the call naming it, but two calls
+            # naming it, or two unknown-scope calls, leave only the session certain.
+            elif claim_lane(other_key, other) != lane and bool(files) == bool(other["files"]):
+                other["ambiguous_agent"] = ambiguous_agent = True
         active[key] = {"files": files, "all_files": broad, "overlap": sorted(overlap),
-                       "ambiguous_actor": ambiguous_actor,
-                       "id": uuid.uuid4().hex,
-                       "actor": git_store.agent(sid, harness),
+                       "ambiguous_actor": ambiguous_actor, "ambiguous_agent": ambiguous_agent,
+                       "id": uuid.uuid4().hex, "session": git_store.session_key(sid, harness),
+                       "lane": lane, "agent": sub,
+                       "actor": git_store.agent(sid, harness, sub=sub),
                        "branch": git_store.shadow_ref(), "pre": git_store.history_head(), "before": git_store.snapshot_tree(),
                        "turn": git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("n", 0)}
         git_store.git("update-ref", "refs/sun/pending/" + active[key]["id"], active[key]["before"])

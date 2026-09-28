@@ -186,8 +186,8 @@ def agent_shell():  # refuse the terminal form here: it is the one check that co
     return bool(git_store.state("active.json", {})) or harness_env()
 
 
-def in_flight_session():  # the one agent session whose tool call is running, if exactly one is
-    keys = {k.rsplit("/", 1)[0] for k in git_store.state("active.json", {})}
+def in_flight_session():  # the one agent session whose tool calls are running, if exactly one is
+    keys = {c.get("session") or k.rsplit("/", 1)[0] for k, c in git_store.state("active.json", {}).items()}
     return keys.pop() if len(keys) == 1 else None
 
 

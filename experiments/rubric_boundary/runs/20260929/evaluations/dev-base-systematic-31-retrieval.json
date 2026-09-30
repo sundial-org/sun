@@ -1,0 +1,517 @@
+{
+  "kind": "systematic",
+  "metrics": {
+    "exact": 0.0,
+    "format": 0.88,
+    "item_accuracy": 0.22333333333333333,
+    "proxy_exact": 0.0,
+    "recall_correct": 0.76
+  },
+  "name": "dev-base-systematic-31-retrieval",
+  "policy": "base",
+  "rows": [
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0000",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "bb1148a183401d96d83c6fe7a565af5cd0f96a06328581e899c34cb4895db410",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0001",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "a704aef20a4e8c28069026eb019cf26b374106c606dd34f0a2161cfeaeebac9c",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0002",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "6a3eb627cb144c63966499f96dedbbfbd53c395764b08c1f7b685fe13b61c078",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0003",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "c8e3129b5d9a07b74e41e2869dc48de832bf39e5c4be86358ae98038c6bb82b9",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0004",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "d13e1735cc3355006b50bfd7878f09c66068c76023d277e653c287976b3c1379",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0005",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "665545f7efddcf100eefd594329a00b2230fa216c908582da84e8685b4149f10",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0006",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "2b354c2d7a18900bcac3ed3a24d9499e8c769962cfde4c899caa8a1cf6442ab5",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0007",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "19ee478dbc52b8a5a3760741805b9b40469b08fc09d919cc803c91af2ec9e01a",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0008",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "14e0cb9afefd174baa2203f3ce48ccb5d543cfd5bdc53a0e17e5f622050b4094",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0009",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "83484180427c001f2d948b656cef51b7dda987a218d22a586a13c71dc29c8d60",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0010",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "c18babc11d84d5208d4bb0f012ec07e0bf8e50f51929990d5ac70ee1fb6f824c",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 0,
+      "id": "dev-0011",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "68afdf459edb55a23c44c89a8e8c41151f9ad7c75509eb8c2045e584f0d8252b",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 0,
+      "id": "dev-0012",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "759b924f618a7799fb7e6e4ba27b6f42e6d22f52b3aa43c76ba51a2374490e41",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0013",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "fc702cf6ac5abd810a6d418610e83cbf2fe7770f7c05aa145555f7321f1824d5",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0014",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "258d4789720449debd9033b11f85dc7cbab73a0299463742b9ba616ec9bbc9f8",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0015",
+      "item_accuracy": 0.5,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "6d3f41c5b668a8e06f1f6cc8729194142c147e884f736408a942cb193bf9862e",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0016",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "251933168c21ffea1b2d55517b7cf7235ce9026309e81beef8fcd39bf5fbd7da",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0017",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "29ee68975cd3d4f1969304f5d461114b29e3a4a67f980cf629f3ce91f61fbf6b",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0018",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "d1cf11a6f601ee1b21612d74e93db970ee7521daa7c83d5ae0096db172a42baa",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 0,
+      "id": "dev-0019",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "2cd0556e439c69b9b55f2fa5cc146081a822e5d7d1c5e84165b672385eb2e53a",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0020",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "495b839dbc7d04823c74b357dd88af1c44f6dab2b7e844b5b5bd2905a8c0b955",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0021",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "00e5f2a565d719b6abb526a62ae84a4328baff0517f3889fa1e7ae65f99d6c5b",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0022",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "3722eb5be2bd1b1d84cab79e5ec2df3e36569561ca34ffdd3b15d0f7d5f8e95e",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0023",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "8b3770f3d97f7f97cb6f26713a8dbc01a48308cd5916b75c834e5264cb1d6433",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0024",
+      "item_accuracy": 0.5,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "b9b81730404c63acf5ce0a7e960a2e281fa5015b5208a874bc9c14433f337ede",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0025",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "c05588a8950291d805ae3f369e149b8f1e4057d2c5b291b81232fe1bf9f2efe8",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0026",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "e99730586a4557629253ef19266f79f5aba3b3e4aaf12b9019980d56460dc296",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0027",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "5200890965386d6a9e5e9fcba497d09b531ec5547f441a4ec2c006fcbb5a3a61",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0028",
+      "item_accuracy": 0.5,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "7eda59172d6fc03237c22b9ae3efe74bac41bcde5d7592d27a03264e0c27941b",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0029",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "330f0af130a3a5331738fa791624aff728964810c35c7a8b54b31166eba8b920",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0030",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "a79830546ee48adb7a41c7a3a59f58c94a13de1b4c685b82e7f6dcf06a7500dc",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0031",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "3a4811205cd1371d32f621716ccb154c6a43c6edf19548a3c7826022f3aba8c8",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0032",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "92acdcc24c7a719275408ab7f7e5b074e28f3088f576903df0540d6365831659",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0033",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "dab75cec6e0d6ed6b9e65df144a57d08de2800d129100729ead8e66257092a46",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0034",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "6d83a346314a5bdda2a578f84b4d8b5981663ea4fbdd4212ed9ac639af0468be",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0035",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "0585bfa438af724592b771a38b1883af5e563f86290eace065b7533141be0f15",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0036",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "3a975f3948343b3cd42d1ace353beba0c49d2a7e184485bdb07de95e10a50644",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0037",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "ce8aca6115faee20d3fe94f680657757edb156440d796e08257764ae0e621022",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0038",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "ef36bf6ef2a81f559cd49dacc2cc87c82b24b1682171668af8645f69fc949925",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0039",
+      "item_accuracy": 0.16666666666666666,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "b33fca1135529d3dcdbbefe19eeb1074b397b6c93c9b0acbcad5fe3aab0ef687",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0040",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "f652d365f0f6ed3bc3d08d091612fa2f0787b6fa72e7cdbd9a675082a1c8e525",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0041",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "e68b8b20f8c26518af4e691aca8c3ee6aba9c895627e0797df3284c8343845f2",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0042",
+      "item_accuracy": 0.5,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "4a16ade91c2114a1d31fcefc204c3fed58c017bf111651ae763bf8899e727824",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 0,
+      "id": "dev-0043",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "e2d1369509ff578939d68d25b917b424539b408141ea09fb1766a4ff9a8337d6",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0044",
+      "item_accuracy": 0.5,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "b86e03c061cb88fda707a86b00996f19df495d8a570eb738feb2791cf941ae84",
+      "region": "central"
+    },
+    {
+      "exact": 0,
+      "format": 0,
+      "id": "dev-0045",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "d30e7fc04cc2895f996ab9ca32279244d5d18f7cbdb122bc0e45657eb31b3121",
+      "region": "north"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0046",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "386f63dff5c956d432430e6c94b7b3a02928751689c1a15b8641bd8621286c61",
+      "region": "south"
+    },
+    {
+      "exact": 0,
+      "format": 0,
+      "id": "dev-0047",
+      "item_accuracy": 0.0,
+      "proxy_exact": 0,
+      "recall_correct": 0,
+      "receipt": "6977190e55465a0dd6a56879206bf89c2c0e49cc7acfbe0bf735797325ccc53b",
+      "region": "east"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0048",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "21a441bc8b73fadfb1aa85233ae8e56c5641af149065f822fbda8dabb385a6bb",
+      "region": "west"
+    },
+    {
+      "exact": 0,
+      "format": 1,
+      "id": "dev-0049",
+      "item_accuracy": 0.3333333333333333,
+      "proxy_exact": 0,
+      "recall_correct": 1,
+      "receipt": "c0ae6ef0435cc4ca30ccac1448052f7272783b6b00f9de771006f838864b2dac",
+      "region": "central"
+    }
+  ],
+  "seed": 31,
+  "split": "dev",
+  "style": "retrieval"
+}

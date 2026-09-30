@@ -1,0 +1,121 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+\usepackage[pagenumbers]{cvpr}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\hfuzz=0pt\vfuzz=0pt
+\newcommand{\claim}[2]{#2}
+\title{Reviews in Context or in Weights?\\Audited Pilots and a Controlled Comparison}
+\author{Draft paper\quad 28 September 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+\claim{C01}{We study whether a small agent should reuse a review history through context or weight updates, asking when adaptation improves the reviewed behavior while preserving task validity.}
+\claim{C02}{Two Qwen3-8B pilots motivate a controlled follow-up: a Lean reporting evaluation collapsed to a compile-outcome shortcut, while a writing evaluation learned planted editorial rules but lost valid submissions.}
+\claim{C03}{At the writing endpoint, the live weights-minus-context gap was $-1.2$ percentage points (95\% interval $[-4.0,1.5]$); training on a shared edited archive yielded a held-out gap of $+13.7$ $[11.4,16.0]$.}
+\claim{C04}{These results support archive-specific adaptation, but establish neither a lasting review-count crossover nor retention of general capabilities.}
+\claim{C05}{We specify a shared-review comparison against a compact playbook, with coverage gates, validity safeguards, and clustered inference; this revised experiment remains unexecuted.}
+\end{abstract}
+
+\section{Introduction}
+\claim{C06}{Edits can convey preferences that were absent from the original instruction: prior work infers natural-language preferences from user revisions and retrieves them for later requests~\cite{gao}.}
+\claim{C07}{Our question is where to store that information: in retrieved reviews, in a maintained instruction playbook, or in a model adapter trained on corrected outputs.}
+\claim{C08}{Our conditional thesis is that weight adaptation may eventually outperform a strong context baseline on identical review evidence without materially degrading public-task completion.}
+
+\claim{C09}{Our pilots reveal two obstacles to interpreting such a comparison: a high reporting score can conceal missing event coverage, and a high conditional style score can conceal invalid submissions.}
+\claim{C10}{For writing, we therefore change the primary comparison from separately evolving workflows to representations of a common review archive, while retaining the live loop as a secondary deployment test; Lean already used shared reviews.}
+\claim{C11}{This draft contributes audited pilots and a protocol for the unresolved comparison; neither superiority over a playbook nor continual learning has been demonstrated.}
+
+\section{Related work}
+\claim{C12}{Long-context experiments compare retrieved demonstrations with fine-tuning and find that the relative ranking depends on data scale and task; LoRA does not uniformly overtake in-context learning~\cite{bertsch}.}
+\claim{C13}{We extend this comparison to reviewer corrections under a fixed evidence pool and validity constraints, without assuming a universal threshold.}
+\claim{C14}{CIPHER retrieves preferences inferred from edits~\cite{gao}, while Agentic Context Engineering organizes experience into a playbook maintained through incremental updates~\cite{ace}.}
+\claim{C15}{These approaches motivate a learned summary baseline stronger in representational scope than the pilots' raw-example retrieval, although its performance in our tasks has not yet been measured.}
+
+\claim{C16}{LoRA freezes pretrained weights and trains low-rank update matrices~\cite{lora}; self-distillation work uses a demonstration-conditioned model as its own teacher for on-policy learning~\cite{sdft}.}
+\claim{C17}{We propose separate supervised and distillation arms, treating retention as an empirical question rather than a guarantee of small adapters.}
+\claim{C18}{Model critics can also invent bugs~\cite{critics}, and evaluation methodology recommends paired comparisons and accounting for clustered questions~\cite{miller}; these observations motivate reviewer calibration and grouping repeated samples by their underlying task.}
+
+\section{Completed pilot setup}
+\claim{C19}{Both pilots used Qwen3-8B with a no-feedback arm, a retrieved-example context arm, and rank-16 LoRA retrained from base on cumulative corrections, with four live rounds of 120 sessions per arm.}
+\claim{C20}{Ten concurrent workers per arm supplied throughput, not independent experimental replicates; the writing context budget was 8,000 tokens, and retrieval used normalized prompt-token overlap with recency tie-breaking.}
+\claim{C21}{In the writing pilot, agents used file operations, a public format check, and submission tools to produce stories of 120 to 350 words containing two required words, while an Inkling editor applied eight hidden style rules.}
+\claim{C64}{Guide A prohibited ``suddenly,'' ``very,'' semicolons, and em dashes, and constrained narrative tense, opening length, dialogue-tag verbs, and capitalization.}
+\claim{C22}{The private scorer combined regex/token checks with a pinned spaCy tagger; $S$ is the per-story fraction of applicable rules passed, excluding the dialogue-tag rule when no tags occur, and $U$ indicates valid submission, so reported mean $Y=U S$ assigns invalid submissions zero.}
+\claim{C23}{Training replay replaced the final story-producing action with the edited story and regenerated subsequent tool results; the pilot trained assistant messages, whereas the revised protocol restricts loss to the corrected turn.}
+\claim{C63}{Writing pilot training used learning rate $4\times10^{-4}$, batch four through 60 rows and 16 thereafter, and at least three epochs and 30 steps.}
+
+\claim{C24}{Writing evaluation used 96 held-out prompts with four stochastic samples per policy and seed, including 48 prompts in genres absent from training; neither development nor held-out prompts entered the intended training split.}
+\claim{C25}{The final live LoRA comparison used three training seeds, earlier checkpoints one; 10,000 paired prompt bootstrap draws produced pointwise intervals conditional on the collected training pools, without simultaneous coverage across budgets.}
+\claim{C26}{The Lean pilot instead froze 120 trajectories from 40 lemmas in 20 families and sampled five reports per trajectory at each policy checkpoint; its reported score was precision times recall over structured facts, not F1 or explanation quality.}
+\claim{C27}{Under that frozen rubric, a failed final compilation or absence of compilation produces only event E4, while E5 denotes a local \texttt{sorry} and E6 denotes an admitted dependency; this distinction matters when interpreting aggregate accuracy.}
+
+\section{Audited pilot results}
+\subsection{Lean: the evaluation did not identify a crossover}
+\claim{C28}{The held-out truth sets contained 113 E4-only traces, six E5-only traces, and one E5-plus-E6 trace, with no proved or partial outcomes and no E1, E2, or E3 cases.}
+\claim{C29}{Always reporting E4 scores $113/120=0.9417$; a post hoc rule reporting E4 after failure or no compile and E5 otherwise scores $0.9958$, matching all 600 sampled headers at each of the four LoRA checkpoints.}
+\claim{C30}{On the lone dependency-event trace, every LoRA omitted E6 in all five samples, whereas the base and final context policy detected both events, demonstrating a regression hidden by the aggregate score.}
+\claim{C31}{This shortcut is observationally sufficient to reproduce the headers, not proof of the model's internal computation; five reports on one trace also provide only one dependency example, so the intended crossover claim is withdrawn.}
+
+\subsection{Writing: style learning with a validity cost}
+\claim{C32}{At 15 accepted edits, weights followed 90.4\% of rules on valid stories versus 74.2\% for context, but the corresponding validity-adjusted scores were 77.0\% and 70.0\%, showing why the two metrics must remain distinct.}
+\claim{C33}{Table~\ref{tab:writing} reports the full observed curve: budgets 15 to 60 count accepted edits, later budgets count review opportunities, and the number of usable supervised targets differs from the nominal budget.}
+\begin{table}[t]
+\centering\small
+\input{evidence/curve-table.tex}
+\caption{\claim{T01}{Writing pilot $U S$ scores (percent) and weights-minus-context gaps (percentage points); the unadapted base scores 57.1\%. Endpoint weights average three seeds; other rows use one. These are separate evolving live pools, with early offline checkpoints.}}
+\label{tab:writing}
+\end{table}
+\claim{C34}{At 480 opportunities, weights scored 84.9\% versus 86.1\% for context, a $-1.2$ point gap with interval $[-4.0,1.5]$; the interval includes zero, and the 30-edit comparison was also inconclusive.}
+\claim{C35}{At this endpoint, conditional style compliance was 95.8\% versus 89.1\%, but validity was 88.5\% versus 96.6\%; across the live weights evaluations, short stories and missing required words occurred among invalid outputs.}
+\claim{C36}{The endpoint shows no reliable live-workflow advantage for weights, and pointwise early gains do not establish a lasting crossover.}
+
+\claim{C37}{A separate control used the same Inkling editor with guides A and B, which oppose three rules, and trained three seeds per guide on edits of the same 460 base drafts: held-out weights scored 91.8\% versus 78.2\% for context using A's archive, a $+13.7$ point difference $[11.4,16.0]$.}
+\claim{C38}{On the three opposed rules, the A-adapter's A-style advantage over the B-adapter was $+80.3$ $[78.3,82.3]$ points, and the reversed B-style comparison was $+83.1$ $[80.8,85.4]$, with invalid submissions still assigned zero.}
+\claim{C39}{Edited-target training exceeded unedited-target training by $+33.5$ $[31.8,35.2]$ points on guide A, supporting learning from these edits rather than an explanation based solely on additional training on the original drafts.}
+\claim{C40}{These controls concern planted, mechanically scored preferences and raw-example context; they do not establish literary quality, superiority over a learned playbook, or a review-count threshold on a shared archive.}
+
+\claim{C41}{Selecting the best of four valid unique drafts by the fraction of original tokens surviving the edit improved hidden-rule compliance by $+3.6$ $[2.8,4.4]$ points over uniform choice, compared with $+10.3$ $[9.8,10.9]$ for an oracle selector.}
+\claim{C42}{Each of 96 prompts began with 16 base-policy samples, filtered for validity and deduplicated before averaging four-candidate subsets and uniform ties; scores concern original drafts, token survival ignores pure insertions, and the pilot performed selection rather than reward-based training.}
+
+\section{Revised experiment: specified, not yet run}
+\subsection{Common evidence and adaptation arms}
+\claim{C43}{Following the v3 proposal, the primary experiment will freeze reviews of the no-feedback policy and evaluate budgets of 15, 30, 60, 120, 240, 360, and 480, reserving each arm's own four-round live loop for a secondary comparison.}
+\claim{C44}{We plan six arms: no feedback; BM25 review retrieval capped at 8,000 tokens; a delta-updated playbook capped at 2,000 tokens; cumulative corrected-target SFT; playbook-conditioned self-distillation; and SFT plus the playbook.}
+\claim{C45}{The playbook author will see only reviews and will never receive the writing scorer's secret rules; the distillation arm will use the playbook-conditioned policy as teacher and the unconditioned policy as student on training-pool prompts.}
+\claim{C46}{The primary contrast will be SFT minus playbook; cumulative SFT restarts from base at each budget, making it a joint-training reference rather than a sequential continual learner or a guaranteed performance upper bound.}
+\claim{C47}{Planned controls include step-matched SFT at every budget and sequential LoRA, self-target, and shuffled-target SFT at 480; these distinguish optimization exposure, ongoing updates, and informative corrections.}
+\claim{C48}{The planned Qwen3-8B recipe uses non-thinking generation, temperature 0.7, top-p 0.8, top-k 20, unique session seeds, and prompts within 32,768 tokens; these are protocol choices rather than claims about currently available provider defaults.}
+\claim{C49}{Training will use rank 16, batch 16, at least three epochs and 30 steps, three seeds, and a learning rate selected on development data from $\{1.5,4.7,7.0\}\times10^{-4}$, with corrected-turn loss and downloaded adapters.}
+
+\subsection{Task and reviewer gates}
+\claim{C50}{Before freezing Lean evaluation, development gates require base proof success between 20\% and 70\%, an exit-code baseline at most 0.85, tool errors at most 2\%, and reviewer exactness at least 95\%; these thresholds are proposed acceptance rules.}
+\claim{C51}{The design calls for at least 60 sealed dependency groups, approximately 20\% deliberately unprovable lemmas, and a separately reported compiler-checked challenge set with 20 positives and 20 negatives per rare event, preserving the natural test distribution.}
+\claim{C52}{Lean's revised primary outcome will be exact report-header match over five samples per frozen trace, with report-turn-only adapters; whole-episode proof success will separately test spillover, and explanations will not be counted as verified by a header score.}
+\claim{C53}{Writing gates require each secret rule to be passed by at most 70\% of base development stories, editor recall at least 0.9 per rule, and at most 20\% of changed words in clean sentences; targets failing public format checks will be excluded.}
+\claim{C54}{A frozen reviewer from another model family and a 30-case human check are planned, while writing will retain both conditional style and $U S$, plus a validity safeguard of no more than three percentage points below the base policy.}
+
+\subsection{Inference and remaining work}
+\claim{C55}{The planned primary endpoint is the 480-review SFT-minus-playbook contrast; paired bootstrap analysis will cluster by writing prompt or Lean dependency group, retaining repeated samples within their cluster and reporting training-seed variation separately.}
+\claim{C56}{A crossover will mean the earliest measured budget whose simultaneous lower confidence band remains above zero through 480, subject to the writing validity safeguard; if no budget qualifies, no crossover will be reported within the tested range.}
+\claim{C57}{Development-only power simulations, a frozen implementation of the simultaneous band, reviewer gates, and new sealed test pools must precede execution; the completed pilots do not supply power or calibration evidence for this revised comparison.}
+\claim{C58}{We plan retention measurements on public-task validity, an IFEval subset, and KL divergence from the base model, while editor-specificity controls and the optional token-survival reward experiment remain distinct from the primary comparison.}
+
+\section{Discussion and conclusion}
+\claim{C59}{These pilots motivate auditing outcome coverage and validity denominators: Lean's aggregate score concealed missing event types, while writing style gains coexisted with public-constraint failures.}
+\claim{C60}{Neither pilot contains a completed human editor smoke test or a general retention evaluation, and the writing study lacks blind prose-quality assessment; consequently, claims about human preference, general competence, and long-term personalization remain outside this evidence.}
+\claim{C61}{The shared-archive writing result motivates a stronger contextual comparator; failed Lean calibration warrants withholding a crossover claim until coverage and reviewer gates pass.}
+\claim{C62}{Corrections changed mechanically scored writing behavior, but the budget at which weights reliably beat a learned playbook without unacceptable validity loss remains unknown.}
+
+{\small
+\begin{thebibliography}{9}
+\bibitem{bertsch} A. Bertsch et al. \href{https://arxiv.org/abs/2405.00200v2}{In-Context Learning with Long-Context Models: An In-Depth Exploration}. arXiv:2405.00200v2, 2025.
+\bibitem{gao} G. Gao et al. \href{https://arxiv.org/abs/2404.15269}{Aligning LLM Agents by Learning Latent Preference from User Edits}. NeurIPS, 2024.
+\bibitem{ace} Q. Zhang et al. \href{https://arxiv.org/abs/2510.04618v3}{Agentic Context Engineering: Evolving Contexts for Self-Improving Language Models}. ICLR, 2026.
+\bibitem{lora} E. J. Hu et al. \href{https://arxiv.org/abs/2106.09685}{LoRA: Low-Rank Adaptation of Large Language Models}. arXiv:2106.09685, 2021.
+\bibitem{sdft} I. Shenfeld et al. \href{https://arxiv.org/abs/2601.19897v2}{Self-Distillation Enables Continual Learning}. arXiv:2601.19897v2, 2026.
+\bibitem{critics} N. McAleese et al. \href{https://arxiv.org/abs/2407.00215}{LLM Critics Help Catch LLM Bugs}. arXiv:2407.00215, 2024.
+\bibitem{miller} E. Miller. \href{https://arxiv.org/abs/2411.00640}{Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations}. arXiv:2411.00640, 2024.
+\end{thebibliography}
+}
+\end{document}

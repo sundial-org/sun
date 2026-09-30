@@ -1,0 +1,1 @@
+{"versions":{"absl-py":"2.5.0","en-core-web-trf":"3.8.0","immutabledict":"4.3.1","langdetect":"1.0.9","nltk":"3.10.3","numpy":"2.5.3","spacy":"3.8.11","tinker":"0.27.1","tinker-cookbook":"0.5.7","torch":"2.14.0","transformers":"5.5.4"},"writer_tokenizer_class":"Qwen2Tokenizer","writer_tokenizer_vocab_sha":"f488fa45d324a8bc64c84f0e27b47223872d550f2a6900564f77dfa67ca5ff4d"}

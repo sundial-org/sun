@@ -1,0 +1,1471 @@
+{
+  "adapters": 9,
+  "all_response_receipts": 7041,
+  "comparisons": [
+    {
+      "kind": "clean",
+      "metrics": {
+        "decisions_exact": {
+          "base": {
+            "high": 0.568,
+            "low": 0.444,
+            "mean": 0.508
+          },
+          "delta": {
+            "high": 0.42666666666666664,
+            "low": 0.30666666666666664,
+            "mean": 0.3653333333333334
+          },
+          "trained": {
+            "high": 0.9026666666666667,
+            "low": 0.8426666666666667,
+            "mean": 0.8733333333333333
+          }
+        },
+        "exact": {
+          "base": {
+            "high": 0.272,
+            "low": 0.172,
+            "mean": 0.22
+          },
+          "delta": {
+            "high": 0.4666666666666666,
+            "low": 0.3413333333333333,
+            "mean": 0.4053333333333333
+          },
+          "trained": {
+            "high": 0.6706666666666667,
+            "low": 0.5813333333333333,
+            "mean": 0.6253333333333333
+          }
+        },
+        "format": {
+          "base": {
+            "high": 1.0,
+            "low": 1.0,
+            "mean": 1.0
+          },
+          "delta": {
+            "high": -0.0013333333333333333,
+            "low": -0.014666666666666665,
+            "mean": -0.006666666666666666
+          },
+          "trained": {
+            "high": 0.9986666666666667,
+            "low": 0.9853333333333334,
+            "mean": 0.9933333333333333
+          }
+        },
+        "item_accuracy": {
+          "base": {
+            "high": 0.8306666666666667,
+            "low": 0.7772999999999999,
+            "mean": 0.804
+          },
+          "delta": {
+            "high": 0.17377777777777778,
+            "low": 0.12,
+            "mean": 0.14666666666666667
+          },
+          "trained": {
+            "high": 0.9626666666666668,
+            "low": 0.9377777777777778,
+            "mean": 0.9506666666666667
+          }
+        },
+        "proxy_exact": {
+          "base": {
+            "high": 0.224,
+            "low": 0.132,
+            "mean": 0.176
+          },
+          "delta": {
+            "high": 0.3893333333333333,
+            "low": 0.2773333333333334,
+            "mean": 0.3346666666666666
+          },
+          "trained": {
+            "high": 0.5506666666666666,
+            "low": 0.4706666666666666,
+            "mean": 0.5106666666666666
+          }
+        },
+        "recall_correct": {
+          "base": {
+            "high": 1.0,
+            "low": 0.988,
+            "mean": 0.996
+          },
+          "delta": {
+            "high": 0.006666666666666667,
+            "low": -0.015999999999999997,
+            "mean": -0.005333333333333333
+          },
+          "trained": {
+            "high": 0.9973333333333334,
+            "low": 0.9826666666666666,
+            "mean": 0.9906666666666666
+          }
+        },
+        "sorting_correct": {
+          "base": {
+            "high": 0.548,
+            "low": 0.424,
+            "mean": 0.484
+          },
+          "delta": {
+            "high": 0.3013333333333334,
+            "low": 0.15466666666666667,
+            "mean": 0.23066666666666666
+          },
+          "trained": {
+            "high": 0.756,
+            "low": 0.6733333333333333,
+            "mean": 0.7146666666666668
+          }
+        }
+      },
+      "regions": [
+        {
+          "base": {
+            "exact": 0.22,
+            "recall_correct": 1.0
+          },
+          "n": 50,
+          "region": "north",
+          "trained": {
+            "exact": 0.64,
+            "recall_correct": 0.9866666666666667
+          }
+        },
+        {
+          "base": {
+            "exact": 0.22,
+            "recall_correct": 1.0
+          },
+          "n": 50,
+          "region": "south",
+          "trained": {
+            "exact": 0.62,
+            "recall_correct": 0.9933333333333333
+          }
+        },
+        {
+          "base": {
+            "exact": 0.16,
+            "recall_correct": 0.98
+          },
+          "n": 50,
+          "region": "east",
+          "trained": {
+            "exact": 0.66,
+            "recall_correct": 1.0
+          }
+        },
+        {
+          "base": {
+            "exact": 0.22,
+            "recall_correct": 1.0
+          },
+          "n": 50,
+          "region": "west",
+          "trained": {
+            "exact": 0.5733333333333334,
+            "recall_correct": 0.9933333333333333
+          }
+        },
+        {
+          "base": {
+            "exact": 0.28,
+            "recall_correct": 1.0
+          },
+          "n": 50,
+          "region": "central",
+          "trained": {
+            "exact": 0.6333333333333333,
+            "recall_correct": 0.98
+          }
+        }
+      ],
+      "seeds": [
+        {
+          "base": 0.22,
+          "delta": 0.456,
+          "seed": 31,
+          "trained": 0.676
+        },
+        {
+          "base": 0.22,
+          "delta": 0.336,
+          "seed": 73,
+          "trained": 0.556
+        },
+        {
+          "base": 0.22,
+          "delta": 0.424,
+          "seed": 127,
+          "trained": 0.644
+        }
+      ],
+      "style": "retrieval"
+    },
+    {
+      "kind": "scattered",
+      "metrics": {
+        "decisions_exact": {
+          "base": {
+            "high": 0.5706666666666668,
+            "low": 0.4546666666666666,
+            "mean": 0.5133333333333333
+          },
+          "delta": {
+            "high": 0.3106666666666667,
+            "low": 0.18933333333333335,
+            "mean": 0.25066666666666665
+          },
+          "trained": {
+            "high": 0.8,
+            "low": 0.7266666666666667,
+            "mean": 0.764
+          }
+        },
+        "exact": {
+          "base": {
+            "high": 0.2666666666666666,
+            "low": 0.172,
+            "mean": 0.21866666666666665
+          },
+          "delta": {
+            "high": 0.388,
+            "low": 0.2706666666666666,
+            "mean": 0.3306666666666666
+          },
+          "trained": {
+            "high": 0.5946666666666667,
+            "low": 0.5053333333333333,
+            "mean": 0.5493333333333332
+          }
+        },
+        "format": {
+          "base": {
+            "high": 1.0,
+            "low": 1.0,
+            "mean": 1.0
+          },
+          "delta": {
+            "high": -0.0013333333333333333,
+            "low": -0.014666666666666666,
+            "mean": -0.006666666666666666
+          },
+          "trained": {
+            "high": 0.9986666666666667,
+            "low": 0.9853333333333334,
+            "mean": 0.9933333333333334
+          }
+        },
+        "item_accuracy": {
+          "base": {
+            "high": 0.8324444444444443,
+            "low": 0.780888888888889,
+            "mean": 0.8071111111111111
+          },
+          "delta": {
+            "high": 0.12400000000000001,
+            "low": 0.06844444444444445,
+            "mean": 0.09644444444444444
+          },
+          "trained": {
+            "high": 0.9195555555555556,
+            "low": 0.8866666666666667,
+            "mean": 0.9035555555555557
+          }
+        },
+        "proxy_exact": {
+          "base": {
+            "high": 0.22,
+            "low": 0.13466666666666666,
+            "mean": 0.176
+          },
+          "delta": {
+            "high": 0.328,
+            "low": 0.22133333333333333,
+            "mean": 0.276
+          },
+          "trained": {
+            "high": 0.4933333333333333,
+            "low": 0.4106666666666666,
+            "mean": 0.452
+          }
+        },
+        "recall_correct": {
+          "base": {
+            "high": 0.9933333333333333,
+            "low": 0.976,
+            "mean": 0.9853333333333333
+          },
+          "delta": {
+            "high": -0.058666666666666666,
+            "low": -0.10533333333333332,
+            "mean": -0.08133333333333333
+          },
+          "trained": {
+            "high": 0.9266666666666666,
+            "low": 0.88,
+            "mean": 0.904
+          }
+        },
+        "sorting_correct": {
+          "base": {
+            "high": 0.5146666666666666,
+            "low": 0.4013333333333333,
+            "mean": 0.456
+          },
+          "delta": {
+            "high": 0.31733333333333336,
+            "low": 0.18266666666666664,
+            "mean": 0.252
+          },
+          "trained": {
+            "high": 0.748,
+            "low": 0.6666666666666666,
+            "mean": 0.708
+          }
+        }
+      },
+      "regions": [
+        {
+          "base": {
+            "exact": 0.26,
+            "recall_correct": 0.9933333333333333
+          },
+          "n": 50,
+          "region": "north",
+          "trained": {
+            "exact": 0.5733333333333334,
+            "recall_correct": 0.9066666666666666
+          }
+        },
+        {
+          "base": {
+            "exact": 0.19333333333333333,
+            "recall_correct": 0.9933333333333333
+          },
+          "n": 50,
+          "region": "south",
+          "trained": {
+            "exact": 0.6266666666666667,
+            "recall_correct": 0.9466666666666667
+          }
+        },
+        {
+          "base": {
+            "exact": 0.17333333333333334,
+            "recall_correct": 0.9733333333333334
+          },
+          "n": 50,
+          "region": "east",
+          "trained": {
+            "exact": 0.58,
+            "recall_correct": 0.9266666666666666
+          }
+        },
+        {
+          "base": {
+            "exact": 0.21333333333333335,
+            "recall_correct": 0.9733333333333334
+          },
+          "n": 50,
+          "region": "west",
+          "trained": {
+            "exact": 0.52,
+            "recall_correct": 0.8933333333333333
+          }
+        },
+        {
+          "base": {
+            "exact": 0.25333333333333335,
+            "recall_correct": 0.9933333333333333
+          },
+          "n": 50,
+          "region": "central",
+          "trained": {
+            "exact": 0.44666666666666666,
+            "recall_correct": 0.8466666666666667
+          }
+        }
+      ],
+      "seeds": [
+        {
+          "base": 0.232,
+          "delta": 0.26,
+          "seed": 31,
+          "trained": 0.492
+        },
+        {
+          "base": 0.204,
+          "delta": 0.396,
+          "seed": 73,
+          "trained": 0.6
+        },
+        {
+          "base": 0.22,
+          "delta": 0.336,
+          "seed": 127,
+          "trained": 0.556
+        }
+      ],
+      "style": "retrieval"
+    },
+    {
+      "kind": "systematic",
+      "metrics": {
+        "decisions_exact": {
+          "base": {
+            "high": 0.548,
+            "low": 0.428,
+            "mean": 0.488
+          },
+          "delta": {
+            "high": 0.2866666666666666,
+            "low": 0.16399999999999998,
+            "mean": 0.22533333333333333
+          },
+          "trained": {
+            "high": 0.7333333333333334,
+            "low": 0.692,
+            "mean": 0.7133333333333333
+          }
+        },
+        "exact": {
+          "base": {
+            "high": 0.26,
+            "low": 0.16,
+            "mean": 0.208
+          },
+          "delta": {
+            "high": 0.3306666666666666,
+            "low": 0.21466666666666662,
+            "mean": 0.2733333333333333
+          },
+          "trained": {
+            "high": 0.5213333333333334,
+            "low": 0.44000000000000006,
+            "mean": 0.48133333333333334
+          }
+        },
+        "format": {
+          "base": {
+            "high": 1.0,
+            "low": 1.0,
+            "mean": 1.0
+          },
+          "delta": {
+            "high": -0.026666666666666665,
+            "low": -0.05466666666666666,
+            "mean": -0.04
+          },
+          "trained": {
+            "high": 0.9733333333333334,
+            "low": 0.9453333333333332,
+            "mean": 0.9599999999999999
+          }
+        },
+        "item_accuracy": {
+          "base": {
+            "high": 0.816,
+            "low": 0.76,
+            "mean": 0.788
+          },
+          "delta": {
+            "high": 0.11244444444444444,
+            "low": 0.050222222222222224,
+            "mean": 0.08177777777777777
+          },
+          "trained": {
+            "high": 0.8844444444444445,
+            "low": 0.8537666666666667,
+            "mean": 0.8697777777777778
+          }
+        },
+        "proxy_exact": {
+          "base": {
+            "high": 0.236,
+            "low": 0.14,
+            "mean": 0.188
+          },
+          "delta": {
+            "high": 0.4453333333333333,
+            "low": 0.324,
+            "mean": 0.3853333333333333
+          },
+          "trained": {
+            "high": 0.6186666666666667,
+            "low": 0.528,
+            "mean": 0.5733333333333334
+          }
+        },
+        "recall_correct": {
+          "base": {
+            "high": 0.964,
+            "low": 0.904,
+            "mean": 0.936
+          },
+          "delta": {
+            "high": -0.13866666666666666,
+            "low": -0.20133333333333334,
+            "mean": -0.17066666666666666
+          },
+          "trained": {
+            "high": 0.7786666666666666,
+            "low": 0.7506666666666666,
+            "mean": 0.7653333333333334
+          }
+        },
+        "sorting_correct": {
+          "base": {
+            "high": 0.504,
+            "low": 0.384,
+            "mean": 0.444
+          },
+          "delta": {
+            "high": 0.2386666666666667,
+            "low": 0.10266666666666666,
+            "mean": 0.172
+          },
+          "trained": {
+            "high": 0.66,
+            "low": 0.5706666666666668,
+            "mean": 0.616
+          }
+        }
+      },
+      "regions": [
+        {
+          "base": {
+            "exact": 0.2,
+            "recall_correct": 1.0
+          },
+          "n": 50,
+          "region": "north",
+          "trained": {
+            "exact": 0.6466666666666666,
+            "recall_correct": 0.94
+          }
+        },
+        {
+          "base": {
+            "exact": 0.22,
+            "recall_correct": 0.96
+          },
+          "n": 50,
+          "region": "south",
+          "trained": {
+            "exact": 0.6266666666666667,
+            "recall_correct": 0.9733333333333334
+          }
+        },
+        {
+          "base": {
+            "exact": 0.22,
+            "recall_correct": 0.96
+          },
+          "n": 50,
+          "region": "east",
+          "trained": {
+            "exact": 0.5933333333333334,
+            "recall_correct": 0.96
+          }
+        },
+        {
+          "base": {
+            "exact": 0.14,
+            "recall_correct": 0.8
+          },
+          "n": 50,
+          "region": "west",
+          "trained": {
+            "exact": 0.006666666666666667,
+            "recall_correct": 0.006666666666666667
+          }
+        },
+        {
+          "base": {
+            "exact": 0.26,
+            "recall_correct": 0.96
+          },
+          "n": 50,
+          "region": "central",
+          "trained": {
+            "exact": 0.5333333333333333,
+            "recall_correct": 0.9466666666666667
+          }
+        }
+      ],
+      "seeds": [
+        {
+          "base": 0.208,
+          "delta": 0.216,
+          "seed": 31,
+          "trained": 0.424
+        },
+        {
+          "base": 0.208,
+          "delta": 0.316,
+          "seed": 73,
+          "trained": 0.524
+        },
+        {
+          "base": 0.208,
+          "delta": 0.288,
+          "seed": 127,
+          "trained": 0.496
+        }
+      ],
+      "style": "retrieval"
+    },
+    {
+      "kind": "clean",
+      "metrics": {
+        "decisions_exact": {
+          "base": {
+            "high": 0.268,
+            "low": 0.168,
+            "mean": 0.216
+          },
+          "delta": {
+            "high": 0.7146666666666666,
+            "low": 0.5973333333333334,
+            "mean": 0.656
+          },
+          "trained": {
+            "high": 0.8973333333333332,
+            "low": 0.8466666666666667,
+            "mean": 0.872
+          }
+        },
+        "exact": {
+          "base": {
+            "high": 0.028,
+            "low": 0.0,
+            "mean": 0.012
+          },
+          "delta": {
+            "high": 0.7386666666666666,
+            "low": 0.652,
+            "mean": 0.696
+          },
+          "trained": {
+            "high": 0.7453333333333334,
+            "low": 0.6693333333333333,
+            "mean": 0.708
+          }
+        },
+        "format": {
+          "base": {
+            "high": 0.96,
+            "low": 0.9,
+            "mean": 0.932
+          },
+          "delta": {
+            "high": 0.08933333333333333,
+            "low": 0.026666666666666665,
+            "mean": 0.056
+          },
+          "trained": {
+            "high": 0.9946666666666667,
+            "low": 0.98,
+            "mean": 0.988
+          }
+        },
+        "item_accuracy": {
+          "base": {
+            "high": 0.6026666666666667,
+            "low": 0.524,
+            "mean": 0.564
+          },
+          "delta": {
+            "high": 0.424,
+            "low": 0.3417777777777778,
+            "mean": 0.3822222222222222
+          },
+          "trained": {
+            "high": 0.9577777777777777,
+            "low": 0.9342222222222223,
+            "mean": 0.9462222222222223
+          }
+        },
+        "proxy_exact": {
+          "base": {
+            "high": 0.012,
+            "low": 0.0,
+            "mean": 0.004
+          },
+          "delta": {
+            "high": 0.6053333333333334,
+            "low": 0.5346666666666667,
+            "mean": 0.5706666666666668
+          },
+          "trained": {
+            "high": 0.608,
+            "low": 0.5413333333333332,
+            "mean": 0.5746666666666668
+          }
+        },
+        "recall_correct": {
+          "base": {
+            "high": 0.568,
+            "low": 0.448,
+            "mean": 0.508
+          },
+          "delta": {
+            "high": 0.54,
+            "low": 0.4173333333333334,
+            "mean": 0.47866666666666663
+          },
+          "trained": {
+            "high": 0.9946666666666665,
+            "low": 0.9786666666666666,
+            "mean": 0.9866666666666666
+          }
+        },
+        "sorting_correct": {
+          "base": {
+            "high": 0.1,
+            "low": 0.04,
+            "mean": 0.068
+          },
+          "delta": {
+            "high": 0.7706666666666666,
+            "low": 0.6746666666666667,
+            "mean": 0.724
+          },
+          "trained": {
+            "high": 0.8253333333333333,
+            "low": 0.7573333333333333,
+            "mean": 0.792
+          }
+        }
+      },
+      "regions": [
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.44
+          },
+          "n": 50,
+          "region": "north",
+          "trained": {
+            "exact": 0.7266666666666667,
+            "recall_correct": 0.9933333333333333
+          }
+        },
+        {
+          "base": {
+            "exact": 0.02,
+            "recall_correct": 0.48
+          },
+          "n": 50,
+          "region": "south",
+          "trained": {
+            "exact": 0.7533333333333333,
+            "recall_correct": 0.9933333333333333
+          }
+        },
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.46
+          },
+          "n": 50,
+          "region": "east",
+          "trained": {
+            "exact": 0.74,
+            "recall_correct": 0.9866666666666667
+          }
+        },
+        {
+          "base": {
+            "exact": 0.04,
+            "recall_correct": 0.56
+          },
+          "n": 50,
+          "region": "west",
+          "trained": {
+            "exact": 0.6666666666666666,
+            "recall_correct": 0.9733333333333334
+          }
+        },
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.6
+          },
+          "n": 50,
+          "region": "central",
+          "trained": {
+            "exact": 0.6533333333333333,
+            "recall_correct": 0.9866666666666667
+          }
+        }
+      ],
+      "seeds": [
+        {
+          "base": 0.012,
+          "delta": 0.78,
+          "seed": 31,
+          "trained": 0.792
+        },
+        {
+          "base": 0.012,
+          "delta": 0.728,
+          "seed": 73,
+          "trained": 0.74
+        },
+        {
+          "base": 0.012,
+          "delta": 0.58,
+          "seed": 127,
+          "trained": 0.592
+        }
+      ],
+      "style": "checklist"
+    },
+    {
+      "kind": "scattered",
+      "metrics": {
+        "decisions_exact": {
+          "base": {
+            "high": 0.268,
+            "low": 0.168,
+            "mean": 0.216
+          },
+          "delta": {
+            "high": 0.448,
+            "low": 0.31866666666666665,
+            "mean": 0.384
+          },
+          "trained": {
+            "high": 0.64,
+            "low": 0.56,
+            "mean": 0.6
+          }
+        },
+        "exact": {
+          "base": {
+            "high": 0.028,
+            "low": 0.0,
+            "mean": 0.012
+          },
+          "delta": {
+            "high": 0.5053333333333333,
+            "low": 0.4146666666666667,
+            "mean": 0.46
+          },
+          "trained": {
+            "high": 0.5133333333333333,
+            "low": 0.432,
+            "mean": 0.472
+          }
+        },
+        "format": {
+          "base": {
+            "high": 0.96,
+            "low": 0.9,
+            "mean": 0.932
+          },
+          "delta": {
+            "high": 0.1,
+            "low": 0.04,
+            "mean": 0.068
+          },
+          "trained": {
+            "high": 1.0,
+            "low": 1.0,
+            "mean": 1.0
+          }
+        },
+        "item_accuracy": {
+          "base": {
+            "high": 0.6026666666666667,
+            "low": 0.524,
+            "mean": 0.564
+          },
+          "delta": {
+            "high": 0.31511111111111106,
+            "low": 0.22622222222222224,
+            "mean": 0.2706666666666666
+          },
+          "trained": {
+            "high": 0.8533333333333333,
+            "low": 0.816,
+            "mean": 0.8346666666666667
+          }
+        },
+        "proxy_exact": {
+          "base": {
+            "high": 0.012,
+            "low": 0.0,
+            "mean": 0.004
+          },
+          "delta": {
+            "high": 0.48933333333333323,
+            "low": 0.404,
+            "mean": 0.44666666666666666
+          },
+          "trained": {
+            "high": 0.4906666666666667,
+            "low": 0.4093333333333334,
+            "mean": 0.4506666666666666
+          }
+        },
+        "recall_correct": {
+          "base": {
+            "high": 0.568,
+            "low": 0.448,
+            "mean": 0.508
+          },
+          "delta": {
+            "high": 0.2613333333333333,
+            "low": 0.11866666666666667,
+            "mean": 0.18933333333333335
+          },
+          "trained": {
+            "high": 0.7346666666666666,
+            "low": 0.66,
+            "mean": 0.6973333333333332
+          }
+        },
+        "sorting_correct": {
+          "base": {
+            "high": 0.1,
+            "low": 0.04,
+            "mean": 0.068
+          },
+          "delta": {
+            "high": 0.7280333333333329,
+            "low": 0.628,
+            "mean": 0.68
+          },
+          "trained": {
+            "high": 0.7839999999999999,
+            "low": 0.7106666666666668,
+            "mean": 0.748
+          }
+        }
+      },
+      "regions": [
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.44
+          },
+          "n": 50,
+          "region": "north",
+          "trained": {
+            "exact": 0.46,
+            "recall_correct": 0.6866666666666666
+          }
+        },
+        {
+          "base": {
+            "exact": 0.02,
+            "recall_correct": 0.48
+          },
+          "n": 50,
+          "region": "south",
+          "trained": {
+            "exact": 0.6266666666666667,
+            "recall_correct": 0.82
+          }
+        },
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.46
+          },
+          "n": 50,
+          "region": "east",
+          "trained": {
+            "exact": 0.44,
+            "recall_correct": 0.7
+          }
+        },
+        {
+          "base": {
+            "exact": 0.04,
+            "recall_correct": 0.56
+          },
+          "n": 50,
+          "region": "west",
+          "trained": {
+            "exact": 0.36,
+            "recall_correct": 0.5466666666666666
+          }
+        },
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.6
+          },
+          "n": 50,
+          "region": "central",
+          "trained": {
+            "exact": 0.47333333333333333,
+            "recall_correct": 0.7333333333333333
+          }
+        }
+      ],
+      "seeds": [
+        {
+          "base": 0.012,
+          "delta": 0.372,
+          "seed": 31,
+          "trained": 0.384
+        },
+        {
+          "base": 0.012,
+          "delta": 0.58,
+          "seed": 73,
+          "trained": 0.592
+        },
+        {
+          "base": 0.012,
+          "delta": 0.428,
+          "seed": 127,
+          "trained": 0.44
+        }
+      ],
+      "style": "checklist"
+    },
+    {
+      "kind": "systematic",
+      "metrics": {
+        "decisions_exact": {
+          "base": {
+            "high": 0.268,
+            "low": 0.168,
+            "mean": 0.216
+          },
+          "delta": {
+            "high": 0.3226666666666666,
+            "low": 0.21466666666666664,
+            "mean": 0.2693333333333333
+          },
+          "trained": {
+            "high": 0.49999999999999994,
+            "low": 0.4706666666666666,
+            "mean": 0.4853333333333334
+          }
+        },
+        "exact": {
+          "base": {
+            "high": 0.028,
+            "low": 0.0,
+            "mean": 0.012
+          },
+          "delta": {
+            "high": 0.34933333333333333,
+            "low": 0.2866666666666667,
+            "mean": 0.31866666666666665
+          },
+          "trained": {
+            "high": 0.35866666666666663,
+            "low": 0.30266666666666664,
+            "mean": 0.3306666666666666
+          }
+        },
+        "format": {
+          "base": {
+            "high": 0.96,
+            "low": 0.9,
+            "mean": 0.932
+          },
+          "delta": {
+            "high": -0.2333333333333333,
+            "low": -0.29333333333333333,
+            "mean": -0.2653333333333333
+          },
+          "trained": {
+            "high": 0.6666666666666665,
+            "low": 0.6666666666666665,
+            "mean": 0.6666666666666665
+          }
+        },
+        "item_accuracy": {
+          "base": {
+            "high": 0.6026666666666667,
+            "low": 0.524,
+            "mean": 0.564
+          },
+          "delta": {
+            "high": 0.07733333333333334,
+            "low": -0.0017777777777777518,
+            "mean": 0.03733333333333336
+          },
+          "trained": {
+            "high": 0.6066666666666666,
+            "low": 0.5955555555555554,
+            "mean": 0.6013333333333334
+          }
+        },
+        "proxy_exact": {
+          "base": {
+            "high": 0.012,
+            "low": 0.0,
+            "mean": 0.004
+          },
+          "delta": {
+            "high": 0.428,
+            "low": 0.3653333333333334,
+            "mean": 0.3973333333333333
+          },
+          "trained": {
+            "high": 0.4306666666666667,
+            "low": 0.3706666666666667,
+            "mean": 0.4013333333333333
+          }
+        },
+        "recall_correct": {
+          "base": {
+            "high": 0.568,
+            "low": 0.448,
+            "mean": 0.508
+          },
+          "delta": {
+            "high": 0.08533333333333333,
+            "low": -0.03603333333333335,
+            "mean": 0.023999999999999994
+          },
+          "trained": {
+            "high": 0.5333333333333332,
+            "low": 0.5293333333333332,
+            "mean": 0.532
+          }
+        },
+        "sorting_correct": {
+          "base": {
+            "high": 0.1,
+            "low": 0.04,
+            "mean": 0.068
+          },
+          "delta": {
+            "high": 0.42,
+            "low": 0.3346666666666666,
+            "mean": 0.37866666666666665
+          },
+          "trained": {
+            "high": 0.4759999999999999,
+            "low": 0.41733333333333333,
+            "mean": 0.44666666666666666
+          }
+        }
+      },
+      "regions": [
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.44
+          },
+          "n": 50,
+          "region": "north",
+          "trained": {
+            "exact": 0.48,
+            "recall_correct": 0.6666666666666666
+          }
+        },
+        {
+          "base": {
+            "exact": 0.02,
+            "recall_correct": 0.48
+          },
+          "n": 50,
+          "region": "south",
+          "trained": {
+            "exact": 0.4266666666666667,
+            "recall_correct": 0.6666666666666666
+          }
+        },
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.46
+          },
+          "n": 50,
+          "region": "east",
+          "trained": {
+            "exact": 0.4,
+            "recall_correct": 0.66
+          }
+        },
+        {
+          "base": {
+            "exact": 0.04,
+            "recall_correct": 0.56
+          },
+          "n": 50,
+          "region": "west",
+          "trained": {
+            "exact": 0.0,
+            "recall_correct": 0.0
+          }
+        },
+        {
+          "base": {
+            "exact": 0.0,
+            "recall_correct": 0.6
+          },
+          "n": 50,
+          "region": "central",
+          "trained": {
+            "exact": 0.3466666666666667,
+            "recall_correct": 0.6666666666666666
+          }
+        }
+      ],
+      "seeds": [
+        {
+          "base": 0.012,
+          "delta": 0.52,
+          "seed": 31,
+          "trained": 0.532
+        },
+        {
+          "base": 0.012,
+          "delta": -0.012,
+          "seed": 73,
+          "trained": 0.0
+        },
+        {
+          "base": 0.012,
+          "delta": 0.448,
+          "seed": 127,
+          "trained": 0.46
+        }
+      ],
+      "style": "checklist"
+    }
+  ],
+  "context_example_effects": {
+    "clean": {
+      "base": {
+        "high": 0.264,
+        "low": 0.156,
+        "mean": 0.208
+      },
+      "trained": {
+        "high": -0.041333333333333326,
+        "low": -0.124,
+        "mean": -0.08266666666666667
+      }
+    },
+    "scattered": {
+      "base": {
+        "high": 0.2573333333333333,
+        "low": 0.15866666666666665,
+        "mean": 0.20666666666666667
+      },
+      "trained": {
+        "high": 0.11999999999999998,
+        "low": 0.03466666666666667,
+        "mean": 0.07733333333333332
+      }
+    },
+    "systematic": {
+      "base": {
+        "high": 0.248,
+        "low": 0.144,
+        "mean": 0.196
+      },
+      "trained": {
+        "high": 0.18533333333333332,
+        "low": 0.11733333333333332,
+        "mean": 0.15066666666666667
+      }
+    }
+  },
+  "cost": {
+    "estimated_usd": 3.693734835,
+    "prior_study_estimated_usd": 17.42253885,
+    "reserved_usd": 8.794570635,
+    "total_estimated_usd": 21.116273685
+  },
+  "noise_interaction": {
+    "high": 0.10933333333333332,
+    "low": 0.006666666666666668,
+    "mean": 0.05733333333333333
+  },
+  "practical_reversal": false,
+  "scope": "One synthetic task family, one base model, three training seeds; intervals condition on seeds and generator.",
+  "selection": {
+    "conditions": [
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.22,
+          "item_accuracy": 0.10666666666666666,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.16
+        },
+        "name": "dev-base-clean-31-concise"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.22,
+          "item_accuracy": 0.10666666666666666,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.16
+        },
+        "name": "dev-base-scattered-31-concise"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.22,
+          "item_accuracy": 0.10666666666666666,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.16
+        },
+        "name": "dev-base-systematic-31-concise"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.9,
+          "item_accuracy": 0.4333333333333333,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.34
+        },
+        "name": "dev-base-clean-31-checklist"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.9,
+          "item_accuracy": 0.4333333333333333,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.34
+        },
+        "name": "dev-base-scattered-31-checklist"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.9,
+          "item_accuracy": 0.4333333333333333,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.34
+        },
+        "name": "dev-base-systematic-31-checklist"
+      },
+      {
+        "metrics": {
+          "exact": 0.2,
+          "format": 1.0,
+          "item_accuracy": 0.8333333333333333,
+          "proxy_exact": 0.16,
+          "recall_correct": 1.0
+        },
+        "name": "dev-base-clean-31-retrieval"
+      },
+      {
+        "metrics": {
+          "exact": 0.18,
+          "format": 1.0,
+          "item_accuracy": 0.7866666666666667,
+          "proxy_exact": 0.16,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-scattered-31-retrieval"
+      },
+      {
+        "metrics": {
+          "exact": 0.22,
+          "format": 1.0,
+          "item_accuracy": 0.8133333333333332,
+          "proxy_exact": 0.2,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-systematic-31-retrieval"
+      },
+      {
+        "metrics": {
+          "exact": 0.2,
+          "format": 1.0,
+          "item_accuracy": 0.8333333333333333,
+          "proxy_exact": 0.14,
+          "recall_correct": 1.0
+        },
+        "name": "dev-base-clean-31-retrieval8"
+      },
+      {
+        "metrics": {
+          "exact": 0.2,
+          "format": 1.0,
+          "item_accuracy": 0.8066666666666668,
+          "proxy_exact": 0.14,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-scattered-31-retrieval8"
+      },
+      {
+        "metrics": {
+          "exact": 0.18,
+          "format": 1.0,
+          "item_accuracy": 0.8,
+          "proxy_exact": 0.14,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-systematic-31-retrieval8"
+      },
+      {
+        "metrics": {
+          "exact": 0.26,
+          "format": 1.0,
+          "item_accuracy": 0.8266666666666667,
+          "proxy_exact": 0.16,
+          "recall_correct": 1.0
+        },
+        "name": "dev-base-clean-31-retrieval16"
+      },
+      {
+        "metrics": {
+          "exact": 0.18,
+          "format": 1.0,
+          "item_accuracy": 0.78,
+          "proxy_exact": 0.14,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-scattered-31-retrieval16"
+      },
+      {
+        "metrics": {
+          "exact": 0.16,
+          "format": 1.0,
+          "item_accuracy": 0.8066666666666668,
+          "proxy_exact": 0.18,
+          "recall_correct": 0.94
+        },
+        "name": "dev-base-systematic-31-retrieval16"
+      }
+    ],
+    "rule": "highest mean exact; tie fewer examples then shorter prompt",
+    "scores": {
+      "checklist": 0.0,
+      "concise": 0.0,
+      "retrieval": 0.19999999999999998,
+      "retrieval16": 0.19999999999999998,
+      "retrieval8": 0.19333333333333336
+    },
+    "selected": "retrieval",
+    "selected_dev_exact": 0.19999999999999998
+  },
+  "test_tasks": 250,
+  "unique_test_responses": 5489,
+  "verification": {
+    "frozen_files": 18,
+    "raw_responses_rescored": 5489,
+    "test_oracles_agree": true,
+    "training_steps_verified": true
+  }
+}

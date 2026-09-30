@@ -1,0 +1,62 @@
+{
+  "archive_sha": "46bffd8bb90e90b1cc29c5f2d8aef7b8e70f128d867afb8dae125fe87c88d89e",
+  "base_U": 0.9791666666666666,
+  "budgets": [
+    15,
+    60,
+    480
+  ],
+  "candidates": [
+    {
+      "U": 0.7083333333333334,
+      "US": 0.6633184523809524,
+      "lr": 0.00015,
+      "name": "dev-sft-60-lr0.00015"
+    },
+    {
+      "U": 0.9375,
+      "US": 0.8500744047619048,
+      "lr": 0.00047,
+      "name": "dev-sft-60-lr0.00047"
+    },
+    {
+      "U": 0.4583333333333333,
+      "US": 0.43191964285714285,
+      "lr": 0.0007,
+      "name": "dev-sft-60-lr0.0007"
+    }
+  ],
+  "code_sha": {
+    "PROTOCOL.md": "ce311f6beaf955ecd2d77928f9894ea2747709aa23930092dad2b632ae96051f",
+    "analyze.py": "07023fdbfc5f9d1dbd23b2d40093935b33b0d175e26622411e4b3e09339efbd3",
+    "design.json": "a0b2a66b1d8890255d2148d9d6fce725fee0a53d4c6332058d0ed7ff7890adaf",
+    "development-power.json": "6d39154eedb384ac536797cb9ed035ba922a119774d2fcbfca3552d744b07b26",
+    "environment.json": "eac9e3385ccb116c3b7fd6186a9b4bb8b8e19e8fae60b36ef13d49ff26714a43",
+    "followups.py": "048d4c25a99b9b219539aa3a044ad1f379cb26164c7333667bd3c4b5676b317f",
+    "power.py": "7c7fd48b5b32a178dc379160207db7ec126fd501bf667d87f7eca077351be7c7",
+    "pricing-20260928.json": "1b406f26574fbce8b90225fbf7f089517dcfc672b46f1bce558ae37058e95f70",
+    "retention-plan.json": "cf804eb2c6891798c6b00475c3b48789a2375dabc0b3b96b23f389473a53c897",
+    "run.py": "3c59d16711f74064016a7785324ca8e15b5960e1144aafa631ed9308ceaf9a10",
+    "vendor/data.py": "2fcb7d8d70810fe891c498ee87048f547bf98bf7b90c0e108987ebecc6d16464",
+    "vendor/record.py": "a6f9aff63bade31ef00ece0e0e42caf05a09f165a151e56647fea0b27c8fef62",
+    "vendor/run_experiment.py": "7bfa50ca50762dcb82613ed2abc826e35592151f80d77c36190c6df5e59dd3b1",
+    "vendor/style.py": "96154f9757da839b00174eb12e08bb31b88780bd165cc2f2927cfdd7700d6fe6"
+  },
+  "guardrail_pass": false,
+  "learning_rate": 0.00047,
+  "method": "local freeze after all development jobs completed",
+  "prompts_sha": "f8bb35527f2835964a07350fc04f4530735d94a267e4b1e6bc9ced1645ffc14b",
+  "seeds": [
+    31,
+    73,
+    127
+  ],
+  "selection": {
+    "U": 0.9375,
+    "US": 0.8500744047619048,
+    "lr": 0.00047,
+    "name": "dev-sft-60-lr0.00047"
+  },
+  "test_responses_exist": false,
+  "time": "2026-09-28T23:19:45.503439+00:00"
+}

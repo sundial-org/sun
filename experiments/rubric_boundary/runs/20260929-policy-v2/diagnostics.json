@@ -1,0 +1,5730 @@
+[
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-clean-127-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 55,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 127,
+      "normalized_exact": 55,
+      "normalized_format": 250,
+      "normalized_recall": 249,
+      "schema_failures": 0,
+      "sorting_only_failures": 72,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 123,
+      "valid_recall_violations": 1
+    },
+    "n": 250,
+    "name": "test-base-clean-127-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "GNCH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0087",
+        "input": {
+          "fragile": true,
+          "id": "GNCH",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "A",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "GNCH",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-clean-31-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 55,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 127,
+      "normalized_exact": 55,
+      "normalized_format": 250,
+      "normalized_recall": 249,
+      "schema_failures": 0,
+      "sorting_only_failures": 72,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 123,
+      "valid_recall_violations": 1
+    },
+    "n": 250,
+    "name": "test-base-clean-31-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "GNCH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0087",
+        "input": {
+          "fragile": true,
+          "id": "GNCH",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "A",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "GNCH",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-clean-73-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 55,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 127,
+      "normalized_exact": 55,
+      "normalized_format": 250,
+      "normalized_recall": 249,
+      "schema_failures": 0,
+      "sorting_only_failures": 72,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 123,
+      "valid_recall_violations": 1
+    },
+    "n": 250,
+    "name": "test-base-clean-73-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "GNCH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0087",
+        "input": {
+          "fragile": true,
+          "id": "GNCH",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "A",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "GNCH",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-scattered-127-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 55,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 132,
+      "normalized_exact": 55,
+      "normalized_format": 250,
+      "normalized_recall": 248,
+      "schema_failures": 0,
+      "sorting_only_failures": 77,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 118,
+      "valid_recall_violations": 2
+    },
+    "n": 250,
+    "name": "test-base-scattered-127-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "VYXD",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0083",
+        "input": {
+          "fragile": false,
+          "id": "VYXD",
+          "member": false,
+          "quantity": 5,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "B",
+          "stock": 5
+        },
+        "predicted": {
+          "id": "VYXD",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "GFEN",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0118",
+        "input": {
+          "fragile": false,
+          "id": "GFEN",
+          "member": false,
+          "quantity": 4,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "GFEN",
+          "route": "STANDARD",
+          "units": 0
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-scattered-31-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 58,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 129,
+      "normalized_exact": 58,
+      "normalized_format": 250,
+      "normalized_recall": 248,
+      "schema_failures": 0,
+      "sorting_only_failures": 71,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 121,
+      "valid_recall_violations": 2
+    },
+    "n": 250,
+    "name": "test-base-scattered-31-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "LBJY",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0069",
+        "input": {
+          "fragile": false,
+          "id": "LBJY",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "central",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "LBJY",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "central"
+      },
+      {
+        "expected": {
+          "id": "TKAR",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0206",
+        "input": {
+          "fragile": true,
+          "id": "TKAR",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "south",
+          "requested": "express",
+          "sku": "B",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "TKAR",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        "region": "south"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-scattered-73-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 51,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 124,
+      "normalized_exact": 51,
+      "normalized_format": 250,
+      "normalized_recall": 243,
+      "schema_failures": 0,
+      "sorting_only_failures": 73,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 126,
+      "valid_recall_violations": 7
+    },
+    "n": 250,
+    "name": "test-base-scattered-73-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "CAKU",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0073",
+        "input": {
+          "fragile": true,
+          "id": "CAKU",
+          "member": false,
+          "quantity": 4,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 5
+        },
+        "predicted": {
+          "id": "CAKU",
+          "route": "STANDARD",
+          "units": 4
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "LDWA",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0082",
+        "input": {
+          "fragile": true,
+          "id": "LDWA",
+          "member": true,
+          "quantity": 5,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "A",
+          "stock": 8
+        },
+        "predicted": {
+          "id": "LDWA",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "GNCH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0087",
+        "input": {
+          "fragile": true,
+          "id": "GNCH",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "A",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "GNCH",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 46,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 4
+      },
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-systematic-127-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 52,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 122,
+      "normalized_exact": 52,
+      "normalized_format": 250,
+      "normalized_recall": 234,
+      "schema_failures": 0,
+      "sorting_only_failures": 70,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 128,
+      "valid_recall_violations": 16
+    },
+    "n": 250,
+    "name": "test-base-systematic-127-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "ZDNP",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0028",
+        "input": {
+          "fragile": false,
+          "id": "ZDNP",
+          "member": false,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "ZDNP",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "ALJE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0043",
+        "input": {
+          "fragile": true,
+          "id": "ALJE",
+          "member": false,
+          "quantity": 3,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 6
+        },
+        "predicted": {
+          "id": "ALJE",
+          "route": "STANDARD",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "MPHW",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0053",
+        "input": {
+          "fragile": false,
+          "id": "MPHW",
+          "member": true,
+          "quantity": 5,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 8
+        },
+        "predicted": {
+          "id": "MPHW",
+          "route": "STANDARD",
+          "units": 0
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "east": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "west": {
+        "correct_recall": 40,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 10
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-systematic-31-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 52,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 122,
+      "normalized_exact": 52,
+      "normalized_format": 250,
+      "normalized_recall": 234,
+      "schema_failures": 0,
+      "sorting_only_failures": 70,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 128,
+      "valid_recall_violations": 16
+    },
+    "n": 250,
+    "name": "test-base-systematic-31-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "ZDNP",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0028",
+        "input": {
+          "fragile": false,
+          "id": "ZDNP",
+          "member": false,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "ZDNP",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "ALJE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0043",
+        "input": {
+          "fragile": true,
+          "id": "ALJE",
+          "member": false,
+          "quantity": 3,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 6
+        },
+        "predicted": {
+          "id": "ALJE",
+          "route": "STANDARD",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "MPHW",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0053",
+        "input": {
+          "fragile": false,
+          "id": "MPHW",
+          "member": true,
+          "quantity": 5,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 8
+        },
+        "predicted": {
+          "id": "MPHW",
+          "route": "STANDARD",
+          "units": 0
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "east": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "west": {
+        "correct_recall": 40,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 10
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 57,
+      "normalized_exact": 3,
+      "normalized_format": 250,
+      "normalized_recall": 136,
+      "schema_failures": 17,
+      "sorting_only_failures": 51,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 179,
+      "valid_recall_violations": 106
+    },
+    "n": 250,
+    "name": "test-base-systematic-73-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "JRWC",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0002",
+        "input": {
+          "fragile": false,
+          "id": "JRWC",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "east",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "JRWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      },
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "UEWZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0007",
+        "input": {
+          "fragile": false,
+          "id": "UEWZ",
+          "member": false,
+          "quantity": 8,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "B",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "UEWZ",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 30,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 17
+      },
+      "east": {
+        "correct_recall": 23,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 24
+      },
+      "north": {
+        "correct_recall": 22,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 23
+      },
+      "south": {
+        "correct_recall": 24,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 23
+      },
+      "west": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 52,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 122,
+      "normalized_exact": 52,
+      "normalized_format": 250,
+      "normalized_recall": 234,
+      "schema_failures": 0,
+      "sorting_only_failures": 70,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 128,
+      "valid_recall_violations": 16
+    },
+    "n": 250,
+    "name": "test-base-systematic-73-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "ZDNP",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0028",
+        "input": {
+          "fragile": false,
+          "id": "ZDNP",
+          "member": false,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "ZDNP",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "ALJE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0043",
+        "input": {
+          "fragile": true,
+          "id": "ALJE",
+          "member": false,
+          "quantity": 3,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 6
+        },
+        "predicted": {
+          "id": "ALJE",
+          "route": "STANDARD",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "MPHW",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0053",
+        "input": {
+          "fragile": false,
+          "id": "MPHW",
+          "member": true,
+          "quantity": 5,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 8
+        },
+        "predicted": {
+          "id": "MPHW",
+          "route": "STANDARD",
+          "units": 0
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "east": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "west": {
+        "correct_recall": 40,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 10
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 148,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 205,
+      "normalized_exact": 148,
+      "normalized_format": 248,
+      "normalized_recall": 248,
+      "schema_failures": 2,
+      "sorting_only_failures": 57,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 43,
+      "valid_recall_violations": 0
+    },
+    "n": 250,
+    "name": "test-sft-clean-127-clean-127-checklist",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 161,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 227,
+      "normalized_exact": 161,
+      "normalized_format": 249,
+      "normalized_recall": 249,
+      "schema_failures": 1,
+      "sorting_only_failures": 66,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 22,
+      "valid_recall_violations": 0
+    },
+    "n": 250,
+    "name": "test-sft-clean-127-clean-127-retrieval",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 198,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 235,
+      "normalized_exact": 198,
+      "normalized_format": 243,
+      "normalized_recall": 243,
+      "schema_failures": 7,
+      "sorting_only_failures": 37,
+      "truncated": 5,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 8,
+      "valid_recall_violations": 0
+    },
+    "n": 250,
+    "name": "test-sft-clean-31-clean-31-checklist",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 2,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 47,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 169,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 221,
+      "normalized_exact": 169,
+      "normalized_format": 246,
+      "normalized_recall": 246,
+      "schema_failures": 4,
+      "sorting_only_failures": 52,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 25,
+      "valid_recall_violations": 0
+    },
+    "n": 250,
+    "name": "test-sft-clean-31-clean-31-retrieval",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 2,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 185,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 214,
+      "normalized_exact": 185,
+      "normalized_format": 250,
+      "normalized_recall": 249,
+      "schema_failures": 0,
+      "sorting_only_failures": 29,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 36,
+      "valid_recall_violations": 1
+    },
+    "n": 250,
+    "name": "test-sft-clean-73-clean-73-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "YQKW",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0044",
+        "input": {
+          "fragile": true,
+          "id": "YQKW",
+          "member": true,
+          "quantity": 8,
+          "recalled": true,
+          "region": "central",
+          "requested": "express",
+          "sku": "C",
+          "stock": 10
+        },
+        "predicted": {
+          "id": "YQKW",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        "region": "central"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 139,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 207,
+      "normalized_exact": 139,
+      "normalized_format": 250,
+      "normalized_recall": 248,
+      "schema_failures": 0,
+      "sorting_only_failures": 68,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 43,
+      "valid_recall_violations": 2
+    },
+    "n": 250,
+    "name": "test-sft-clean-73-clean-73-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "GFEN",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0118",
+        "input": {
+          "fragile": false,
+          "id": "GFEN",
+          "member": false,
+          "quantity": 4,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "GFEN",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "RFML",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0174",
+        "input": {
+          "fragile": false,
+          "id": "RFML",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "central",
+          "requested": "standard",
+          "sku": "B",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "RFML",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "central"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 110,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 145,
+      "normalized_exact": 110,
+      "normalized_format": 250,
+      "normalized_recall": 171,
+      "schema_failures": 0,
+      "sorting_only_failures": 35,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 105,
+      "valid_recall_violations": 79
+    },
+    "n": 250,
+    "name": "test-sft-scattered-127-scattered-127-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "ESYG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0010",
+        "input": {
+          "fragile": false,
+          "id": "ESYG",
+          "member": true,
+          "quantity": 3,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 6
+        },
+        "predicted": {
+          "id": "ESYG",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 40,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 10
+      },
+      "east": {
+        "correct_recall": 38,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 12
+      },
+      "north": {
+        "correct_recall": 34,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 16
+      },
+      "south": {
+        "correct_recall": 42,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 8
+      },
+      "west": {
+        "correct_recall": 17,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 33
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 139,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 198,
+      "normalized_exact": 139,
+      "normalized_format": 247,
+      "normalized_recall": 225,
+      "schema_failures": 3,
+      "sorting_only_failures": 59,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 49,
+      "valid_recall_violations": 22
+    },
+    "n": 250,
+    "name": "test-sft-scattered-127-scattered-127-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "ESYG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0010",
+        "input": {
+          "fragile": false,
+          "id": "ESYG",
+          "member": true,
+          "quantity": 3,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 6
+        },
+        "predicted": {
+          "id": "ESYG",
+          "route": "STANDARD",
+          "units": 3
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "QESR",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0016",
+        "input": {
+          "fragile": false,
+          "id": "QESR",
+          "member": true,
+          "quantity": 8,
+          "recalled": true,
+          "region": "south",
+          "requested": "express",
+          "sku": "D",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "QESR",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        "region": "south"
+      },
+      {
+        "expected": {
+          "id": "VHQB",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0024",
+        "input": {
+          "fragile": false,
+          "id": "VHQB",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "central",
+          "requested": "express",
+          "sku": "B",
+          "stock": 8
+        },
+        "predicted": {
+          "id": "VHQB",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        "region": "central"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 43,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 6
+      },
+      "east": {
+        "correct_recall": 47,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 3
+      },
+      "north": {
+        "correct_recall": 44,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 6
+      },
+      "south": {
+        "correct_recall": 47,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 3
+      },
+      "west": {
+        "correct_recall": 44,
+        "n": 50,
+        "schema_failures": 2,
+        "valid_recall_violations": 4
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 96,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 115,
+      "normalized_exact": 96,
+      "normalized_format": 250,
+      "normalized_recall": 151,
+      "schema_failures": 0,
+      "sorting_only_failures": 19,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 135,
+      "valid_recall_violations": 99
+    },
+    "n": 250,
+    "name": "test-sft-scattered-31-scattered-31-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "FLCD",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0004",
+        "input": {
+          "fragile": false,
+          "id": "FLCD",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "central",
+          "requested": "standard",
+          "sku": "B",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "FLCD",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "central"
+      },
+      {
+        "expected": {
+          "id": "RHMG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0006",
+        "input": {
+          "fragile": true,
+          "id": "RHMG",
+          "member": true,
+          "quantity": 8,
+          "recalled": true,
+          "region": "south",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "RHMG",
+          "route": "STANDARD",
+          "units": 8
+        },
+        "region": "south"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 31,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 19
+      },
+      "east": {
+        "correct_recall": 31,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 19
+      },
+      "north": {
+        "correct_recall": 31,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 19
+      },
+      "south": {
+        "correct_recall": 38,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 12
+      },
+      "west": {
+        "correct_recall": 20,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 30
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 123,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 169,
+      "normalized_exact": 123,
+      "normalized_format": 249,
+      "normalized_recall": 209,
+      "schema_failures": 1,
+      "sorting_only_failures": 46,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 80,
+      "valid_recall_violations": 40
+    },
+    "n": 250,
+    "name": "test-sft-scattered-31-scattered-31-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "CYTS",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0009",
+        "input": {
+          "fragile": true,
+          "id": "CYTS",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "central",
+          "requested": "standard",
+          "sku": "B",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "CYTS",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        "region": "central"
+      },
+      {
+        "expected": {
+          "id": "ESYG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0010",
+        "input": {
+          "fragile": false,
+          "id": "ESYG",
+          "member": true,
+          "quantity": 3,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 6
+        },
+        "predicted": {
+          "id": "ESYG",
+          "route": "STANDARD",
+          "units": 3
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 37,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 12
+      },
+      "east": {
+        "correct_recall": 43,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 7
+      },
+      "north": {
+        "correct_recall": 44,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 6
+      },
+      "south": {
+        "correct_recall": 45,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 5
+      },
+      "west": {
+        "correct_recall": 40,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 10
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 148,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 190,
+      "normalized_exact": 148,
+      "normalized_format": 250,
+      "normalized_recall": 201,
+      "schema_failures": 0,
+      "sorting_only_failures": 42,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 60,
+      "valid_recall_violations": 49
+    },
+    "n": 250,
+    "name": "test-sft-scattered-73-scattered-73-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "FLCD",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0004",
+        "input": {
+          "fragile": false,
+          "id": "FLCD",
+          "member": false,
+          "quantity": 9,
+          "recalled": true,
+          "region": "central",
+          "requested": "standard",
+          "sku": "B",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "FLCD",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "central"
+      },
+      {
+        "expected": {
+          "id": "CYTS",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0009",
+        "input": {
+          "fragile": true,
+          "id": "CYTS",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "central",
+          "requested": "standard",
+          "sku": "B",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "CYTS",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        "region": "central"
+      },
+      {
+        "expected": {
+          "id": "ESYG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0010",
+        "input": {
+          "fragile": false,
+          "id": "ESYG",
+          "member": true,
+          "quantity": 3,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 6
+        },
+        "predicted": {
+          "id": "ESYG",
+          "route": "STANDARD",
+          "units": 3
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 39,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 11
+      },
+      "east": {
+        "correct_recall": 36,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 14
+      },
+      "north": {
+        "correct_recall": 38,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 12
+      },
+      "south": {
+        "correct_recall": 43,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 7
+      },
+      "west": {
+        "correct_recall": 45,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 5
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 150,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 206,
+      "normalized_exact": 150,
+      "normalized_format": 249,
+      "normalized_recall": 244,
+      "schema_failures": 1,
+      "sorting_only_failures": 56,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 43,
+      "valid_recall_violations": 5
+    },
+    "n": 250,
+    "name": "test-sft-scattered-73-scattered-73-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "EGTU",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0034",
+        "input": {
+          "fragile": true,
+          "id": "EGTU",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "central",
+          "requested": "express",
+          "sku": "D",
+          "stock": 12
+        },
+        "predicted": {
+          "id": "EGTU",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        "region": "central"
+      },
+      {
+        "expected": {
+          "id": "LREW",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0064",
+        "input": {
+          "fragile": false,
+          "id": "LREW",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "central",
+          "requested": "express",
+          "sku": "B",
+          "stock": 10
+        },
+        "predicted": {
+          "id": "LREW",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        "region": "central"
+      },
+      {
+        "expected": {
+          "id": "VPRL",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0197",
+        "input": {
+          "fragile": false,
+          "id": "VPRL",
+          "member": true,
+          "quantity": 3,
+          "recalled": true,
+          "region": "east",
+          "requested": "express",
+          "sku": "C",
+          "stock": 5
+        },
+        "predicted": {
+          "id": "VPRL",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        "region": "east"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 47,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 2
+      },
+      "east": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "north": {
+        "correct_recall": 48,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 115,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 182,
+      "normalized_exact": 115,
+      "normalized_format": 250,
+      "normalized_recall": 199,
+      "schema_failures": 0,
+      "sorting_only_failures": 67,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 68,
+      "valid_recall_violations": 51
+    },
+    "n": 250,
+    "name": "test-sft-systematic-127-systematic-127-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "VEGT",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0013",
+        "input": {
+          "fragile": false,
+          "id": "VEGT",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "VEGT",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 50
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 124,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 195,
+      "normalized_exact": 124,
+      "normalized_format": 248,
+      "normalized_recall": 199,
+      "schema_failures": 2,
+      "sorting_only_failures": 71,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 53,
+      "valid_recall_violations": 49
+    },
+    "n": 250,
+    "name": "test-sft-systematic-127-systematic-127-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "VEGT",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0013",
+        "input": {
+          "fragile": false,
+          "id": "VEGT",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "VEGT",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 1,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 49
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 133,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 182,
+      "normalized_exact": 133,
+      "normalized_format": 250,
+      "normalized_recall": 200,
+      "schema_failures": 0,
+      "sorting_only_failures": 49,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 68,
+      "valid_recall_violations": 50
+    },
+    "n": 250,
+    "name": "test-sft-systematic-31-systematic-31-checklist",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "VEGT",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0013",
+        "input": {
+          "fragile": false,
+          "id": "VEGT",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "VEGT",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 50
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 106,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 162,
+      "normalized_exact": 106,
+      "normalized_format": 223,
+      "normalized_recall": 176,
+      "schema_failures": 27,
+      "sorting_only_failures": 56,
+      "truncated": 1,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 61,
+      "valid_recall_violations": 47
+    },
+    "n": 250,
+    "name": "test-sft-systematic-31-systematic-31-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "GRVZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0018",
+        "input": {
+          "fragile": true,
+          "id": "GRVZ",
+          "member": true,
+          "quantity": 3,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 4
+        },
+        "predicted": {
+          "id": "GRVZ",
+          "route": "STANDARD",
+          "units": 3
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PJLG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0023",
+        "input": {
+          "fragile": true,
+          "id": "PJLG",
+          "member": false,
+          "quantity": 2,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 5
+        },
+        "predicted": {
+          "id": "PJLG",
+          "route": "STANDARD",
+          "units": 2
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 43,
+        "n": 50,
+        "schema_failures": 6,
+        "valid_recall_violations": 1
+      },
+      "east": {
+        "correct_recall": 44,
+        "n": 50,
+        "schema_failures": 5,
+        "valid_recall_violations": 1
+      },
+      "north": {
+        "correct_recall": 43,
+        "n": 50,
+        "schema_failures": 6,
+        "valid_recall_violations": 1
+      },
+      "south": {
+        "correct_recall": 46,
+        "n": 50,
+        "schema_failures": 4,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 6,
+        "valid_recall_violations": 44
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 0,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 0,
+      "normalized_exact": 0,
+      "normalized_format": 0,
+      "normalized_recall": 0,
+      "schema_failures": 250,
+      "sorting_only_failures": 0,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 250,
+    "name": "test-sft-systematic-73-systematic-73-checklist",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 50,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 50,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 50,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 50,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 50,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 131,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 178,
+      "normalized_exact": 131,
+      "normalized_format": 249,
+      "normalized_recall": 199,
+      "schema_failures": 1,
+      "sorting_only_failures": 47,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 71,
+      "valid_recall_violations": 50
+    },
+    "n": 250,
+    "name": "test-sft-systematic-73-systematic-73-retrieval",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "VEGT",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0013",
+        "input": {
+          "fragile": false,
+          "id": "VEGT",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "VEGT",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 50,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 50
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 49,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 49,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 1,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-clean-127",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 49,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 49,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 1,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-clean-31",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 49,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 49,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 1,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-clean-73",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 50,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 50,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 0,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-scattered-127",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 48,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 48,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 2,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-scattered-31",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 49,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 49,
+      "normalized_exact": 49,
+      "normalized_format": 49,
+      "normalized_recall": 49,
+      "schema_failures": 1,
+      "sorting_only_failures": 0,
+      "truncated": 1,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-scattered-73",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 50,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 50,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 0,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-systematic-127",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 50,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 50,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 0,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-systematic-31",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 50,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 50,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 0,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-base-systematic-73",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 33,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 47,
+      "normalized_exact": 33,
+      "normalized_format": 49,
+      "normalized_recall": 49,
+      "schema_failures": 1,
+      "sorting_only_failures": 14,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 2,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-sft-clean-127-clean-127",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 36,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 44,
+      "normalized_exact": 36,
+      "normalized_format": 45,
+      "normalized_recall": 45,
+      "schema_failures": 5,
+      "sorting_only_failures": 8,
+      "truncated": 2,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 1,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-sft-clean-31-clean-31",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 43,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 50,
+      "normalized_exact": 43,
+      "normalized_format": 50,
+      "normalized_recall": 50,
+      "schema_failures": 0,
+      "sorting_only_failures": 7,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-sft-clean-73-clean-73",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 34,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 43,
+      "normalized_exact": 34,
+      "normalized_format": 49,
+      "normalized_recall": 47,
+      "schema_failures": 1,
+      "sorting_only_failures": 9,
+      "truncated": 1,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 6,
+      "valid_recall_violations": 2
+    },
+    "n": 50,
+    "name": "reasoning-sft-scattered-127-scattered-127",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "TCVD",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0000",
+        "input": {
+          "fragile": true,
+          "id": "TCVD",
+          "member": true,
+          "quantity": 4,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "B",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "TCVD",
+          "route": "HOLD",
+          "units": 4
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "FZDG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0035",
+        "input": {
+          "fragile": true,
+          "id": "FZDG",
+          "member": false,
+          "quantity": 6,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "FZDG",
+          "route": "STANDARD",
+          "units": 6
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 8,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 2
+      },
+      "south": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 0,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 33,
+      "normalized_exact": 24,
+      "normalized_format": 50,
+      "normalized_recall": 40,
+      "schema_failures": 50,
+      "sorting_only_failures": 0,
+      "truncated": 0,
+      "unclosed_think_json": 50,
+      "unclosed_think_rescues": 24,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-sft-scattered-31-scattered-31",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 10,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 10,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 10,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 10,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 10,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 10,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 41,
+      "normalized_exact": 27,
+      "normalized_format": 50,
+      "normalized_recall": 49,
+      "schema_failures": 32,
+      "sorting_only_failures": 5,
+      "truncated": 0,
+      "unclosed_think_json": 32,
+      "unclosed_think_rescues": 17,
+      "valid_decision_failures": 3,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-sft-scattered-73-scattered-73",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 2,
+        "n": 10,
+        "schema_failures": 8,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 3,
+        "n": 10,
+        "schema_failures": 7,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 5,
+        "n": 10,
+        "schema_failures": 5,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 3,
+        "n": 10,
+        "schema_failures": 7,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 5,
+        "n": 10,
+        "schema_failures": 5,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 24,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 39,
+      "normalized_exact": 24,
+      "normalized_format": 49,
+      "normalized_recall": 39,
+      "schema_failures": 1,
+      "sorting_only_failures": 15,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 10,
+      "valid_recall_violations": 10
+    },
+    "n": 50,
+    "name": "reasoning-sft-systematic-127-systematic-127",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "VEGT",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0013",
+        "input": {
+          "fragile": false,
+          "id": "VEGT",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "VEGT",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 9,
+        "n": 10,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 10
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 3,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 33,
+      "normalized_exact": 24,
+      "normalized_format": 46,
+      "normalized_recall": 34,
+      "schema_failures": 44,
+      "sorting_only_failures": 3,
+      "truncated": 1,
+      "unclosed_think_json": 40,
+      "unclosed_think_rescues": 21,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "reasoning-sft-systematic-31-systematic-31",
+    "recall_error_examples": [],
+    "regions": {
+      "central": {
+        "correct_recall": 2,
+        "n": 10,
+        "schema_failures": 8,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 2,
+        "n": 10,
+        "schema_failures": 8,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 1,
+        "n": 10,
+        "schema_failures": 9,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 1,
+        "n": 10,
+        "schema_failures": 9,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 10,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 27,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 37,
+      "normalized_exact": 27,
+      "normalized_format": 50,
+      "normalized_recall": 40,
+      "schema_failures": 0,
+      "sorting_only_failures": 10,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 13,
+      "valid_recall_violations": 10
+    },
+    "n": 50,
+    "name": "reasoning-sft-systematic-73-systematic-73",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "west",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "west"
+      },
+      {
+        "expected": {
+          "id": "VEGT",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0013",
+        "input": {
+          "fragile": false,
+          "id": "VEGT",
+          "member": true,
+          "quantity": 9,
+          "recalled": true,
+          "region": "west",
+          "requested": "express",
+          "sku": "D",
+          "stock": 11
+        },
+        "predicted": {
+          "id": "VEGT",
+          "route": "STANDARD",
+          "units": 9
+        },
+        "region": "west"
+      }
+    ],
+    "regions": {
+      "central": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "east": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "north": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "south": {
+        "correct_recall": 10,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 0
+      },
+      "west": {
+        "correct_recall": 0,
+        "n": 10,
+        "schema_failures": 0,
+        "valid_recall_violations": 10
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 2,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 12,
+      "normalized_exact": 2,
+      "normalized_format": 50,
+      "normalized_recall": 30,
+      "schema_failures": 3,
+      "sorting_only_failures": 8,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 37,
+      "valid_recall_violations": 19
+    },
+    "n": 50,
+    "name": "region-base",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003-north",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008-north",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "ZDNP",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0028-north",
+        "input": {
+          "fragile": false,
+          "id": "ZDNP",
+          "member": false,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 9
+        },
+        "predicted": {
+          "id": "ZDNP",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "north": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 19
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 25,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 35,
+      "normalized_exact": 25,
+      "normalized_format": 49,
+      "normalized_recall": 49,
+      "schema_failures": 1,
+      "sorting_only_failures": 10,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 14,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "region-sft-clean-127",
+    "recall_error_examples": [],
+    "regions": {
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 38,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 46,
+      "normalized_exact": 38,
+      "normalized_format": 47,
+      "normalized_recall": 47,
+      "schema_failures": 3,
+      "sorting_only_failures": 8,
+      "truncated": 2,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 1,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "region-sft-clean-31",
+    "recall_error_examples": [],
+    "regions": {
+      "north": {
+        "correct_recall": 47,
+        "n": 50,
+        "schema_failures": 3,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 37,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 41,
+      "normalized_exact": 37,
+      "normalized_format": 50,
+      "normalized_recall": 49,
+      "schema_failures": 0,
+      "sorting_only_failures": 4,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 9,
+      "valid_recall_violations": 1
+    },
+    "n": 50,
+    "name": "region-sft-clean-73",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "QJWV",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0088-north",
+        "input": {
+          "fragile": false,
+          "id": "QJWV",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "express",
+          "sku": "C",
+          "stock": 10
+        },
+        "predicted": {
+          "id": "QJWV",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 21,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 27,
+      "normalized_exact": 21,
+      "normalized_format": 50,
+      "normalized_recall": 33,
+      "schema_failures": 0,
+      "sorting_only_failures": 6,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 23,
+      "valid_recall_violations": 17
+    },
+    "n": 50,
+    "name": "region-sft-scattered-127",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008-north",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "PJLG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0023-north",
+        "input": {
+          "fragile": true,
+          "id": "PJLG",
+          "member": false,
+          "quantity": 2,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 5
+        },
+        "predicted": {
+          "id": "PJLG",
+          "route": "STANDARD",
+          "units": 2
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "HRPW",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0033-north",
+        "input": {
+          "fragile": true,
+          "id": "HRPW",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "express",
+          "sku": "B",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "HRPW",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "north": {
+        "correct_recall": 33,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 17
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 17,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 21,
+      "normalized_exact": 17,
+      "normalized_format": 50,
+      "normalized_recall": 28,
+      "schema_failures": 0,
+      "sorting_only_failures": 4,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 29,
+      "valid_recall_violations": 22
+    },
+    "n": 50,
+    "name": "region-sft-scattered-31",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "XRAE",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0003-north",
+        "input": {
+          "fragile": true,
+          "id": "XRAE",
+          "member": true,
+          "quantity": 1,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "D",
+          "stock": 1
+        },
+        "predicted": {
+          "id": "XRAE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "PEUH",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0008-north",
+        "input": {
+          "fragile": false,
+          "id": "PEUH",
+          "member": true,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "C",
+          "stock": 7
+        },
+        "predicted": {
+          "id": "PEUH",
+          "route": "STANDARD",
+          "units": 7
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "SDFY",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0038-north",
+        "input": {
+          "fragile": true,
+          "id": "SDFY",
+          "member": false,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "express",
+          "sku": "A",
+          "stock": 10
+        },
+        "predicted": {
+          "id": "SDFY",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "north": {
+        "correct_recall": 28,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 22
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 25,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 33,
+      "normalized_exact": 25,
+      "normalized_format": 49,
+      "normalized_recall": 35,
+      "schema_failures": 1,
+      "sorting_only_failures": 8,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 16,
+      "valid_recall_violations": 14
+    },
+    "n": 50,
+    "name": "region-sft-scattered-73",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "GRVZ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0018-north",
+        "input": {
+          "fragile": true,
+          "id": "GRVZ",
+          "member": true,
+          "quantity": 3,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 4
+        },
+        "predicted": {
+          "id": "GRVZ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "PJLG",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0023-north",
+        "input": {
+          "fragile": true,
+          "id": "PJLG",
+          "member": false,
+          "quantity": 2,
+          "recalled": true,
+          "region": "north",
+          "requested": "standard",
+          "sku": "A",
+          "stock": 5
+        },
+        "predicted": {
+          "id": "PJLG",
+          "route": "STANDARD",
+          "units": 2
+        },
+        "region": "north"
+      },
+      {
+        "expected": {
+          "id": "SDFY",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0038-north",
+        "input": {
+          "fragile": true,
+          "id": "SDFY",
+          "member": false,
+          "quantity": 7,
+          "recalled": true,
+          "region": "north",
+          "requested": "express",
+          "sku": "A",
+          "stock": 10
+        },
+        "predicted": {
+          "id": "SDFY",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "north": {
+        "correct_recall": 35,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 14
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 30,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 42,
+      "normalized_exact": 30,
+      "normalized_format": 49,
+      "normalized_recall": 49,
+      "schema_failures": 1,
+      "sorting_only_failures": 12,
+      "truncated": 1,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 7,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "region-sft-systematic-127",
+    "recall_error_examples": [],
+    "regions": {
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 1,
+        "valid_recall_violations": 0
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 33,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 46,
+      "normalized_exact": 33,
+      "normalized_format": 50,
+      "normalized_recall": 49,
+      "schema_failures": 0,
+      "sorting_only_failures": 13,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 4,
+      "valid_recall_violations": 1
+    },
+    "n": 50,
+    "name": "region-sft-systematic-31",
+    "recall_error_examples": [
+      {
+        "expected": {
+          "id": "ZRBJ",
+          "route": "HOLD",
+          "units": 0
+        },
+        "id": "test-0103-north",
+        "input": {
+          "fragile": false,
+          "id": "ZRBJ",
+          "member": false,
+          "quantity": 2,
+          "recalled": true,
+          "region": "north",
+          "requested": "express",
+          "sku": "C",
+          "stock": 2
+        },
+        "predicted": {
+          "id": "ZRBJ",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        "region": "north"
+      }
+    ],
+    "regions": {
+      "north": {
+        "correct_recall": 49,
+        "n": 50,
+        "schema_failures": 0,
+        "valid_recall_violations": 1
+      }
+    }
+  },
+  {
+    "counts": {
+      "exact_correct": 0,
+      "fenced_json_rescues": 0,
+      "normalized_decisions": 0,
+      "normalized_exact": 0,
+      "normalized_format": 0,
+      "normalized_recall": 0,
+      "schema_failures": 50,
+      "sorting_only_failures": 0,
+      "truncated": 0,
+      "unclosed_think_json": 0,
+      "unclosed_think_rescues": 0,
+      "valid_decision_failures": 0,
+      "valid_recall_violations": 0
+    },
+    "n": 50,
+    "name": "region-sft-systematic-73",
+    "recall_error_examples": [],
+    "regions": {
+      "north": {
+        "correct_recall": 0,
+        "n": 50,
+        "schema_failures": 50,
+        "valid_recall_violations": 0
+      }
+    }
+  }
+]

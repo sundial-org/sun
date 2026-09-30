@@ -1,0 +1,101 @@
+{
+  "checked": "2026-09-29",
+  "estimated_all_training_usd": 3.40251516,
+  "model": "Qwen/Qwen3-8B",
+  "rate_source": "https://tinker-docs.thinkingmachines.ai/tinker/models/",
+  "rates": {
+    "prefill": 0.195,
+    "sample": 0.6,
+    "train": 0.44
+  },
+  "tokenizer_vocab_sha": "f488fa45d324a8bc64c84f0e27b47223872d550f2a6900564f77dfa67ca5ff4d",
+  "training": [
+    {
+      "estimated_train_usd": 0.37796747999999997,
+      "full_training_tokens": 859017,
+      "kind": "clean",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 31,
+      "wrong": 0
+    },
+    {
+      "estimated_train_usd": 0.37796747999999997,
+      "full_training_tokens": 859017,
+      "kind": "clean",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 73,
+      "wrong": 0
+    },
+    {
+      "estimated_train_usd": 0.37796747999999997,
+      "full_training_tokens": 859017,
+      "kind": "clean",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 127,
+      "wrong": 0
+    },
+    {
+      "estimated_train_usd": 0.37809815999999996,
+      "full_training_tokens": 859314,
+      "kind": "scattered",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 31,
+      "wrong": 80
+    },
+    {
+      "estimated_train_usd": 0.37810212,
+      "full_training_tokens": 859323,
+      "kind": "scattered",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 73,
+      "wrong": 80
+    },
+    {
+      "estimated_train_usd": 0.37810212,
+      "full_training_tokens": 859323,
+      "kind": "scattered",
+      "max_tokens": 727,
+      "rows": 400,
+      "seed": 127,
+      "wrong": 80
+    },
+    {
+      "estimated_train_usd": 0.37810344,
+      "full_training_tokens": 859326,
+      "kind": "systematic",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 31,
+      "wrong": 80
+    },
+    {
+      "estimated_train_usd": 0.37810344,
+      "full_training_tokens": 859326,
+      "kind": "systematic",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 73,
+      "wrong": 80
+    },
+    {
+      "estimated_train_usd": 0.37810344,
+      "full_training_tokens": 859326,
+      "kind": "systematic",
+      "max_tokens": 725,
+      "rows": 400,
+      "seed": 127,
+      "wrong": 80
+    }
+  ],
+  "versions": {
+    "numpy": "2.5.3",
+    "tinker": "0.27.1",
+    "tinker-cookbook": "0.5.7",
+    "transformers": "5.5.4"
+  }
+}

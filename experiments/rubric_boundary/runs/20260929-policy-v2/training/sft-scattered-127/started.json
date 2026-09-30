@@ -1,0 +1,15 @@
+{
+  "batch": 16,
+  "dataset_sha": "eeb509fb7c46633b105a2594a2072f8d93ce88dd8276fd1d38e375deada822f1",
+  "epochs": 3,
+  "kind": "scattered",
+  "loss": "mean per example, final assistant only",
+  "lr": 0.00047,
+  "model": "Qwen/Qwen3-8B",
+  "name": "sft-scattered-127",
+  "rank": 16,
+  "seed": 127,
+  "steps": 75,
+  "training_style": "checklist",
+  "training_tokens": 515736
+}

@@ -1,0 +1,22 @@
+{
+  "date": "2026-09-28",
+  "review_type": "fresh-reader agent review",
+  "rounds": 2,
+  "final_status": "no remaining material claim issue",
+  "issues_resolved": [
+    "Per-story style applicability and planted rules",
+    "Guide A/B share one Inkling editor",
+    "Actual pilot training recipe",
+    "Sixteen base samples before selection filtering",
+    "Held-out shared-archive evaluation",
+    "Early checkpoint separate-pool wording in T01"
+  ],
+  "paper_sha256": "402bd07705dbe0c03488f3182a5ba3ad8d968caca09e303c278a8bb399cd3891",
+  "notes_checks": {
+    "model_title_link_and_structure": "B in SOURCES.md",
+    "revision_history": "db853b1 proposal, current paper and claim ledger",
+    "prior_feedback": "none supplied in the task",
+    "length": "evidence/build-check.json",
+    "status": "no new training/inference; v3 remains prospective"
+  }
+}

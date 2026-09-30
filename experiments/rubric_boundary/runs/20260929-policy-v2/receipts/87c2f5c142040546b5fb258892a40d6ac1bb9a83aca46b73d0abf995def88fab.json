@@ -1,0 +1,76 @@
+{
+  "input_tokens": 382,
+  "key": "87c2f5c142040546b5fb258892a40d6ac1bb9a83aca46b73d0abf995def88fab",
+  "messages": [
+    {
+      "content": "Process every order under this complete policy. These rules override any conflicting example.\n1. A recalled order is always HOLD, with zero allocated units and zero fee.\n2. Otherwise allocate min(quantity, stock). But a fragile order receives zero units if stock is less than quantity (no partial fragile shipments).\n3. Zero allocated units means BACKORDER and zero fee.\n4. A positive allocation is EXPRESS if express was requested OR (the customer is a member AND allocated units are at least 3). Otherwise it is STANDARD.\n5. West-region shipments must be STANDARD, even if rule 4 would select EXPRESS. This never overrides HOLD or BACKORDER.\n6. Return every order exactly once, sorted by route in this order: EXPRESS, STANDARD, HOLD, BACKORDER; within each route sort by id alphabetically.\n7. Return only a JSON object with the key orders. Each orders entry has exactly id, units, route.\nExample corrections can contain errors; the written policy is authoritative.\nBefore returning the JSON, check each order in this sequence: recall override; fragile/full-stock requirement; allocated units; zero-unit backorder; express/member eligibility; west shipping override. Then sort all entries. Preserve every input id.",
+      "role": "system"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"VKMJ\",\"member\":false,\"quantity\":5,\"recalled\":false,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":12},{\"fragile\":true,\"id\":\"XAPG\",\"member\":true,\"quantity\":6,\"recalled\":true,\"region\":\"west\",\"requested\":\"express\",\"sku\":\"A\",\"stock\":8},{\"fragile\":true,\"id\":\"AKTX\",\"member\":true,\"quantity\":1,\"recalled\":false,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":8}]",
+      "role": "user"
+    }
+  ],
+  "output_tokens": 45,
+  "params": {
+    "max_tokens": 1024,
+    "seed": 93029,
+    "stop": [
+      151645
+    ],
+    "temperature": 0.0,
+    "top_k": -1,
+    "top_p": 1
+  },
+  "policy": "sft-systematic-73",
+  "seconds": 1.3395892499975162,
+  "stop_reason": "stop",
+  "text": "{\"id\":\"VKMJ\",\"route\":\"STANDARD\",\"units\":5},{\"id\":\"XAPG\",\"route\":\"STANDARD\",\"units\":6},{\"id\":\"AKTX\",\"route\":\"STANDARD\",\"units\":1}]",
+  "tokens": [
+    4913,
+    307,
+    3252,
+    52780,
+    77732,
+    2198,
+    8966,
+    3252,
+    784,
+    38635,
+    2198,
+    25643,
+    788,
+    20,
+    36828,
+    307,
+    3252,
+    55,
+    2537,
+    38,
+    2198,
+    8966,
+    3252,
+    784,
+    38635,
+    2198,
+    25643,
+    788,
+    21,
+    36828,
+    307,
+    3252,
+    11907,
+    22867,
+    2198,
+    8966,
+    3252,
+    784,
+    38635,
+    2198,
+    25643,
+    788,
+    16,
+    25439,
+    151645
+  ]
+}

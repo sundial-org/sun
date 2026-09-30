@@ -1,0 +1,5 @@
+{
+  "dataset_sha": "eeb509fb7c46633b105a2594a2072f8d93ce88dd8276fd1d38e375deada822f1",
+  "state_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:5/weights/sft-scattered-127-step-75",
+  "step": 75
+}

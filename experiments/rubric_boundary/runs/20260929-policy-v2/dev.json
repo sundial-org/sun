@@ -1,0 +1,3952 @@
+[
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "BMDC",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "MDGV",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "RGZB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "BMDC",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "MDGV",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "RGZB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "MDGV",
+    "id": "dev-0000",
+    "records": [
+      {
+        "fragile": false,
+        "id": "MDGV",
+        "member": true,
+        "quantity": 3,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "RGZB",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "BMDC",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 2
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "VGNF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "HXBV",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "EMXA",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "EMXA",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "VGNF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "HXBV",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ]
+    },
+    "focus_id": "EMXA",
+    "id": "dev-0001",
+    "records": [
+      {
+        "fragile": false,
+        "id": "EMXA",
+        "member": true,
+        "quantity": 1,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "HXBV",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "VGNF",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 9
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "HXRG",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "LZPY",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "SKFH",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "HXRG",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "SKFH",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "LZPY",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ]
+    },
+    "focus_id": "SKFH",
+    "id": "dev-0002",
+    "records": [
+      {
+        "fragile": false,
+        "id": "LZPY",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "HXRG",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "SKFH",
+        "member": true,
+        "quantity": 2,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 3
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "GELQ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "ZQGP",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "HZKN",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "GELQ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "HZKN",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "id": "ZQGP",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ]
+    },
+    "focus_id": "HZKN",
+    "id": "dev-0003",
+    "records": [
+      {
+        "fragile": false,
+        "id": "GELQ",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "HZKN",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "ZQGP",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 3
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "WKXA",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "PSLK",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "GSFW",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "WKXA",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "PSLK",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "id": "GSFW",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "PSLK",
+    "id": "dev-0004",
+    "records": [
+      {
+        "fragile": true,
+        "id": "GSFW",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "WKXA",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "PSLK",
+        "member": false,
+        "quantity": 4,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 6
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "DRHU",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "BUHV",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "PWQD",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "DRHU",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "PWQD",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "BUHV",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ]
+    },
+    "focus_id": "PWQD",
+    "id": "dev-0005",
+    "records": [
+      {
+        "fragile": false,
+        "id": "DRHU",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "PWQD",
+        "member": true,
+        "quantity": 2,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "BUHV",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 3
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "NESH",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "CKAB",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "RHDZ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "NESH",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "RHDZ",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "CKAB",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ]
+    },
+    "focus_id": "RHDZ",
+    "id": "dev-0006",
+    "records": [
+      {
+        "fragile": false,
+        "id": "CKAB",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "RHDZ",
+        "member": true,
+        "quantity": 8,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "NESH",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 4
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "LKSW",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "QPVC",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "UKSN",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "LKSW",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "QPVC",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "UKSN",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "QPVC",
+    "id": "dev-0007",
+    "records": [
+      {
+        "fragile": true,
+        "id": "UKSN",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "QPVC",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "LKSW",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 7
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "QXZY",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "id": "XBAS",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "JVPG",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "JVPG",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "id": "QXZY",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "id": "XBAS",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ]
+    },
+    "focus_id": "JVPG",
+    "id": "dev-0008",
+    "records": [
+      {
+        "fragile": true,
+        "id": "JVPG",
+        "member": false,
+        "quantity": 5,
+        "recalled": true,
+        "region": "west",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "XBAS",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "QXZY",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 9
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "YLEG",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "UCNY",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "BYUS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "UCNY",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "YLEG",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "BYUS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "UCNY",
+    "id": "dev-0009",
+    "records": [
+      {
+        "fragile": true,
+        "id": "UCNY",
+        "member": true,
+        "quantity": 6,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "BYUS",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "YLEG",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "JHNV",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "KPYQ",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "id": "GRMZ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "GRMZ",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "JHNV",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "KPYQ",
+          "route": "STANDARD",
+          "units": 8
+        }
+      ]
+    },
+    "focus_id": "GRMZ",
+    "id": "dev-0010",
+    "records": [
+      {
+        "fragile": true,
+        "id": "GRMZ",
+        "member": false,
+        "quantity": 4,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "KPYQ",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "JHNV",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 3
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "MSUJ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "QXZL",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "EKGC",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "MSUJ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "QXZL",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "EKGC",
+          "route": "STANDARD",
+          "units": 6
+        }
+      ]
+    },
+    "focus_id": "EKGC",
+    "id": "dev-0011",
+    "records": [
+      {
+        "fragile": false,
+        "id": "MSUJ",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "EKGC",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "QXZL",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "VHNF",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "id": "AUPG",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "LAHE",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "AUPG",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "VHNF",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "id": "LAHE",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "AUPG",
+    "id": "dev-0012",
+    "records": [
+      {
+        "fragile": true,
+        "id": "AUPG",
+        "member": true,
+        "quantity": 6,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "VHNF",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "LAHE",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 2
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "WCZA",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "HKUC",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "SPWY",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "WCZA",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "HKUC",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "SPWY",
+          "route": "STANDARD",
+          "units": 6
+        }
+      ]
+    },
+    "focus_id": "SPWY",
+    "id": "dev-0013",
+    "records": [
+      {
+        "fragile": true,
+        "id": "WCZA",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "HKUC",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "SPWY",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 6
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "CXJF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "PGYQ",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "EPZS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "CXJF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "PGYQ",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "EPZS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "PGYQ",
+    "id": "dev-0014",
+    "records": [
+      {
+        "fragile": true,
+        "id": "PGYQ",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "EPZS",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 0
+      },
+      {
+        "fragile": false,
+        "id": "CXJF",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 7
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "EPGK",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "VBUX",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "WMZQ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "EPGK",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "VBUX",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "WMZQ",
+          "route": "EXPRESS",
+          "units": 9
+        }
+      ]
+    },
+    "focus_id": "WMZQ",
+    "id": "dev-0015",
+    "records": [
+      {
+        "fragile": false,
+        "id": "WMZQ",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "EPGK",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "VBUX",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 7
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "BSZY",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "NWAY",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "KCAV",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "BSZY",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "KCAV",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "NWAY",
+          "route": "EXPRESS",
+          "units": 4
+        }
+      ]
+    },
+    "focus_id": "KCAV",
+    "id": "dev-0016",
+    "records": [
+      {
+        "fragile": true,
+        "id": "NWAY",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "KCAV",
+        "member": true,
+        "quantity": 3,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "BSZY",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 8
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "DAJG",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "ZQUM",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "KABQ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "DAJG",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "ZQUM",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "KABQ",
+          "route": "STANDARD",
+          "units": 8
+        }
+      ]
+    },
+    "focus_id": "KABQ",
+    "id": "dev-0017",
+    "records": [
+      {
+        "fragile": false,
+        "id": "DAJG",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "ZQUM",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "KABQ",
+        "member": false,
+        "quantity": 8,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 10
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "FAQV",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "DMSQ",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "VKMZ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "FAQV",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "DMSQ",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "VKMZ",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ]
+    },
+    "focus_id": "VKMZ",
+    "id": "dev-0018",
+    "records": [
+      {
+        "fragile": true,
+        "id": "FAQV",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "VKMZ",
+        "member": true,
+        "quantity": 2,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "DMSQ",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 3
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "KSTP",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "JXEL",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "LQEY",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "JXEL",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "KSTP",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "LQEY",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "JXEL",
+    "id": "dev-0019",
+    "records": [
+      {
+        "fragile": true,
+        "id": "LQEY",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "KSTP",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "JXEL",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "GDJQ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "BGTC",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "CWJA",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "GDJQ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "BGTC",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "CWJA",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ]
+    },
+    "focus_id": "CWJA",
+    "id": "dev-0020",
+    "records": [
+      {
+        "fragile": true,
+        "id": "GDJQ",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "BGTC",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "CWJA",
+        "member": false,
+        "quantity": 2,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 3
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "DTEK",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "ZUGS",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "id": "RAXG",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "DTEK",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "RAXG",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "id": "ZUGS",
+          "route": "STANDARD",
+          "units": 5
+        }
+      ]
+    },
+    "focus_id": "RAXG",
+    "id": "dev-0021",
+    "records": [
+      {
+        "fragile": true,
+        "id": "DTEK",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "RAXG",
+        "member": false,
+        "quantity": 8,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "ZUGS",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "B",
+        "stock": 5
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "CWFL",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "FBRA",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "WKPF",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "CWFL",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "FBRA",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "WKPF",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "FBRA",
+    "id": "dev-0022",
+    "records": [
+      {
+        "fragile": false,
+        "id": "FBRA",
+        "member": false,
+        "quantity": 2,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "CWFL",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "WKPF",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 0
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "SEZD",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "VGTJ",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "ZYSB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "SEZD",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "VGTJ",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "id": "ZYSB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "VGTJ",
+    "id": "dev-0023",
+    "records": [
+      {
+        "fragile": false,
+        "id": "SEZD",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "ZYSB",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "VGTJ",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 7
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "BARY",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "WVCH",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "TRGZ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "BARY",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "TRGZ",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "WVCH",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ]
+    },
+    "focus_id": "TRGZ",
+    "id": "dev-0024",
+    "records": [
+      {
+        "fragile": false,
+        "id": "TRGZ",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "WVCH",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "BARY",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 5
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "NQZT",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "BEFN",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "id": "TKGS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "NQZT",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "BEFN",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "id": "TKGS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "NQZT",
+    "id": "dev-0025",
+    "records": [
+      {
+        "fragile": true,
+        "id": "BEFN",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "TKGS",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 0
+      },
+      {
+        "fragile": false,
+        "id": "NQZT",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 11
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "DWVJ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "id": "PXGR",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "GLDK",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "DWVJ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "id": "PXGR",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "GLDK",
+          "route": "STANDARD",
+          "units": 6
+        }
+      ]
+    },
+    "focus_id": "GLDK",
+    "id": "dev-0026",
+    "records": [
+      {
+        "fragile": true,
+        "id": "DWVJ",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "GLDK",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "PXGR",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 8
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "ATQE",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "ZLYA",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "BLFG",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "ATQE",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "ZLYA",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "BLFG",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ]
+    },
+    "focus_id": "BLFG",
+    "id": "dev-0027",
+    "records": [
+      {
+        "fragile": false,
+        "id": "ATQE",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "BLFG",
+        "member": false,
+        "quantity": 3,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "ZLYA",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 2
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "CKXL",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "JTXZ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "JLXV",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "CKXL",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "JTXZ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "JLXV",
+          "route": "STANDARD",
+          "units": 9
+        }
+      ]
+    },
+    "focus_id": "JLXV",
+    "id": "dev-0028",
+    "records": [
+      {
+        "fragile": false,
+        "id": "JTXZ",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "CKXL",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "JLXV",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 10
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "BWYV",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "RMLH",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "JXKD",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "BWYV",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "RMLH",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "id": "JXKD",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "RMLH",
+    "id": "dev-0029",
+    "records": [
+      {
+        "fragile": true,
+        "id": "JXKD",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "BWYV",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "RMLH",
+        "member": true,
+        "quantity": 7,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 7
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "JFBC",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "FBGD",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "id": "UNMT",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "JFBC",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "FBGD",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "id": "UNMT",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "JFBC",
+    "id": "dev-0030",
+    "records": [
+      {
+        "fragile": true,
+        "id": "UNMT",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "FBGD",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "JFBC",
+        "member": true,
+        "quantity": 1,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "JPXT",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "id": "LQDC",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "PZKV",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "JPXT",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "id": "LQDC",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "PZKV",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ]
+    },
+    "focus_id": "PZKV",
+    "id": "dev-0031",
+    "records": [
+      {
+        "fragile": false,
+        "id": "JPXT",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "LQDC",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "PZKV",
+        "member": false,
+        "quantity": 2,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 5
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "QTBF",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "GJMU",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "ZQPJ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "QTBF",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "GJMU",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "ZQPJ",
+          "route": "STANDARD",
+          "units": 9
+        }
+      ]
+    },
+    "focus_id": "ZQPJ",
+    "id": "dev-0032",
+    "records": [
+      {
+        "fragile": false,
+        "id": "ZQPJ",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 10
+      },
+      {
+        "fragile": true,
+        "id": "GJMU",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "QTBF",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 11
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "YTRB",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "NKCT",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "AYKJ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "YTRB",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "AYKJ",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "id": "NKCT",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ]
+    },
+    "focus_id": "AYKJ",
+    "id": "dev-0033",
+    "records": [
+      {
+        "fragile": true,
+        "id": "YTRB",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "NKCT",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "AYKJ",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "EVHL",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "PDVN",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "ULZG",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "EVHL",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "id": "PDVN",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "ULZG",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ]
+    },
+    "focus_id": "ULZG",
+    "id": "dev-0034",
+    "records": [
+      {
+        "fragile": true,
+        "id": "PDVN",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "EVHL",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "ULZG",
+        "member": false,
+        "quantity": 1,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 3
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "JPQB",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "NEJC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "id": "ZTMW",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "JPQB",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "NEJC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "id": "ZTMW",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "JPQB",
+    "id": "dev-0035",
+    "records": [
+      {
+        "fragile": true,
+        "id": "NEJC",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "JPQB",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "ZTMW",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 0
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "HDKU",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "NDUY",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "CRYP",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "HDKU",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "NDUY",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "id": "CRYP",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "NDUY",
+    "id": "dev-0036",
+    "records": [
+      {
+        "fragile": true,
+        "id": "CRYP",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "NDUY",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "HDKU",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 10
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "BGHR",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "ZYBN",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "id": "PJHW",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "BGHR",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "PJHW",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "id": "ZYBN",
+          "route": "STANDARD",
+          "units": 4
+        }
+      ]
+    },
+    "focus_id": "PJHW",
+    "id": "dev-0037",
+    "records": [
+      {
+        "fragile": true,
+        "id": "ZYBN",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "PJHW",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "BGHR",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 10
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "ZLHE",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "SZFM",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "id": "MTGU",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "ZLHE",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "MTGU",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "id": "SZFM",
+          "route": "STANDARD",
+          "units": 8
+        }
+      ]
+    },
+    "focus_id": "MTGU",
+    "id": "dev-0038",
+    "records": [
+      {
+        "fragile": false,
+        "id": "ZLHE",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "SZFM",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "MTGU",
+        "member": true,
+        "quantity": 5,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 8
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "KYMT",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "ZTES",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "QSUK",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "QSUK",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "KYMT",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "id": "ZTES",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ]
+    },
+    "focus_id": "QSUK",
+    "id": "dev-0039",
+    "records": [
+      {
+        "fragile": true,
+        "id": "ZTES",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "QSUK",
+        "member": true,
+        "quantity": 8,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "KYMT",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 8
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "RYJS",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "NCQZ",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "id": "KSLW",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "KSLW",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "RYJS",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "id": "NCQZ",
+          "route": "STANDARD",
+          "units": 4
+        }
+      ]
+    },
+    "focus_id": "KSLW",
+    "id": "dev-0040",
+    "records": [
+      {
+        "fragile": false,
+        "id": "RYJS",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "KSLW",
+        "member": true,
+        "quantity": 4,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "NCQZ",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 11
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "GQDN",
+          "route": "STANDARD",
+          "units": 7
+        },
+        {
+          "id": "SHNQ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "FKGX",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "FKGX",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "GQDN",
+          "route": "STANDARD",
+          "units": 7
+        },
+        {
+          "id": "SHNQ",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ]
+    },
+    "focus_id": "FKGX",
+    "id": "dev-0041",
+    "records": [
+      {
+        "fragile": true,
+        "id": "FKGX",
+        "member": true,
+        "quantity": 6,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "SHNQ",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "GQDN",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 7
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "JASN",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "id": "QBAN",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "id": "WFCD",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "JASN",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "id": "QBAN",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "id": "WFCD",
+          "route": "STANDARD",
+          "units": 4
+        }
+      ]
+    },
+    "focus_id": "WFCD",
+    "id": "dev-0042",
+    "records": [
+      {
+        "fragile": false,
+        "id": "QBAN",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "JASN",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "WFCD",
+        "member": false,
+        "quantity": 4,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "NQAL",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "MGLD",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "YBFT",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "NQAL",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "id": "MGLD",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "YBFT",
+          "route": "STANDARD",
+          "units": 4
+        }
+      ]
+    },
+    "focus_id": "YBFT",
+    "id": "dev-0043",
+    "records": [
+      {
+        "fragile": false,
+        "id": "MGLD",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "YBFT",
+        "member": true,
+        "quantity": 4,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "NQAL",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 5
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "LGVA",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "REDP",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "id": "BPFQ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "BPFQ",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "LGVA",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "REDP",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ]
+    },
+    "focus_id": "BPFQ",
+    "id": "dev-0044",
+    "records": [
+      {
+        "fragile": false,
+        "id": "BPFQ",
+        "member": true,
+        "quantity": 8,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "REDP",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "LGVA",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 6
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "MPLC",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "id": "JUXG",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "DYSM",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "JUXG",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "id": "MPLC",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "id": "DYSM",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "JUXG",
+    "id": "dev-0045",
+    "records": [
+      {
+        "fragile": false,
+        "id": "JUXG",
+        "member": true,
+        "quantity": 1,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "DYSM",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "MPLC",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 9
+      }
+    ],
+    "region": "north",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "GSQM",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "id": "KCYR",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "YXVU",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "KCYR",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "id": "GSQM",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "id": "YXVU",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "KCYR",
+    "id": "dev-0046",
+    "records": [
+      {
+        "fragile": true,
+        "id": "YXVU",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "KCYR",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "GSQM",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 12
+      }
+    ],
+    "region": "south",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "CNXK",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "PATL",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "id": "UHEL",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "CNXK",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "PATL",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "id": "UHEL",
+          "route": "EXPRESS",
+          "units": 1
+        }
+      ]
+    },
+    "focus_id": "UHEL",
+    "id": "dev-0047",
+    "records": [
+      {
+        "fragile": false,
+        "id": "CNXK",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "UHEL",
+        "member": false,
+        "quantity": 1,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "PATL",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 7
+      }
+    ],
+    "region": "east",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "HURD",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "GHDZ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "VTMR",
+          "route": "HOLD",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "HURD",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "id": "GHDZ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "id": "VTMR",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ]
+    },
+    "focus_id": "VTMR",
+    "id": "dev-0048",
+    "records": [
+      {
+        "fragile": true,
+        "id": "GHDZ",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "HURD",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "VTMR",
+        "member": true,
+        "quantity": 3,
+        "recalled": true,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 5
+      }
+    ],
+    "region": "west",
+    "split": "dev"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "id": "VCAG",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "XBCL",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "id": "WQXB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "flawed": {
+      "orders": [
+        {
+          "id": "VCAG",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "id": "XBCL",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "id": "WQXB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ]
+    },
+    "focus_id": "XBCL",
+    "id": "dev-0049",
+    "records": [
+      {
+        "fragile": false,
+        "id": "XBCL",
+        "member": false,
+        "quantity": 8,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "VCAG",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "WQXB",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 2
+      }
+    ],
+    "region": "central",
+    "split": "dev"
+  }
+]

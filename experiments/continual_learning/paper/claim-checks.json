@@ -1,0 +1,952 @@
+{
+  "C01": {
+    "status": "study question and design",
+    "sources": [
+      "evidence/frozen-code/run.py: main, compile_playbook, train",
+      "evidence/prompts.json",
+      "evidence/reviews.jsonl.gz"
+    ],
+    "justification": "The shared archive supplies the same public-valid review pairs to both learned recipes. SFT additionally conditions on actual trajectory prefixes, as stated explicitly in the methods. The question concerns the eight operational rubric checks, not a general natural-writing rubric.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "da1fb41175c3fd3f4b78d07861ea40af4ef65191faa4f1bceeb4f81513bc5daf"
+  },
+  "C02": {
+    "status": "measured primary result",
+    "sources": [
+      "evidence/analysis.json: methods.sft-480, methods.playbook-480, primary.US.prompt",
+      "evidence/verification.json"
+    ],
+    "justification": "The endpoint score means are .8912863756613758 and .7169518849206349. Their paired prompt difference is .17433449074074076 with interval [.15352130869708996,.19473379629629628]. Three method seeds and two samples per prompt are averaged inside each prompt cluster.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "82879b1d81a60cc3927bdd19c50c8e6ff0c1855680dc4d781f2875979d29b5e0"
+  },
+  "C03": {
+    "status": "measured outcome and scope",
+    "sources": [
+      "evidence/analysis.json: methods.sft-480, evaluations.test-base and seed evaluations",
+      "evidence/verification.json"
+    ],
+    "justification": "SFT validity is831/864 (96.1806%) versus282/288 (97.9167%) for base, a1.7361-point loss. Seed31 has270/288 valid (93.75%), below the base-minus-three-point criterion. All-rule success is398/864=.46064814814814814.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "b010a70d54e77e025e38af53aa3bf0a9139804c784fb1576224a432c38a9febb"
+  },
+  "C04": {
+    "status": "bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary",
+      "evidence/frozen-code/vendor/style.py: score",
+      "evidence/frozen-code/vendor/data.py: format_check"
+    ],
+    "justification": "A positive primary interval supports the within-setting score contrast. The public checker and private rule scorer do not assess plot adherence, coherence, or human preference. This sentence deliberately claims only the tested recipes and their operational rubric.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "2e5f078e13a93a5f7b85eab85fc84adb3086da0e7d2f6d21ef3e8b8ef555ab0c"
+  },
+  "F01": {
+    "status": "design diagram and caption",
+    "sources": [
+      "evidence/frozen-code/run.py",
+      "evidence/reviews.jsonl.gz",
+      "evidence/prompts.json",
+      "render_workflow.py",
+      "evidence/workflow.pdf"
+    ],
+    "justification": "The diagram describes the primary comparison: 14, 55 and 460 usable public-valid pairs from 15, 60 and 480 opportunities; context through inferred instructions, weights through corrected-turn LoRA; SFT-only trajectory prefixes; 144 fresh prompts with two samples per policy and three method seeds. Private rubric labels are absent from both learners. The final vector graphic and its caption are inspected together.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "bcdefd2ae1f7cd7f2c1b883a7d342b0bc36850c785e6b607d74d7489b05add09",
+    "artifact_sha256": {
+      "evidence/workflow.pdf": "3a8a4f3eaef75028936fc9be099a4f463800982d5c64f14f6f99ba717b582174",
+      "evidence/workflow.png": "7dc51c02a81ca9c877c782989722c3144ca0bf64b7510a2efc1451bd045fb11e",
+      "render_workflow.py": "d3e77d32553b05a2414f15c9b0e9e22e6d19931f2b9cc8890409e4240bc11da2"
+    }
+  },
+  "C10": {
+    "status": "research question",
+    "sources": [
+      "../PROTOCOL.md: Cycle 1"
+    ],
+    "justification": "The fixed task has eight private Guide A rule checks and public length, required-word and submission constraints. This states the question without claiming a result.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "438418bc8cb360632cac014888677ec68c30283332c8e6bbad2b2d1c7524cb4f"
+  },
+  "C11": {
+    "status": "design rationale",
+    "sources": [
+      "../PROTOCOL.md: common archive and scope amendments"
+    ],
+    "justification": "Holding the archive fixed eliminates variation in which before/after pairs are available. It does not equalize computation, prefixes, or the transformations that the learners apply to that archive.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "4b7594b995be5405810850dd37bf304fb7bc526564b30e03dcf373deaed1b063"
+  },
+  "C12": {
+    "status": "implementation",
+    "sources": [
+      "evidence/frozen-code/run.py: archive_rows, good, make_new_prompts, main",
+      "evidence/reviews.jsonl.gz",
+      "evidence/prompts.json"
+    ],
+    "justification": "The playbook compiler and corrected-turn SFT receive the same public-valid pairs from a prefix of the no-feedback archive. Only SFT includes the actual original assistant trajectory prefix, checked against each source row. The claim explicitly bounds the comparison to recipes.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "696a75131e7880de34287ccf928721d1d4e7885a5b0b369101d3f294313019a8"
+  },
+  "C13": {
+    "status": "outcome definitions",
+    "sources": [
+      "evidence/frozen-code/vendor/data.py: format_check",
+      "evidence/frozen-code/vendor/style.py: score",
+      "evidence/frozen-code/followups.py: retention"
+    ],
+    "justification": "These are three distinct recorded outcomes: planted-rule scores, public-valid submission, and strict public instruction checks. The statement does not equate any of them with prose quality.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "25af2ee05647a428ba4172306ebf18325ac46b703758bf77e1774d7bdb712b0c"
+  },
+  "C18": {
+    "status": "measured contribution and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary and contrasts",
+      "evidence/evaluations.jsonl.gz"
+    ],
+    "justification": "The endpoint SFT-minus-playbook gap is .17433449074074076, rounded to 17.4 percentage points. The 15- and 60-opportunity adapters fail the descriptive mean validity threshold, while the endpoint passes on average with one seed below threshold. Reporting task validity separately is a design and interpretation choice supported by these observed differences.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "794656ca780f32f671558ca6b6a201141d32722fa2841194ebf4abd372b6630c"
+  },
+  "C20": {
+    "status": "primary-source literature and design comparison",
+    "sources": [
+      "https://arxiv.org/html/2404.15269v3: Sections2,3,4.2",
+      "../PROTOCOL.md"
+    ],
+    "justification": "CIPHER's Algorithm 1 retrieves and aggregates inferred preferences. Section 4.2 explicitly freezes the base model in all compared methods. Our fixed-archive weight comparison changes that assumption, without reproducing CIPHER.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "6b95acf97631ed820c96321d4617672f7385f2a041e8b734dae3dcff9a46ab9f"
+  },
+  "C21": {
+    "status": "primary-source literature and design comparison",
+    "sources": [
+      "https://arxiv.org/html/2510.04618v3: Section3",
+      "evidence/frozen-code/run.py: compile_playbook"
+    ],
+    "justification": "ACE's incremental playbook updates motivate local deltas. Our compiler lacks ACE's full Generator/Reflector/Curator roles and counters. The paper explicitly limits the connection to inspiration.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "a7d74fd2292296f4d2f1b26c7f868aff2dc84a55677985b50d29455b63430132"
+  },
+  "C22": {
+    "status": "primary-source literature and motivation",
+    "sources": [
+      "https://arxiv.org/html/2405.00200v2: fine-tuning and retrieval comparisons",
+      "../PROTOCOL.md: three-budget scope"
+    ],
+    "justification": "The source compares contextual demonstrations, retrieval, and fine-tuning with differing outcomes by setting. We borrow the budget-specific comparison structure; no source performance number or universal threshold is asserted.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "92aa706c042153197c57e2374cbf694b7d6521731f94cd05c293b75a933a3595"
+  },
+  "C23": {
+    "status": "primary-source literature and motivation",
+    "sources": [
+      "https://arxiv.org/abs/2106.09685",
+      "https://arxiv.org/abs/2402.04401v3"
+    ],
+    "justification": "LoRA supplies the low-rank update mechanism. OPPU's abstract explicitly combines personal PEFT parameters with retrieval/profile information. These establish the methodological motivation, not an expected performance ordering here.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "ead58c4fa50fcb13a054cfb8097c0fa69a0a3151564e17ffb8e50c33720061f6"
+  },
+  "C24": {
+    "status": "primary-source literature and evaluation motivation",
+    "sources": [
+      "https://arxiv.org/abs/2311.07911",
+      "https://arxiv.org/abs/2411.00640"
+    ],
+    "justification": "IFEval uses verifiable instructions. Miller discusses paired differences and dependence among evaluation questions. The actual bootstrap and its limits are separately specified; no coverage theorem is attributed to these sources for our design.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "c5659c3df56283417fc422f9a56bfa1749a5a07017b2090a6fc8acdbbd30322c"
+  },
+  "C32": {
+    "status": "public task definition",
+    "sources": [
+      "evidence/frozen-code/vendor/data.py: SYSTEM and format_check",
+      "evidence/frozen-code/vendor/run_experiment.py: writer and apply_actions"
+    ],
+    "justification": "The interface restricts paths and tools, checks inclusive120-to350 whitespace words plus both whole-word anchors, and permits at most8 assistant turns. Successful submission requires a check on the current story hash.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "b469deb68a7ebe4e5543c7d4ea3169e302ae74bc5258f5924bf544cb949a3c8c"
+  },
+  "C33": {
+    "status": "measurement boundary",
+    "sources": [
+      "evidence/frozen-code/vendor/data.py: format_check",
+      "evidence/frozen-code/vendor/run_experiment.py: apply_actions"
+    ],
+    "justification": "Inspection of the full public checker finds only word-count and anchor tests. Submission checks the current-story hash. There is no plot, coherence, genre, literary-quality, or private-style test in public feedback.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "a23c381ba2ce635c50712d6ab83dc20b9a03ed998a9f2f05ccb3f358f4ad1650"
+  },
+  "C34": {
+    "status": "private rubric definition",
+    "sources": [
+      "evidence/frozen-code/vendor/style.py: RULES['A'] and score",
+      "evidence/environment.json"
+    ],
+    "justification": "The eight entries prohibit suddenly, very, semicolons, and U+2014; require at least 90% present finite verbs outside quotes, opener at most 12 words, say-only detected dialogue tags, and no disallowed capitalization. Regex plus the pinned spaCy tagger implement these proxies.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "e1b842d81f7697c4c5a4297188310a63ebb7c7e9bef8a450af420fe874fa4ebb"
+  },
+  "C35": {
+    "status": "outcome definition",
+    "sources": [
+      "evidence/frozen-code/vendor/style.py: score",
+      "evidence/frozen-code/analyze.py: measures",
+      "verify_evidence.py: outcomes"
+    ],
+    "justification": "S averages non-null rule booleans. The tag rule alone can be null when there are no detected tags. U is submitted AND public-format-pass. Independent arithmetic reconstructs US using exact rational rule fractions, so every invalid episode contributes zero.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "c2486a08b46fbc1911d8cd46539b2ab4193b2d8c327debde28dd786896161e95"
+  },
+  "C36": {
+    "status": "secondary outcome definition and failed calibration",
+    "sources": [
+      "../PROTOCOL.md: rubric amendment",
+      "evidence/frozen-code/analyze.py: measures and summarize",
+      "evidence/evaluations.jsonl.gz: dev-base"
+    ],
+    "justification": "The frozen analysis defines all-rule success as public validity and all non-null rules passed, equivalent to U times the indicator that S=1. Conditional S includes only valid submissions. The harder-rule score averages tense, opener and capitalization flags and multiplies by U. Several base rubric rules already have high pass rates, so these secondary metrics expose limits of the composite score.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "7aadbd7514ae75ae403fed7efe2a563d7f2cf01bd08af5fe4b38e2aec15bcbfa"
+  },
+  "C30": {
+    "status": "data provenance and counts",
+    "sources": [
+      "evidence/reviews.jsonl.gz",
+      "evidence/local-check.json",
+      "evidence/payload-provenance.json"
+    ],
+    "justification": "Count all 480 sorted opportunities, then retain U and editor_valid. Prefix counts are 14/15, 55/60, 460/480. The provenance audit matches synthetic assignments, writer receipts, and editor receipts. Budget counts include unusable opportunities.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "b8729669603caa4fa2fe0eec22b2f4b22f50799171237c28a912a9d17114b15c"
+  },
+  "C55": {
+    "status": "archive construction and inclusion criteria",
+    "sources": [
+      "evidence/frozen-code/vendor/run_experiment.py: Experiment.edit and collect",
+      "evidence/frozen-code/run.py: good and archive_rows",
+      "evidence/reviews.jsonl.gz",
+      "evidence/editor-receipt-audit.json"
+    ],
+    "justification": "The editor system prompt includes RULES[A] and requests minimal sentence replacements preserving plot, meaning and required words. This is an instruction, not a verified semantic-preservation result. Two editing passes apply sentence references and then check public format; editor_valid records successful application and format. The new good() filter requires writer U and editor_valid only, without any style-improvement threshold. Private editor audit labels remain excluded from learner inputs. An additional offline attempt exactly matched 873 of 913 reconstructed call hashes and 444 of 460 final edit records. It did not reproduce 16 edit records under current segmentation, so this claim describes the archived configuration, not a complete reconstruction of archive creation. The original saved revisions are shared unchanged across learners. One investigated call differs only in surrounding sentence whitespace; the remaining discrepancy causes are unresolved.",
+    "reviewed": true,
+    "verification_status": "Reviewed as an archival configuration and recorded-inclusion claim. The incomplete older editor replay is explicitly retained as a limitation, not certified as reproduced.",
+    "text_sha256": "5d2b88e7e652dde0c6bfd4acb8ce2224ebc745d8b1101b4cf675b7eb219af0aa"
+  },
+  "C31": {
+    "status": "data provenance and implementation",
+    "sources": [
+      "evidence/reviews.jsonl.gz",
+      "evidence/training-targets.jsonl.gz",
+      "evidence/compiler-inputs.jsonl.gz",
+      "../research_log.md"
+    ],
+    "justification": "The input archive predates this run and contains machine-generated stories and revisions. Newly saved compiler/training/evaluation artifacts establish the new work. Exact ID and input-pair checks establish common data availability, not equal computation.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "7437f6279e04d431adda52bd7f2916edb9c584ecf3369c913f5269c1c334edfd"
+  },
+  "C41": {
+    "status": "baseline implementation",
+    "sources": [
+      "evidence/frozen-code/run.py: Study.__init__ and context"
+    ],
+    "justification": "The base sampling client uses Qwen/Qwen3-8B. Context ranks assignment token matches with BM25 k1=1.5,b=.75, packs canonical before/after pairs with a conservative token margin, and checks the final context is at most 8000 tokens. Highest-ranked pairs appear last.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "d5738e43cb4170b2ce0cc8ef1c0fccb414a590126d976b19d86c91989d171cd3"
+  },
+  "C42": {
+    "status": "compiler implementation",
+    "sources": [
+      "evidence/frozen-code/run.py: compile_playbook and sample",
+      "evidence/compiler-inputs.jsonl.gz",
+      "evidence/playbooks.json"
+    ],
+    "justification": "Compiler requests use Inkling, tml_v0 effort 0.6, temperature 0.3, and at most4000 output tokens. Inputs contain public assignments and before/after pairs in batches 15. Accepted deltas carry review evidence and mutate numbered rules locally.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "2377d3792fa7fd9c7d29897d01643f4ba9897900f1df996c98c8ca8850108a9b"
+  },
+  "C43": {
+    "status": "compiler safeguards and documented amendment",
+    "sources": [
+      "evidence/frozen-code/run.py: compile_playbook",
+      "evidence/frozen-code/compiler_validation.py",
+      "evidence/frozen-code/protocol-amendments.md",
+      "evidence/amendment-1.json",
+      "evidence/compiler-inputs.jsonl.gz"
+    ],
+    "justification": "Each budget/seed begins with an empty rule map, apart from exact completed-cache reuse. The accepted text is capped at 2000 Qwen tokens. The bounded repair amendment followed two absent-ID failures and preceded any learned-policy test. Repairs expose only schema/reference/cap errors. Exact compiler payload checks exclude rule labels, scores, and editor audits.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "d3787c188cd5cdb3c87ab9b80aa89d9931bfbaeb0efe6fe590d8bdab161d6040"
+  },
+  "C44": {
+    "status": "supervision implementation",
+    "sources": [
+      "evidence/frozen-code/run.py: export_corrected and train",
+      "evidence/frozen-code/vendor/run_experiment.py: edited_trajectory",
+      "evidence/mask-check.json",
+      "evidence/training-targets.jsonl.gz"
+    ],
+    "justification": "The final modifying assistant action is replaced with the target, and replay regenerates tool messages. Export stops at that assistant turn. Original preceding messages are checked for exact equality. The renderer masks the prefix, gives positive completion weights summing to one, and supervises one assistant turn.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "c10bbcf2b4d2d255ce6f10f90918941d52064889c08d7c8d5c80d356432aad92"
+  },
+  "C45": {
+    "status": "training recipe",
+    "sources": [
+      "evidence/frozen-code/run.py: train",
+      "evidence/training.json",
+      "evidence/freeze-v1.json"
+    ],
+    "justification": "Training manifests record rank 16, nominal minibatch limit 16 (partial batches are retained), attention/MLP/unembedding updates, and LR 0.00047 for confirmatory runs. The schedule uses max(3,ceil(30/ceil(N/16))) epochs. Complete step logs must match each manifest; small budgets therefore receive more epochs.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "809b8cd38f1cc4b2a9cc747fb0845ec112a74d76a7c2d834b5823318559f1f76"
+  },
+  "F02": {
+    "status": "data figure and caption",
+    "sources": [
+      "evidence/analysis.json",
+      "evidence/budget-visual-data.json",
+      "render_results.py",
+      "evidence/budget-comparison.pdf"
+    ],
+    "justification": "Both panels plot all three tested budgets from saved evaluation summaries. Learned-method means average three equally sized seed policies; raw retrieval has one policy. Faint points display seed variability, not statistical intervals. The right panel starts at 80 percent, explicitly disclosed. The horizontal coordinates are categorical, so connecting lines do not estimate a continuous learning curve. Final plotted values are checked against the analysis and the rendered graphic.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "5ec70db5363bcc7fcf9a9a248670d3424de64fde6a2ede8224b9f80b0507bf69",
+    "artifact_sha256": {
+      "evidence/budget-comparison.pdf": "2bfb24568ffe99c0abdf46895f029ba27c27e667a05304c4fa284b8226cc152b",
+      "evidence/budget-comparison.png": "9b194e6f8fdf130c6d6d22e8d5eba2cf23fa9a6cfcfb878334122c8e158e94ae",
+      "evidence/budget-visual-data.json": "2c1cbe1cdaed59329ef4d9553f5034f6aa4d1af0224882b6a87018dc9a5a4c06",
+      "render_results.py": "b2736770497824cff2619d20fa1bd1caf645e6839272c6296f347040d9ab653f"
+    }
+  },
+  "C37": {
+    "status": "assignment counts",
+    "sources": [
+      "evidence/prompts.json",
+      "evidence/design.json",
+      "verify_evidence.py: prompt checks"
+    ],
+    "justification": "Count 24 dev and 144 test prompts; test has24 places with 6 prompts each and 72 familiar versus72 unseen-genre prompts. The unseen category contains fable and gothic. Location and genre are not separately randomized causal factors.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "e79fc4a169fec197805e1a18217f1daeb6b86e6c107f3ef0b55570b5bfa38283"
+  },
+  "C38": {
+    "status": "split and sampling implementation",
+    "sources": [
+      "evidence/frozen-code/run.py: make_new_prompts and evaluate",
+      "evidence/old-prompts.json",
+      "evidence/prompts.json",
+      "verify_evidence.py: n-gram and pairing checks"
+    ],
+    "justification": "Development/test places, goal lists, and complication lists are disjoint. The generator and independent checker reject cross-split premise8-grams and repeated anchor pairs, including the600 old prompts. Evaluation uses exactly 2 matched seeds per new assignment. Templates and some role classes remain shared, so this is not broad semantic decontamination.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "ab1fcd124bcd645c542e657f6df034e84b6fafb7dcf2c8ede613a42e4b3546f8"
+  },
+  "C15": {
+    "status": "measured development result",
+    "sources": [
+      "evidence/freeze-v1.json: candidates, base_U, guardrail_pass",
+      "evidence/evaluations.jsonl.gz: five dev evaluations"
+    ],
+    "justification": "The candidate valid counts are 34, 45, 22 of 48 for learning rates 0.00015, 0.00047, 0.0007. Base has 47/48 valid. Even 45/48 falls 4.1667 percentage points below base, exceeding the 3-point allowance. These observations do not imply the chosen candidate satisfies the validity safeguard.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "655eff277d325b9a6bcf9dc6a8bbcb1dab5169b75ad07a956bda2c1dd59430b9"
+  },
+  "C16": {
+    "status": "selection procedure",
+    "sources": [
+      "evidence/frozen-code/run.py: freeze_development_local",
+      "evidence/freeze-v1.json: selection and time",
+      "evidence/amendment-1.json"
+    ],
+    "justification": "With no eligible candidate, the frozen fallback maximizes validity, then US, then favors smaller learning rate. It selects 0.00047. The subsequent compiler-reference amendment did not change selection or test settings.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "c161e55b9bac6bd17ddf90a976f06a6b32d10490dba8dab7a2907abdb03f14c5"
+  },
+  "C17": {
+    "status": "scope limitation",
+    "sources": [
+      "evidence/frozen-code/run.py: train and main",
+      "../PROTOCOL.md: scope amendments"
+    ],
+    "justification": "Every named budget/seed adapter is created with create_lora_training_client(base_model=WRITER), not from the preceding budget's adapter. This measures cumulative fresh-base adaptation, not sequential updates or forgetting prevention.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "a0a8a8dbe9de9ac0a8fd7cce3c2e598a80d5b939d05cd78d5fb9485260ef8355"
+  },
+  "C46": {
+    "status": "seed and decoding configuration",
+    "sources": [
+      "evidence/frozen-code/run.py: SEEDS, Study.__init__, sample, evaluate",
+      "evidence/training.json",
+      "evidence/evaluations.jsonl.gz"
+    ],
+    "justification": "Method seeds are 31, 73, 127. Writer sampling uses qwen3_disable_thinking, temperature 0.7, top_p 0.8, top_k 20. Assignment/sample seeds are deterministic and matched across arms; turn index increments within each episode. Repair/compiler seeds are separate from writer seeds.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "eacdd9e2bbd055c2b32b94f4b2c828d679c441b1f5d51bdb8a8c467b86dc91b1"
+  },
+  "C53": {
+    "status": "documented implementation amendment",
+    "sources": [
+      "evidence/amendment-1.json",
+      "evidence/freeze-v1.json",
+      "evidence/frozen-code/protocol-amendments.md",
+      "../research_log.md"
+    ],
+    "justification": "The first run ended after base and raw15 completed. The amendment manifest and local precondition checks record zero learned-policy test episodes and zero confirmatory training starts. Repairs changed schema handling only, and existing successful books were reused.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "2c40c242aa06d0a6fe854715f954e3a6d166c57a196fd4bce29e1f400fd5958c"
+  },
+  "C47": {
+    "status": "prespecified estimand and scope",
+    "sources": [
+      "../PROTOCOL.md: Confirmatory evaluation",
+      "evidence/frozen-code/analyze.py: main"
+    ],
+    "justification": "The endpoint is480 opportunities and the direction is SFT minus playbook. Three sparse budgets cannot identify an unmeasured crossing point or establish a persistent threshold across intermediate budgets. Other comparisons are exploratory.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "86f378c98336b2de1e3d9271d0044d29b3a8b31b96c19542b753404ae4f4db52"
+  },
+  "C48": {
+    "status": "statistical procedure",
+    "sources": [
+      "evidence/frozen-code/analyze.py: paired",
+      "verify_evidence.py: independent_interval"
+    ],
+    "justification": "Rows are averaged within prompt or place before paired resampling. Strata are familiar/unseen;10000 draws sample each stratum with replacement and preserve its weight. The2.5th/97.5th percentiles define intervals. Independent reconstruction checks both units and all reported paired metrics.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "3563a17185ef165f932b19ba0b877a1a6553f11fea1e9b96604252dc1ec36f59"
+  },
+  "C49": {
+    "status": "inference limitation",
+    "sources": [
+      "../PROTOCOL.md: inference and safeguard",
+      "evidence/frozen-code/analyze.py: paired and summarize"
+    ],
+    "justification": "The bootstrap resamples prompts/places, not training seeds or review corpora. Thus it cannot quantify population variance across arbitrary training seeds or archives. The3-point safeguard compares point estimates without a prespecified noninferiority test. The test reference for the safeguard is the unadapted base, not the playbook.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "4d46d0dbfe97048f2590f62add475a3eb06b9d33cef03c1b1c7308174292b034"
+  },
+  "C50": {
+    "status": "control implementation",
+    "sources": [
+      "evidence/frozen-code/followups.py: controls",
+      "evidence/shuffle-maps.json",
+      "evidence/training.json"
+    ],
+    "justification": "The code pairs each adapter with its own playbook, substitutes original drafts for self-target training, and uses a seeded donor derangement with anchor remapping for shuffled targets. All share the endpoint schedule. Explicit rules are supplied only to the separately labeled privileged reference. These controls do not themselves score plot adherence.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "3102196f67cf229a30ec29f5f619b8098b3fdc5ccbcb47747a61819a51995505"
+  },
+  "C54": {
+    "status": "exploratory control design",
+    "sources": [
+      "evidence/compact-rubric-plan.json",
+      "evidence/exploratory-code/COMPACT_RUBRIC.md",
+      "evidence/exploratory-code/compact_rubric.py"
+    ],
+    "justification": "The plan was frozen at 2026-09-29T02:51:56.296212Z after the verbatim reference result, before any compact-reference responses. It permits one version only. The rendering changes ordering, imperative wording, and level of detector detail, so it is not a pure length-only ablation and cannot assess preference inference from edits. The same test set is reused.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "42dfc99f36bc2ebb55cc64fb379c377aef05749788831cad8353167b45dfe287"
+  },
+  "C51": {
+    "status": "independent probe implementation",
+    "sources": [
+      "evidence/retention-plan.json",
+      "evidence/frozen-code/followups.py: prepare_retention and retention",
+      "evidence/retention.jsonl.gz",
+      "../vendor/instruction_following_eval/SOURCE.json"
+    ],
+    "justification": "The plan selects 128 public IDs by a fixed SHA256 order before responses and fixes generic system prompt, decoding, and 4096 output-token cap. The official pinned strict checker scores base, 3 endpoint adapters, and 3 active playbooks, one response per example/policy.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "aa6b7824637615547b05ea3088586c3d85e92f1bb81184856266b1dc51acfcb9"
+  },
+  "C56": {
+    "status": "instruction-probe uncertainty procedure",
+    "sources": [
+      "evidence/frozen-code/analyze.py: main retention analysis",
+      "verify_evidence.py: retention interval recomputation",
+      "evidence/verification.json"
+    ],
+    "justification": "The retention analysis groups the three seed-specific binary strict-prompt outcomes by example ID, subtracts the single base outcome from the within-example mean, and resamples all 128 paired example differences with replacement for 10000 draws using seed 260928. The 2.5th and 97.5th percentiles form the interval. No writing-genre strata are used for this separate public benchmark. Independent recomputation matched both intervals.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "e3449d91d6b9f9b68aaba8324c44e4b92aaaebe789ed2bafa5cb7d79d359991d"
+  },
+  "C52": {
+    "status": "interpretation and scope limitation",
+    "sources": [
+      "evidence/frozen-code/run.py: independent base and adapter clients",
+      "evidence/frozen-code/followups.py: retention",
+      "evidence/retention-plan.json"
+    ],
+    "justification": "Adapters leave pretrained parameters unchanged and are optional at sampling time; books are optional system context. The probe tests the active adapted policies. Its public128-item subset cannot establish general retention, and writing instructions can conflict with arbitrary IFEval requests.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "9c4e2194c004f4208d4f23764c12731881297de60a13b17e0edb8f550a173f70"
+  },
+  "C60": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "The frozen analysis gives SFT .8912863756613758 and playbook .7169518849206349. The paired mean gap is .17433449074074076; prompt interval [.15352130869708996,.19473379629629628], place interval [.15207454943783066,.19574652777777773]. Percentages and points are rounded to one decimal. The unadapted base US is .5200892857142857, rounded to52.0%.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "a397429a746cb72e082e15925af14d2e6b4925dba82ed4d93157d53b9f7ffafe"
+  },
+  "C61": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Validity is831/864 SFT,817/864 book,282/288 base. SFT is1.7361 points below base, passing the descriptive3-point threshold. Its paired difference from book is.016203703703703703, interval[-.004629629629629629,.037037037037037035], including zero. Passing this point-estimate safeguard is not a noninferiority finding.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "d5c92cc739332a2fb5677a8764cf9b06e300394727c35e16f9762de7c11bab41"
+  },
+  "C62": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Seeds31,73,127 have US .8626612103174602,.8937872023809523,.9174107142857143 and270,279,282 valid episodes. Seed31 validity93.75% is below base97.9167%-3%. The bootstrap averages the three seeds inside each prompt rather than resampling a seed population.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "2b78440702fc608ab7b0d3bf269b27bccd1a594a2e1a287fe46e86095f35b37a"
+  },
+  "C63": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Frozen hard3 means are .7935956790123456 and .5416666666666666; all-rule success .46064814814814814 and .05555555555555555. Both zero invalid episodes. Improvement on hard3 supports a gain beyond easy lexical prohibitions, while .46065<.5 directly bounds mastery.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "f7c778678b2f47973cf7d10a3a68238133998564aa566f3ec6bddbdb3803c6f5"
+  },
+  "C64": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Conditional rule pass rates use831 valid SFT and817 valid book episodes. Opening rates are .5138387484957883/.17135862913096694, capitalization .9675090252707581/1.0. The sentence does not infer unconditional superiority from conditional rates.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "ef495d606db73e32dadf47fefe900259c214165d44edcaa78ef3bab376423a0e"
+  },
+  "C65": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "15/60 US gaps are .1848131613756614/.18619791666666666; SFT valid counts814/864 and800/864, both below base-.03. The first observed positive gap at15 is not evidence for the behavior of unmeasured budgets or a monotonic crossover.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "44f03fb7816c54b9c73ed88e7cc6dc10c1badca9f7bb9d11913f35ca862f2290"
+  },
+  "C66": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/playbooks.json: n480-s31, n480-s73, n480-s127",
+      "evidence/frozen-code/run.py: compile_playbook"
+    ],
+    "justification": "Final token counts are84,147,63. Read all three final playbooks: they mention present tense, lowercase names, and anchors, with various concise-prose/dialogue/premise instructions, but none gives the twelve-word opener limit. The inference is about this compiler output, not a universal context limitation.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "f2bf8d9ff5e9c18dfaf75be5803878c7bbb632d7440326a422dbd2f79dca772a"
+  },
+  "C68": {
+    "status": "measured exploratory result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: followups.self",
+      "evidence/evaluations.jsonl.gz: self and endpoint SFT policies",
+      "evidence/training.json"
+    ],
+    "justification": "Unedited-target US is .5287491732804233, versus .8912863756613758 for corrected targets. The paired difference is -.36253720238095233, interval [-.37991898148148145,-.3449487433862434]. Both conditions use the same 460 selected source rows, rank, learning rate, three epochs and 87-step schedule, but target content and resulting token counts differ. This supports the importance of corrected targets for this recipe, not an isolated semantic mechanism or a general claim about all self-training.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "d3e13f413b6bed10501c47e162f4e9a5769467ffac487cb818c95126f5a28ee0"
+  },
+  "C69": {
+    "status": "measured exploratory result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: followups.shuffled",
+      "evidence/evaluations.jsonl.gz: shuffled and endpoint SFT policies",
+      "evidence/shuffle-maps.json"
+    ],
+    "justification": "Shuffled US is .8014012896825398, U is 732/864 = .8472222222222222, conditional S is .9459162763466042, and all-rule success is 453/864 = .5243055555555556. The US difference from SFT is -.08988508597883597 with interval [-.11861462466931218,-.06262349123677248]. SFT conditional S is .926680419460203 and all-rule success is .46064814814814814. Conditional comparisons select different valid subsets; the claim is descriptive and does not infer a causal style advantage. Neither private rubric checks nor public validity checks evaluate premise adherence.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "2fc66d7e511e30833d3e0aad2c4e35d71bff7c17c42f1c575c0e1cc2ba453c3c"
+  },
+  "C67": {
+    "status": "measured exploratory result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: followups.combined",
+      "evidence/evaluations.jsonl.gz: combined and endpoint SFT policies"
+    ],
+    "justification": "Combined US is .8811383928571429 and U is 811/864 = .9386574074074074. The paired US difference is -.0101479828042328, percentile interval [-.02643435846560846,.005994233630952382]. Validity difference is -.023148148148148147, interval [-.04050925925925926,-.0057870370370370385]. These were independently calculated from all 864 saved combined episodes and the paired SFT episodes. The score interval includes zero; the validity interval is negative. These exploratory intervals are not adjusted for multiple comparisons. Combined all-rule success is 465/864 = .5381944444444444, versus 398/864 = .46064814814814814 for SFT. This is a descriptive secondary-metric increase, not an adjusted hypothesis test.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "feb299824152e9fbb3bc42db53a751c82aab353c5942aa1b096369dda6299a6e"
+  },
+  "C70": {
+    "status": "measured exploratory presentation result and scope",
+    "sources": [
+      "evidence/analysis.json: test-explicit-rules and test-compact-rubric",
+      "evidence/evaluations.jsonl.gz",
+      "evidence/compact-rubric-plan.json",
+      "evidence/exploratory-code/COMPACT_RUBRIC.md"
+    ],
+    "justification": "Verbatim US is .6236359126984127 and U is 274/288; zero of those 274 valid stories pass the tense check. Compact US is .7323288690476191 and U is 245/288; tense pass is 179/245 = .7306122448979592. Its 43 invalid episodes include 36 below the 120-word minimum. Invalid-feature counts overlap and are not exclusive causal assignments. This was one fixed exploratory rendering, designed after observing the verbatim result, with reused test prompts and matched seeds. It changes several prompt properties together, is privileged rather than inferred, and supplies no optimized contextual upper bound.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "4a212f82c6cba7846be83db0243b9fa273e2b49a8bfd6a72f89c51dbaee6cb78"
+  },
+  "C71": {
+    "status": "measured exploratory instruction-probe result and scope",
+    "sources": [
+      "evidence/analysis.json: retention",
+      "evidence/retention.jsonl.gz",
+      "evidence/rescore-retention.json",
+      "evidence/retention-plan.json"
+    ],
+    "justification": "Strict prompt counts are base 106/128, SFT 320/384, and active playbook 304/384. Averaging the three seed responses within each example and bootstrapping 128 paired examples for 10000 draws gives SFT-minus-base .005208333333333328 with interval [-.036458333333333336,.046875], and playbook-minus-base -.036458333333333336 with interval [-.08072916666666667,.0078124999999999905]. Both include zero. No noninferiority margin or power guarantee is inferred, and public benchmark performance with an active policy does not establish knowledge erasure. Official strict checks were independently rerun for all 896 responses.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "f2e407c0ea1563b769932d33350047af5b7d2c7c19c8195060dc5f2698867b2d"
+  },
+  "T01": {
+    "status": "endpoint data table and caption",
+    "sources": [
+      "evidence/analysis.json",
+      "evidence/visual-data.json",
+      "evidence/endpoint-table.tex",
+      "render_results.py"
+    ],
+    "justification": "The nine endpoint rows are generated from the full saved summaries, rounded to one decimal percentage point. Playbook, SFT and SFT-control rows pool three seed policies of 288 episodes each; base, retrieval and the two privileged rubric references each use 288 episodes. US and U include all episodes; S conditional on U pools only valid episodes; all-rule success requires validity. The privileged references are separated and the compact version is explicitly exploratory. Every table cell is checked against its unrounded source value.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "6b725500e28173ca09b17fb9014ccb400d4f9f989c6fbff7f905875443e9c440",
+    "artifact_sha256": {
+      "evidence/endpoint-table.tex": "0b1c2fe1dbe169f99c9c711a1326b96f560e2f467c74b4c207bfc7985ba629ba",
+      "evidence/visual-data.json": "69d7439f7f9c1ce4bbb63221130d0dde5533e285eca164ffb4f63699f020c5d0",
+      "render_results.py": "b2736770497824cff2619d20fa1bd1caf645e6839272c6296f347040d9ab653f"
+    }
+  },
+  "T02": {
+    "status": "instruction-probe data table and caption",
+    "sources": [
+      "evidence/analysis.json: retention",
+      "evidence/retention.jsonl.gz",
+      "evidence/retention-table.tex",
+      "evidence/retention-visual-data.json",
+      "evidence/rescore-retention.json"
+    ],
+    "justification": "Each of seven policies answers exactly the same 128 frozen public prompts once, giving 896 responses. The base row has one policy; endpoint SFT and active-playbook rows each pool three seed policies. Official strict prompt accuracy averages all-instructions-pass indicators, while instruction accuracy pools the individual constraint booleans. Values are rounded to one decimal percentage point and checked against unrounded summaries and the full official rescore. The selected examples contain 206 individual instructions per policy, or 618 for each pooled three-seed row.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "1fe8a33ebc3cfecfbb0c6d446a31e4dad31f7d44ef2f5889a8fa89c729b9149c",
+    "artifact_sha256": {
+      "evidence/retention-table.tex": "7212011e51fb4fb2da5e23c7a6d9a0a0bb2fd113f286a4eed06be7977b2939a7",
+      "evidence/retention-visual-data.json": "8ee4acd3b5f6450b34993b9754a18b63e326a9870f306ca69ee32378aa2762dc",
+      "render_results.py": "b2736770497824cff2619d20fa1bd1caf645e6839272c6296f347040d9ab653f"
+    }
+  },
+  "C80": {
+    "status": "measurement limitation",
+    "sources": [
+      "evidence/frozen-code/vendor/data.py: format_check",
+      "evidence/frozen-code/vendor/style.py: score",
+      "evidence/frozen-code/followups.py: controls"
+    ],
+    "justification": "The endpoint checks only public word/anchor/submission constraints and planted stylistic proxies. There is no semantic plot checker or human preference annotation. Shuffling targets therefore challenges pairing while leaving unmeasured whether a generated story actually fits its assigned plot.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "5b88f1304c5d9f191bbc3d08c458c3a829631a33335de68bf5739b5be5c1e320"
+  },
+  "C81": {
+    "status": "implementation and identification limitation",
+    "sources": [
+      "evidence/training.json",
+      "evidence/frozen-code/run.py: train, export_corrected",
+      "evidence/freeze-v1.json"
+    ],
+    "justification": "The schedule is max(3, ceil(30/ceil(N/16))) epochs with N equal to 14, 55, or 460. This gives 30/8/3 epochs and 30/32/87 optimizer steps. SFT additionally conditions on the original trajectory prefix. Learning-rate selection used only seed 31 at 60 opportunities. Hence the recipe contrast is not an isolated causal manipulation of storage representation.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "60b8c94a493b3da5c0dec5bad63e75f60f0f145e119dc122f59af5e50e840ff3"
+  },
+  "C82": {
+    "status": "generalization limitation",
+    "sources": [
+      "evidence/reviews.jsonl.gz",
+      "evidence/freeze.json",
+      "evidence/frozen-code/run.py: WRITER, EDITOR, SEEDS",
+      "evidence/frozen-code/vendor/style.py"
+    ],
+    "justification": "The actual design has one Qwen3-8B writer, one Inkling editor, one guide A rule set, and one synthetic archive. Three method seeds repeat construction/training within that setting, not across models, human reviewers, or changing preferences.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "a32f70dc3e069ed44cc545cbd91b46c3f1477ffcf0972755a289890da7f2330b"
+  },
+  "C83": {
+    "status": "future research and scope boundary",
+    "sources": [
+      "../PROTOCOL.md",
+      "evidence/frozen-code/run.py: train, main",
+      "evidence/frozen-code/followups.py: retention"
+    ],
+    "justification": "The proposed studies are future work and assert no unobserved result. Current adapters each start from the base; no optimization state is carried across budgets. IFEval measures the active policy on public instructions and cannot by itself demonstrate sequential adaptation or prevention of forgetting.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "63888c0c2cc9097d4e1526b89b41d6ec510c6df4f3635a4c4d6d53d122d98d3b"
+  },
+  "R01": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2404.15269v3"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "b29330a0d9c4d0dd97c044d31ef8865aacc722f12702423ef24f6521a634b9f1"
+  },
+  "R02": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2510.04618v3"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "773210b18e1c129295ed312b40a2f6e36abd480659dc2f04be8e6e0c3172096d"
+  },
+  "R03": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2405.00200v2"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "190f899653fa6ce2756f6e82cf1bd34a8406e261f8ad1925bf95abdc6f652890"
+  },
+  "R04": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2106.09685v2"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "1353b1589ef816a354e2baa4174080b31726cea1fb8501f3d3e2fdbb26001429"
+  },
+  "R05": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2402.04401v3"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "3fd8ee97677621c882ab0d35f835c48817f491371c272754972cd855ff876bfe"
+  },
+  "R06": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2311.07911v1"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "5a9228bdd835e95dac34113618fef23bce44c645ff3914a30ec8a685731d6bfd"
+  },
+  "R07": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2411.00640v1"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "d565d5e292abd263fae5f597978e05570cb42802b90d0942101ea51b0c1a8926"
+  },
+  "N01": {
+    "status": "model-paper choice and scoped comparison",
+    "sources": [
+      "https://arxiv.org/html/2405.00200v2",
+      "paper.tex: Introduction, Method, Experiments"
+    ],
+    "justification": "The cited paper compares in-context demonstrations and fine-tuning across data sizes. These notes explicitly describe an adaptation of its empirical structure, not reproduction of its tasks or findings. Our paper concerns synthetic editor corrections and tool-based writing.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "5e22afeaafa59d4f5126276c55e82d75c7bf074e5f977b51103c7704722865b0"
+  },
+  "N02": {
+    "status": "outline description",
+    "sources": [
+      "paper.tex: Abstract and Introduction"
+    ],
+    "justification": "The stated question, shared archive, two representations, and distinction between rubric score and public validity appear in the corresponding sections. The abstract gives the measured endpoint and its scope.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "4fba963b90e59744477af9c2cd325b9b1e37fec7cbdaf017ce14903a87b61119"
+  },
+  "N03": {
+    "status": "outline and editorial choice",
+    "sources": [
+      "paper.tex: Related work",
+      "../RELATED_WORK.md"
+    ],
+    "justification": "The compact related-work section covers CIPHER, ACE, LoRA and OPPU before Method and Experiments. The broader literature map remains outside the paper. Its position is an editorial decision, not an empirical claim.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "bdf84b72652ab1a474b1eaeb64761143975c03b3e10fcbdeff9abd0ff8ac2a7f"
+  },
+  "N04": {
+    "status": "outline and figure description",
+    "sources": [
+      "paper.tex: Method",
+      "evidence/workflow.pdf"
+    ],
+    "justification": "The method covers the task, rubric, common reviews, inferred instructions and adapters. The diagram branches from the same review pairs into context and weights and ends at fresh evaluation.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "92cd4a4961d63c857ce7a9d26a0877fbafafd5f70887a303bb021ea4b87fa470"
+  },
+  "N05": {
+    "status": "outline and editorial rationale",
+    "sources": [
+      "paper.tex: Experiments",
+      "https://arxiv.org/html/2405.00200v2"
+    ],
+    "justification": "The experimental section specifies splits, development selection, controls and paired uncertainty. The composite endpoint and validity requirements motivate additional denominator explanations; this is an editorial rationale.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "4f9b8c80dff7fd350442471bc595de5dc77eb9b39d64cf7d1301052424f9180f"
+  },
+  "N06": {
+    "status": "results and visualization description",
+    "sources": [
+      "paper.tex: Results",
+      "evidence/budget-comparison.pdf",
+      "evidence/endpoint-table.tex",
+      "evidence/retention-table.tex"
+    ],
+    "justification": "The final results show the three budgets, primary contrast, uncertainty and seed variation. The figure has separate panels for US and validity. The table contains all endpoint controls; the prose includes the public instruction probe. A second table reports strict prompt and instruction accuracy on the independent public probe.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "65552fec4ab74c6f82fc7ceb3bdd5672c6d44a44cd47170001112d5f4f188b0a"
+  },
+  "N07": {
+    "status": "diagnostic scope",
+    "sources": [
+      "paper.tex: Experiments and Results",
+      "evidence/frozen-code/followups.py",
+      "evidence/compact-rubric-plan.json"
+    ],
+    "justification": "The listed controls were actually run. They reuse the test prompts and are explanatory or exploratory comparisons, not fresh confirmatory tests of a mechanism selected from their results.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "877fe9105612f23f6afc6a55c04d6dc56c299a5dc2f63b8e659658e63f82336f"
+  },
+  "N08": {
+    "status": "discussion scope and editorial choice",
+    "sources": [
+      "paper.tex: Discussion",
+      "https://arxiv.org/html/2405.00200v2"
+    ],
+    "justification": "The discussion identifies the single synthetic setting, three seeds, absence of human quality ratings and fresh-base training. Attention, ordering and broad multi-model investigations are outside this study; no findings about those mechanisms are borrowed.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "e9e8f18f0cde2d503350e52f82d3d5152e9b284016e58669c955a07ce98dfddd"
+  },
+  "N09": {
+    "status": "artifact organization",
+    "sources": [
+      "paper.tex: References",
+      "CLAIMS.md",
+      "evidence/package.json"
+    ],
+    "justification": "The bibliography contains the cited primary sources. The separate evidence package and claim ledger contain records and checks, rather than adding them to the word-limited manuscript.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "7e4422b946db086ecd108f36638f21a3fad6e27e93a56414f0e47c237f168dc9"
+  },
+  "N10": {
+    "status": "revision history and scope",
+    "sources": [
+      "git commit db853b1323dd009cbcc190ff23329c3233390be6",
+      "../research_log.md",
+      "../PROTOCOL.md",
+      "paper.tex"
+    ],
+    "justification": "The repository proposal covered writing and Lean. The recorded research cycle narrows to writing, implements the planned shared archive and inferred playbook, freezes development selection, and separates the endpoint from diagnostics. The paper retains the failed development safeguard. No instructor or classmate feedback was provided in this task, and no response to such feedback is claimed. The original proposal required each rubric rule to pass at most 70% of base stories; the protocol records that several rules exceed this calibration goal and adds harder-rule/all-rule reporting before testing.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "0591ac85af48deb6f3d5f7d931d53127b998db605dddc79de93325bf6b960d62"
+  },
+  "N11": {
+    "status": "delivery specification and status",
+    "sources": [
+      "https://web.stanford.edu/class/cs197/assignments/project.html#draft-paper",
+      "build.py",
+      "evidence/build-check.json",
+      "CLAIMS.md"
+    ],
+    "justification": "The user explicitly requested half length and a separate justification file. Build checks enforce 2000\u20132500 manuscript words and append one notes page. The notes supply a model-paper analysis, adapted outline and revisions. The task produced local review artifacts; no class, venue or Overleaf upload was performed.",
+    "reviewed": true,
+    "verification_status": "Reviewed against the cited evidence, completed offline verification, and stated scope. Reader-review clarifications incorporated; no human prose-quality assessment is implied.",
+    "text_sha256": "87fe5d28b7192ffb35788101b1336ac4aad062caa4b5a44bc967a6659c4759ce"
+  }
+}

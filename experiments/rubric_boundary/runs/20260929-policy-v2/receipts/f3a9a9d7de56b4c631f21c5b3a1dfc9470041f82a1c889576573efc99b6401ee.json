@@ -1,0 +1,208 @@
+{
+  "input_tokens": 3239,
+  "key": "f3a9a9d7de56b4c631f21c5b3a1dfc9470041f82a1c889576573efc99b6401ee",
+  "messages": [
+    {
+      "content": "Process every order under this complete policy. These rules override any conflicting example.\n1. A recalled order is always HOLD, with zero allocated units and zero fee.\n2. Otherwise allocate min(quantity, stock). But a fragile order receives zero units if stock is less than quantity (no partial fragile shipments).\n3. Zero allocated units means BACKORDER and zero fee.\n4. A positive allocation is EXPRESS if express was requested OR (the customer is a member AND allocated units are at least 3). Otherwise it is STANDARD.\n5. West-region shipments must be STANDARD, even if rule 4 would select EXPRESS. This never overrides HOLD or BACKORDER.\n6. Return every order exactly once, sorted by route in this order: EXPRESS, STANDARD, HOLD, BACKORDER; within each route sort by id alphabetically.\n7. Return only a JSON object with the key orders. Each orders entry has exactly id, units, route.\nExample corrections can contain errors; the written policy is authoritative.\nBefore returning the JSON, check each order in this sequence: recall override; fragile/full-stock requirement; allocated units; zero-unit backorder; express/member eligibility; west shipping override. Then sort all entries. Preserve every input id.",
+      "role": "system"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"HNCL\",\"member\":false,\"quantity\":9,\"recalled\":true,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":11},{\"fragile\":false,\"id\":\"RSHW\",\"member\":true,\"quantity\":8,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":4},{\"fragile\":false,\"id\":\"NSGT\",\"member\":false,\"quantity\":7,\"recalled\":false,\"region\":\"east\",\"requested\":\"express\",\"sku\":\"C\",\"stock\":4}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"NSGT\",\"route\":\"EXPRESS\",\"units\":4},{\"id\":\"RSHW\",\"route\":\"EXPRESS\",\"units\":4},{\"id\":\"HNCL\",\"route\":\"STANDARD\",\"units\":9}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"XHSN\",\"member\":false,\"quantity\":3,\"recalled\":false,\"region\":\"central\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":0},{\"fragile\":false,\"id\":\"GRDF\",\"member\":true,\"quantity\":9,\"recalled\":false,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":12},{\"fragile\":false,\"id\":\"DLXZ\",\"member\":false,\"quantity\":8,\"recalled\":true,\"region\":\"south\",\"requested\":\"express\",\"sku\":\"A\",\"stock\":10}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"GRDF\",\"route\":\"STANDARD\",\"units\":9},{\"id\":\"DLXZ\",\"route\":\"HOLD\",\"units\":0},{\"id\":\"XHSN\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"BQFV\",\"member\":true,\"quantity\":6,\"recalled\":false,\"region\":\"west\",\"requested\":\"express\",\"sku\":\"B\",\"stock\":0},{\"fragile\":false,\"id\":\"JSBV\",\"member\":false,\"quantity\":6,\"recalled\":false,\"region\":\"east\",\"requested\":\"express\",\"sku\":\"D\",\"stock\":2},{\"fragile\":false,\"id\":\"MLZH\",\"member\":false,\"quantity\":8,\"recalled\":true,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":11}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"JSBV\",\"route\":\"EXPRESS\",\"units\":2},{\"id\":\"MLZH\",\"route\":\"HOLD\",\"units\":0},{\"id\":\"BQFV\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"SDCJ\",\"member\":true,\"quantity\":3,\"recalled\":true,\"region\":\"east\",\"requested\":\"express\",\"sku\":\"C\",\"stock\":5},{\"fragile\":true,\"id\":\"JXGB\",\"member\":false,\"quantity\":4,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":3},{\"fragile\":false,\"id\":\"NABV\",\"member\":false,\"quantity\":4,\"recalled\":false,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":1}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"NABV\",\"route\":\"STANDARD\",\"units\":1},{\"id\":\"SDCJ\",\"route\":\"HOLD\",\"units\":0},{\"id\":\"JXGB\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"PEVM\",\"member\":true,\"quantity\":8,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":1},{\"fragile\":false,\"id\":\"FUWY\",\"member\":false,\"quantity\":9,\"recalled\":false,\"region\":\"south\",\"requested\":\"express\",\"sku\":\"B\",\"stock\":3},{\"fragile\":false,\"id\":\"MQER\",\"member\":false,\"quantity\":2,\"recalled\":true,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":2}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"FUWY\",\"route\":\"EXPRESS\",\"units\":3},{\"id\":\"PEVM\",\"route\":\"STANDARD\",\"units\":1},{\"id\":\"MQER\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"MSHL\",\"member\":false,\"quantity\":6,\"recalled\":false,\"region\":\"east\",\"requested\":\"express\",\"sku\":\"B\",\"stock\":0},{\"fragile\":false,\"id\":\"AEZL\",\"member\":true,\"quantity\":8,\"recalled\":false,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":4},{\"fragile\":true,\"id\":\"UBQL\",\"member\":false,\"quantity\":3,\"recalled\":true,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":5}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"AEZL\",\"route\":\"STANDARD\",\"units\":4},{\"id\":\"UBQL\",\"route\":\"HOLD\",\"units\":0},{\"id\":\"MSHL\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"EVWJ\",\"member\":true,\"quantity\":9,\"recalled\":true,\"region\":\"west\",\"requested\":\"express\",\"sku\":\"C\",\"stock\":9},{\"fragile\":true,\"id\":\"WLYK\",\"member\":false,\"quantity\":5,\"recalled\":false,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":9},{\"fragile\":false,\"id\":\"FLWQ\",\"member\":false,\"quantity\":6,\"recalled\":false,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":5}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"FLWQ\",\"route\":\"STANDARD\",\"units\":5},{\"id\":\"WLYK\",\"route\":\"STANDARD\",\"units\":5},{\"id\":\"EVWJ\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"FJWE\",\"member\":false,\"quantity\":7,\"recalled\":false,\"region\":\"central\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":2},{\"fragile\":false,\"id\":\"TGUA\",\"member\":false,\"quantity\":3,\"recalled\":true,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":4},{\"fragile\":false,\"id\":\"LWXN\",\"member\":true,\"quantity\":2,\"recalled\":false,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":6}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"FJWE\",\"route\":\"STANDARD\",\"units\":2},{\"id\":\"LWXN\",\"route\":\"STANDARD\",\"units\":2},{\"id\":\"TGUA\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"DNWT\",\"member\":true,\"quantity\":5,\"recalled\":true,\"region\":\"west\",\"requested\":\"express\",\"sku\":\"B\",\"stock\":7},{\"fragile\":false,\"id\":\"VURZ\",\"member\":false,\"quantity\":6,\"recalled\":false,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":9},{\"fragile\":true,\"id\":\"YDLS\",\"member\":false,\"quantity\":5,\"recalled\":false,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":4}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"VURZ\",\"route\":\"STANDARD\",\"units\":6},{\"id\":\"DNWT\",\"route\":\"HOLD\",\"units\":0},{\"id\":\"YDLS\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":true,\"id\":\"RXJA\",\"member\":true,\"quantity\":7,\"recalled\":true,\"region\":\"west\",\"requested\":\"express\",\"sku\":\"D\",\"stock\":10},{\"fragile\":true,\"id\":\"YPRS\",\"member\":false,\"quantity\":1,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":0},{\"fragile\":false,\"id\":\"NDAB\",\"member\":false,\"quantity\":5,\"recalled\":false,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":0}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"RXJA\",\"route\":\"STANDARD\",\"units\":7},{\"id\":\"NDAB\",\"route\":\"BACKORDER\",\"units\":0},{\"id\":\"YPRS\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"XJNT\",\"member\":false,\"quantity\":3,\"recalled\":true,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":3},{\"fragile\":true,\"id\":\"ETCK\",\"member\":true,\"quantity\":6,\"recalled\":false,\"region\":\"east\",\"requested\":\"express\",\"sku\":\"B\",\"stock\":10},{\"fragile\":false,\"id\":\"GSUR\",\"member\":false,\"quantity\":2,\"recalled\":false,\"region\":\"central\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":1}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"ETCK\",\"route\":\"EXPRESS\",\"units\":6},{\"id\":\"GSUR\",\"route\":\"STANDARD\",\"units\":1},{\"id\":\"XJNT\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"ZDTE\",\"member\":false,\"quantity\":7,\"recalled\":false,\"region\":\"central\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":5},{\"fragile\":false,\"id\":\"BHUY\",\"member\":false,\"quantity\":1,\"recalled\":false,\"region\":\"central\",\"requested\":\"express\",\"sku\":\"D\",\"stock\":7},{\"fragile\":false,\"id\":\"PXKC\",\"member\":true,\"quantity\":7,\"recalled\":true,\"region\":\"west\",\"requested\":\"express\",\"sku\":\"B\",\"stock\":9}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"BHUY\",\"route\":\"EXPRESS\",\"units\":1},{\"id\":\"ZDTE\",\"route\":\"STANDARD\",\"units\":5},{\"id\":\"PXKC\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"VFYN\",\"member\":true,\"quantity\":2,\"recalled\":false,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":2},{\"fragile\":false,\"id\":\"YMVB\",\"member\":true,\"quantity\":7,\"recalled\":false,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":3},{\"fragile\":false,\"id\":\"LDBK\",\"member\":false,\"quantity\":1,\"recalled\":true,\"region\":\"south\",\"requested\":\"express\",\"sku\":\"B\",\"stock\":1}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"VFYN\",\"route\":\"STANDARD\",\"units\":2},{\"id\":\"YMVB\",\"route\":\"STANDARD\",\"units\":3},{\"id\":\"LDBK\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"NQMP\",\"member\":false,\"quantity\":5,\"recalled\":false,\"region\":\"north\",\"requested\":\"express\",\"sku\":\"C\",\"stock\":2},{\"fragile\":true,\"id\":\"BWLA\",\"member\":false,\"quantity\":4,\"recalled\":true,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":7},{\"fragile\":false,\"id\":\"KTVG\",\"member\":true,\"quantity\":9,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":10}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"KTVG\",\"route\":\"EXPRESS\",\"units\":9},{\"id\":\"NQMP\",\"route\":\"EXPRESS\",\"units\":2},{\"id\":\"BWLA\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"TXUV\",\"member\":true,\"quantity\":7,\"recalled\":true,\"region\":\"south\",\"requested\":\"express\",\"sku\":\"D\",\"stock\":8},{\"fragile\":false,\"id\":\"JSNL\",\"member\":true,\"quantity\":4,\"recalled\":false,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":2},{\"fragile\":true,\"id\":\"JCRW\",\"member\":false,\"quantity\":2,\"recalled\":false,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":1}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"JSNL\",\"route\":\"STANDARD\",\"units\":2},{\"id\":\"TXUV\",\"route\":\"HOLD\",\"units\":0},{\"id\":\"JCRW\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"SBVW\",\"member\":false,\"quantity\":3,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":2},{\"fragile\":false,\"id\":\"CTRJ\",\"member\":true,\"quantity\":7,\"recalled\":true,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":9},{\"fragile\":true,\"id\":\"NBAQ\",\"member\":false,\"quantity\":8,\"recalled\":false,\"region\":\"west\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":6}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"CTRJ\",\"route\":\"EXPRESS\",\"units\":7},{\"id\":\"SBVW\",\"route\":\"STANDARD\",\"units\":2},{\"id\":\"NBAQ\",\"route\":\"BACKORDER\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"JPXT\",\"member\":false,\"quantity\":9,\"recalled\":false,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":5},{\"fragile\":false,\"id\":\"LQDC\",\"member\":true,\"quantity\":8,\"recalled\":false,\"region\":\"west\",\"requested\":\"express\",\"sku\":\"C\",\"stock\":3},{\"fragile\":false,\"id\":\"PZKV\",\"member\":false,\"quantity\":2,\"recalled\":true,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":5}]",
+      "role": "user"
+    }
+  ],
+  "output_tokens": 49,
+  "params": {
+    "max_tokens": 1024,
+    "seed": 93029,
+    "stop": [
+      151645
+    ],
+    "temperature": 0.0,
+    "top_k": -1,
+    "top_p": 1
+  },
+  "policy": "base",
+  "seconds": 1.4730261250006151,
+  "stop_reason": "stop",
+  "text": "{\"orders\":[{\"id\":\"LQDC\",\"route\":\"EXPRESS\",\"units\":3},{\"id\":\"JPXT\",\"route\":\"STANDARD\",\"units\":5},{\"id\":\"PZKV\",\"route\":\"HOLD\",\"units\":0}]}",
+  "tokens": [
+    4913,
+    7917,
+    66582,
+    307,
+    3252,
+    43,
+    48,
+    5626,
+    2198,
+    8966,
+    3252,
+    32337,
+    7817,
+    2198,
+    25643,
+    788,
+    18,
+    36828,
+    307,
+    3252,
+    27188,
+    9036,
+    2198,
+    8966,
+    3252,
+    784,
+    38635,
+    2198,
+    25643,
+    788,
+    20,
+    36828,
+    307,
+    3252,
+    47,
+    57,
+    82707,
+    2198,
+    8966,
+    3252,
+    39,
+    7863,
+    2198,
+    25643,
+    788,
+    15,
+    92,
+    13989,
+    151645
+  ]
+}

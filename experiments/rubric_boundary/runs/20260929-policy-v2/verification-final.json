@@ -1,0 +1,24 @@
+{
+  "adapters": 9,
+  "checks": [
+    "primary and control freezes",
+    "analysis evidence and source hashes",
+    "claim references",
+    "all evaluation counts",
+    "every current-run pending marker and receipt hash",
+    "nine distinct complete samplers",
+    "native training token counts",
+    "nine local adapter archive manifests"
+  ],
+  "claims": 22,
+  "completed_current_run_requests": 7041,
+  "control_evaluations": 28,
+  "control_unique_responses": 1093,
+  "estimated_cumulative_usd": 21.116273685,
+  "estimated_cycle_usd": 3.693734835,
+  "optimizer_steps": 675,
+  "primary_evaluations": 36,
+  "primary_unique_responses": 5489,
+  "report_sha256": "1ddd3c128ddfac67259b1c2a0fc58b7d06197d77eaf817983be83a6bcd99c1c4",
+  "status": "passed"
+}

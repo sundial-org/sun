@@ -1,0 +1,75 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype,enumitem}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\begin{document}
+\setcounter{page}{4}
+\begin{center}
+{\Large\bfseries Draft-paper submission notes}\\[3pt]
+Reviews in Context or in Weights?\quad 28 September 2026
+\end{center}
+
+\textbf{Model paper.}
+Amanda Bertsch et al., \emph{In-Context Learning with Long-Context Models: An In-Depth Exploration},
+\href{https://arxiv.org/html/2405.00200v2}{arXiv:2405.00200v2} (2025).
+Its argument compares contextual demonstrations and fine-tuning across data budgets.
+We retain the empirical comparison, experimental setup, diagnostic analysis, and
+bounded conclusion. Our evidence concerns reviewer corrections and incomplete
+pilots, so the revised comparison is prospective.
+
+\textbf{Adapted outline and visual roles.}
+\begin{itemize}
+\item \textbf{Abstract and introduction:} state the storage question, conditional
+thesis, and two pilot obstacles. Establish that validity and outcome coverage are
+necessary to interpret a threshold. Avoid implying that the proposed comparison
+has been executed.
+\item \textbf{Related work:} place demonstration retrieval, learned playbooks,
+low-rank adaptation, self-distillation, and reviewer reliability together.
+Move related work earlier than the model paper to establish the playbook comparator.
+Keep this compact to preserve room for methods and evidence.
+\item \textbf{Completed setup:} describe the agent, editor, public/private checks,
+training recipe, held-out split, repeats, and score denominators. This performs
+the role of the model paper's experimental setup, with two task-specific metrics.
+\item \textbf{Audited results:} separate Lean's failed outcome calibration from
+writing's validity-adjusted learning curve and matched-archive controls.
+\textbf{Table 1 is the central visual}: it shows every measured writing budget,
+usable target count, and score. A table replaces a smooth curve to expose the
+change in budget definition and avoid implying an interpolated crossover.
+The text gives endpoint uncertainty and validity alongside conditional style.
+\item \textbf{Revised experiment:} add the shared-pool arms, reviewer and task
+gates, primary endpoint, and prospective inference. This is a necessary addition
+because the pilots do not resolve the main thesis. No synthetic result figure
+stands in for the unexecuted experiment.
+\item \textbf{Discussion and conclusion:} condense mechanism claims into observable
+limitations and the remaining empirical question. Omit attention-pattern and
+input-ordering analyses from the model paper because these pilots did not test
+them. Omit its dataset survey and multi-model figures; our single table and
+task-specific audit serve this draft's narrower evidence.
+\item \textbf{References:} seven primary research sources. Detailed source
+locators, computations, and every claim's justification remain in the separate
+\texttt{CLAIMS.md} audit rather than inflating the paper.
+\end{itemize}
+
+\textbf{Revisions and status.}
+The starting artifact was the 799-word v3 proposal at commit
+\texttt{db853b1}, not a prior full class submission.
+This draft adds a literature synthesis, completed-pilot methods and results,
+limitations, references, and a prospective analysis section.
+It separates live and shared-archive comparisons, retains the withdrawal of the Lean
+crossover claim, distinguishes $U S$ from valid-only style, and replaces the
+``upper bound'' label for fresh-base SFT with ``joint-training reference.''
+No instructor or peer feedback was supplied, so none is represented as addressed.
+
+\textbf{Length and audit.}
+The paper is intentionally half length under the user's instruction; its measured
+word and page counts are in \texttt{evidence/build-check.json}.
+This combined PDF contains the draft followed by these notes, as requested by the
+\href{https://web.stanford.edu/class/cs197/assignments/project.html\#draft-paper}{CS197 assignment}.
+The separate claim ledger classifies observations, literature, design choices,
+inferences, and scope limits. The revised run, human checks, and peer-review
+exercise remain future work; no new training or inference was performed for this draft.
+\end{document}

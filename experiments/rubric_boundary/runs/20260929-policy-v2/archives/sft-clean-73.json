@@ -1,0 +1,11 @@
+{
+  "bytes": 184647680,
+  "members": [
+    "adapter_config.json",
+    "adapter_model.safetensors",
+    "checkpoint_complete"
+  ],
+  "name": "sft-clean-73",
+  "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:1/sampler_weights/sft-clean-73",
+  "sha256": "4f86e6b3edcf0650c5f2660392f38c7b772d21480ee8f022add2503c01913aff"
+}

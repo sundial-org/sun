@@ -1,0 +1,187 @@
+{
+  "files": {
+    "PROTOCOL.md": "a7bb410a17bcbc05ead73dfc8fdaa5075ad2673a8c519fdf5d39630c6d868caa",
+    "run.py": "03507a57a9863b54b8b0f0cb45b5705139f61b3778f7ababb89da82dc58818c7",
+    "runs/20260929-policy-v2/dev.json": "ab0cfa70bb1bb6d7c48abf16eeedbf1b57afd029e8f41fa465be989df8b1e7a2",
+    "runs/20260929-policy-v2/manual-review-complete.json": "1a3ec4cd31c9e161ffcdeb11baff96463bf8c328119401af54a04663bb145a5a",
+    "runs/20260929-policy-v2/pools/clean-127.json": "ab4ab0fc36ec87354674013420e34f738b079f1fcf959f0ec803d5965d3cdb1d",
+    "runs/20260929-policy-v2/pools/clean-31.json": "ab4ab0fc36ec87354674013420e34f738b079f1fcf959f0ec803d5965d3cdb1d",
+    "runs/20260929-policy-v2/pools/clean-73.json": "ab4ab0fc36ec87354674013420e34f738b079f1fcf959f0ec803d5965d3cdb1d",
+    "runs/20260929-policy-v2/pools/scattered-127.json": "f81dc5d52836f9499e90e66274f2906a8068c41039468ce148dcd702bfeee6a2",
+    "runs/20260929-policy-v2/pools/scattered-31.json": "595ea442c6b72189815c877fb08e97f442ab1280414ef6ffbeec9105ac2cbd8e",
+    "runs/20260929-policy-v2/pools/scattered-73.json": "038ab9ad1e86f057034bfce0680a8c68b510e6c10af0712f86a1429a7bfa3fef",
+    "runs/20260929-policy-v2/pools/systematic-127.json": "7fcff2794e03d9d93be8fc51837f019036b13e41b9c17d59cbb32b9f2dd43eb3",
+    "runs/20260929-policy-v2/pools/systematic-31.json": "7fcff2794e03d9d93be8fc51837f019036b13e41b9c17d59cbb32b9f2dd43eb3",
+    "runs/20260929-policy-v2/pools/systematic-73.json": "7fcff2794e03d9d93be8fc51837f019036b13e41b9c17d59cbb32b9f2dd43eb3",
+    "runs/20260929-policy-v2/selection.json": "aa5cb5a9c76cf02a522993eb9b0fad3fbcde5c92c082411f022271a9246de1ec",
+    "runs/20260929-policy-v2/test.json": "1d9f5a08014b1f2966856bd970c222b368c56f0e80b100bbf86e26f8348144ef",
+    "runs/20260929-policy-v2/train.json": "6f81c19b43b6e0c97fb953e6913eac81cf11c33a6d8cd8478b5c377df2d49a61",
+    "task.py": "08ae0d27a2d832c947aa7d90213cb78588e7d0e4b1624cb014d5a6049b753bee",
+    "test_task.py": "73f0dd08ab7ffb7ac9b1c83d399b699c3d11923d2a2794066f3ca05ac8d8cfbb"
+  },
+  "selection": {
+    "conditions": [
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.22,
+          "item_accuracy": 0.10666666666666666,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.16
+        },
+        "name": "dev-base-clean-31-concise"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.22,
+          "item_accuracy": 0.10666666666666666,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.16
+        },
+        "name": "dev-base-scattered-31-concise"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.22,
+          "item_accuracy": 0.10666666666666666,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.16
+        },
+        "name": "dev-base-systematic-31-concise"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.9,
+          "item_accuracy": 0.4333333333333333,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.34
+        },
+        "name": "dev-base-clean-31-checklist"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.9,
+          "item_accuracy": 0.4333333333333333,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.34
+        },
+        "name": "dev-base-scattered-31-checklist"
+      },
+      {
+        "metrics": {
+          "exact": 0.0,
+          "format": 0.9,
+          "item_accuracy": 0.4333333333333333,
+          "proxy_exact": 0.0,
+          "recall_correct": 0.34
+        },
+        "name": "dev-base-systematic-31-checklist"
+      },
+      {
+        "metrics": {
+          "exact": 0.2,
+          "format": 1.0,
+          "item_accuracy": 0.8333333333333333,
+          "proxy_exact": 0.16,
+          "recall_correct": 1.0
+        },
+        "name": "dev-base-clean-31-retrieval"
+      },
+      {
+        "metrics": {
+          "exact": 0.18,
+          "format": 1.0,
+          "item_accuracy": 0.7866666666666667,
+          "proxy_exact": 0.16,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-scattered-31-retrieval"
+      },
+      {
+        "metrics": {
+          "exact": 0.22,
+          "format": 1.0,
+          "item_accuracy": 0.8133333333333332,
+          "proxy_exact": 0.2,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-systematic-31-retrieval"
+      },
+      {
+        "metrics": {
+          "exact": 0.2,
+          "format": 1.0,
+          "item_accuracy": 0.8333333333333333,
+          "proxy_exact": 0.14,
+          "recall_correct": 1.0
+        },
+        "name": "dev-base-clean-31-retrieval8"
+      },
+      {
+        "metrics": {
+          "exact": 0.2,
+          "format": 1.0,
+          "item_accuracy": 0.8066666666666668,
+          "proxy_exact": 0.14,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-scattered-31-retrieval8"
+      },
+      {
+        "metrics": {
+          "exact": 0.18,
+          "format": 1.0,
+          "item_accuracy": 0.8,
+          "proxy_exact": 0.14,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-systematic-31-retrieval8"
+      },
+      {
+        "metrics": {
+          "exact": 0.26,
+          "format": 1.0,
+          "item_accuracy": 0.8266666666666667,
+          "proxy_exact": 0.16,
+          "recall_correct": 1.0
+        },
+        "name": "dev-base-clean-31-retrieval16"
+      },
+      {
+        "metrics": {
+          "exact": 0.18,
+          "format": 1.0,
+          "item_accuracy": 0.78,
+          "proxy_exact": 0.14,
+          "recall_correct": 0.96
+        },
+        "name": "dev-base-scattered-31-retrieval16"
+      },
+      {
+        "metrics": {
+          "exact": 0.16,
+          "format": 1.0,
+          "item_accuracy": 0.8066666666666668,
+          "proxy_exact": 0.18,
+          "recall_correct": 0.94
+        },
+        "name": "dev-base-systematic-31-retrieval16"
+      }
+    ],
+    "rule": "highest mean exact; tie fewer examples then shorter prompt",
+    "scores": {
+      "checklist": 0.0,
+      "concise": 0.0,
+      "retrieval": 0.19999999999999998,
+      "retrieval16": 0.19999999999999998,
+      "retrieval8": 0.19333333333333336
+    },
+    "selected": "retrieval",
+    "selected_dev_exact": 0.19999999999999998
+  },
+  "time": "2026-09-29T19:23:24.771810+00:00"
+}

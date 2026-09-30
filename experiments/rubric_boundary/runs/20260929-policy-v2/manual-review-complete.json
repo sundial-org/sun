@@ -1,0 +1,13 @@
+{
+  "reviewed_tasks": 50,
+  "reviewed_records": 150,
+  "method": "Inspected compact inputs, per-order allocations/routes and sorted target IDs for all 50 sampled tasks, covering all regions; reviewed corruption locality with independent automated checks",
+  "findings": [
+    "Recall overrides checked across all regions",
+    "Fragile insufficient-stock cases correctly backorder",
+    "Partial non-fragile allocation and member threshold checked",
+    "West forces standard only for actual shipments",
+    "No personal data or external material"
+  ],
+  "scope": "Agent inspection, not independent human annotation"
+}

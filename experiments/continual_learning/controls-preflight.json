@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "frozen_followups_sha256": "048d4c25a99b9b219539aa3a044ad1f379cb26164c7333667bd3c4b5676b317f",
+  "seeds": {
+    "31": {
+      "pairs": 460,
+      "valid_remapped_targets": 460,
+      "same_recipient_donor": 0,
+      "unchanged_corrected_target": 0
+    },
+    "73": {
+      "pairs": 460,
+      "valid_remapped_targets": 460,
+      "same_recipient_donor": 0,
+      "unchanged_corrected_target": 0
+    },
+    "127": {
+      "pairs": 460,
+      "valid_remapped_targets": 460,
+      "same_recipient_donor": 0,
+      "unchanged_corrected_target": 0
+    }
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "input_tokens": 1097,
+  "key": "4f93403136bb4cc2942a1ebe72b638945c743b77aa8c12c5875c5f448e356cb7",
+  "messages": [
+    {
+      "content": "Process every order under this complete policy. These rules override any conflicting example.\n1. A recalled order is always HOLD, with zero allocated units and zero fee.\n2. Otherwise allocate min(quantity, stock). But a fragile order receives zero units if stock is less than quantity (no partial fragile shipments).\n3. Zero allocated units means BACKORDER and zero fee.\n4. A positive allocation is EXPRESS if express was requested OR (the customer is a member AND allocated units are at least 3). Otherwise it is STANDARD.\n5. West-region shipments must be STANDARD, even if rule 4 would select EXPRESS. This never overrides HOLD or BACKORDER.\n6. Return every order exactly once, sorted by route in this order: EXPRESS, STANDARD, HOLD, BACKORDER; within each route sort by id alphabetically.\n7. Return only a JSON object with the key orders. Each orders entry has exactly id, units, route.\nExample corrections can contain errors; the written policy is authoritative.\nBefore returning the JSON, check each order in this sequence: recall override; fragile/full-stock requirement; allocated units; zero-unit backorder; express/member eligibility; west shipping override. Then sort all entries. Preserve every input id.",
+      "role": "system"
+    },
+    {
+      "content": "[{\"fragile\":true,\"id\":\"ZUES\",\"member\":true,\"quantity\":7,\"recalled\":false,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":10},{\"fragile\":false,\"id\":\"PHSE\",\"member\":false,\"quantity\":4,\"recalled\":false,\"region\":\"south\",\"requested\":\"express\",\"sku\":\"C\",\"stock\":7},{\"fragile\":false,\"id\":\"PCDK\",\"member\":true,\"quantity\":8,\"recalled\":true,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":11}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"PHSE\",\"route\":\"EXPRESS\",\"units\":4},{\"id\":\"ZUES\",\"route\":\"EXPRESS\",\"units\":7},{\"id\":\"PCDK\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"DPWS\",\"member\":true,\"quantity\":9,\"recalled\":false,\"region\":\"central\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":8},{\"fragile\":false,\"id\":\"PKTC\",\"member\":false,\"quantity\":6,\"recalled\":false,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":9},{\"fragile\":true,\"id\":\"LKWE\",\"member\":true,\"quantity\":8,\"recalled\":true,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":10}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"DPWS\",\"route\":\"EXPRESS\",\"units\":8},{\"id\":\"PKTC\",\"route\":\"STANDARD\",\"units\":6},{\"id\":\"LKWE\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":true,\"id\":\"GMNH\",\"member\":true,\"quantity\":5,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":6},{\"fragile\":false,\"id\":\"JQPG\",\"member\":true,\"quantity\":2,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"D\",\"stock\":8},{\"fragile\":false,\"id\":\"GKCJ\",\"member\":true,\"quantity\":5,\"recalled\":true,\"region\":\"east\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":5}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"GMNH\",\"route\":\"EXPRESS\",\"units\":5},{\"id\":\"JQPG\",\"route\":\"STANDARD\",\"units\":2},{\"id\":\"GKCJ\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":false,\"id\":\"WJRG\",\"member\":true,\"quantity\":2,\"recalled\":false,\"region\":\"south\",\"requested\":\"express\",\"sku\":\"D\",\"stock\":6},{\"fragile\":true,\"id\":\"ZVPC\",\"member\":false,\"quantity\":1,\"recalled\":false,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":7},{\"fragile\":false,\"id\":\"JZFG\",\"member\":true,\"quantity\":8,\"recalled\":true,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":10}]",
+      "role": "user"
+    },
+    {
+      "content": "{\"orders\":[{\"id\":\"WJRG\",\"route\":\"EXPRESS\",\"units\":2},{\"id\":\"ZVPC\",\"route\":\"STANDARD\",\"units\":1},{\"id\":\"JZFG\",\"route\":\"HOLD\",\"units\":0}]}",
+      "role": "assistant"
+    },
+    {
+      "content": "[{\"fragile\":true,\"id\":\"TDVL\",\"member\":false,\"quantity\":2,\"recalled\":false,\"region\":\"south\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":9},{\"fragile\":false,\"id\":\"ZCXV\",\"member\":true,\"quantity\":5,\"recalled\":false,\"region\":\"central\",\"requested\":\"standard\",\"sku\":\"A\",\"stock\":6},{\"fragile\":false,\"id\":\"BCWU\",\"member\":true,\"quantity\":9,\"recalled\":true,\"region\":\"north\",\"requested\":\"standard\",\"sku\":\"C\",\"stock\":12}]",
+      "role": "user"
+    }
+  ],
+  "output_tokens": 49,
+  "params": {
+    "max_tokens": 1024,
+    "seed": 93029,
+    "stop": [
+      151645
+    ],
+    "temperature": 0.0,
+    "top_k": -1,
+    "top_p": 1
+  },
+  "policy": "sft-systematic-127",
+  "seconds": 1.4720074169999862,
+  "stop_reason": "stop",
+  "text": "{\"orders\":[{\"id\":\"ZCXV\",\"route\":\"EXPRESS\",\"units\":5},{\"id\":\"BCWU\",\"route\":\"HOLD\",\"units\":0},{\"id\":\"TDVL\",\"route\":\"STANDARD\",\"units\":2}]}",
+  "tokens": [
+    4913,
+    7917,
+    66582,
+    307,
+    3252,
+    57,
+    65240,
+    53,
+    2198,
+    8966,
+    3252,
+    32337,
+    7817,
+    2198,
+    25643,
+    788,
+    20,
+    36828,
+    307,
+    3252,
+    4897,
+    54,
+    52,
+    2198,
+    8966,
+    3252,
+    39,
+    7863,
+    2198,
+    25643,
+    788,
+    15,
+    36828,
+    307,
+    3252,
+    16985,
+    30698,
+    2198,
+    8966,
+    3252,
+    784,
+    38635,
+    2198,
+    25643,
+    788,
+    17,
+    92,
+    13989,
+    151645
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "batch": 16,
+  "dataset_sha": "a32882a30f5842480b23048990cf08f258ec6901bfbc777b2f7ec4a5191923da",
+  "epochs": 3,
+  "kind": "clean",
+  "loss": "mean per example, final assistant only",
+  "lr": 0.00047,
+  "model": "Qwen/Qwen3-8B",
+  "name": "sft-clean-127",
+  "rank": 16,
+  "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:2/sampler_weights/sft-clean-127",
+  "saved_at": "2026-09-29T19:37:58.800730+00:00",
+  "seconds": 201.97911241700058,
+  "seed": 127,
+  "state_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:2/weights/sft-clean-127-step-75",
+  "steps": 75,
+  "training_style": "checklist",
+  "training_tokens": 515736
+}

@@ -1,0 +1,229 @@
+{
+  "status": 200,
+  "versions": {
+    "tinker": "0.27.1",
+    "tinker-cookbook": "0.5.7",
+    "transformers": "5.5.4"
+  },
+  "capabilities": {
+    "supported_models": [
+      {
+        "model_name": "Qwen/Qwen3-8B",
+        "tokenizer_id": "Qwen/Qwen3-8B",
+        "max_context_length": 32768,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.5-35B-A3B-Base",
+        "tokenizer_id": "Qwen/Qwen3.5-35B-A3B-Base",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.5-397B-A17B",
+        "tokenizer_id": "Qwen/Qwen3.5-397B-A17B",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.5-397B-A17B:peft:262144",
+        "tokenizer_id": "Qwen/Qwen3.5-397B-A17B",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.5-4B",
+        "tokenizer_id": "Qwen/Qwen3.5-4B",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.5-9B",
+        "tokenizer_id": "Qwen/Qwen3.5-9B",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.5-9B-Base",
+        "tokenizer_id": "Qwen/Qwen3.5-9B-Base",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.6-27B",
+        "tokenizer_id": "Qwen/Qwen3.6-27B",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.6-35B-A3B",
+        "tokenizer_id": "Qwen/Qwen3.6-35B-A3B",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.8-27B",
+        "tokenizer_id": "Qwen/Qwen3.8-27B",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "Qwen/Qwen3.8-27B:peft:262144",
+        "tokenizer_id": "Qwen/Qwen3.8-27B",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "deepseek-ai/DeepSeek-V3.1",
+        "tokenizer_id": "deepseek-ai/DeepSeek-V3.1",
+        "max_context_length": 32768,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "moonshotai/Kimi-K2.6",
+        "tokenizer_id": "moonshotai/Kimi-K2.6",
+        "max_context_length": 32768,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "moonshotai/Kimi-K2.6:peft:131072",
+        "tokenizer_id": "moonshotai/Kimi-K2.6",
+        "max_context_length": 131072,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+        "tokenizer_id": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+        "tokenizer_id": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16:peft:262144",
+        "tokenizer_id": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+        "tokenizer_id": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16:peft:262144",
+        "tokenizer_id": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+        "tokenizer_id": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16:peft:262144",
+        "tokenizer_id": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "openai/gpt-oss-120b",
+        "tokenizer_id": "openai/gpt-oss-120b",
+        "max_context_length": 32768,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "openai/gpt-oss-120b:peft:131072",
+        "tokenizer_id": "openai/gpt-oss-120b",
+        "max_context_length": 131072,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "openai/gpt-oss-20b",
+        "tokenizer_id": "openai/gpt-oss-20b",
+        "max_context_length": 32768,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "thinkingmachines/Inkling",
+        "tokenizer_id": "thinkingmachines/Inkling",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "thinkingmachines/Inkling-Small",
+        "tokenizer_id": "thinkingmachines/Inkling-Small",
+        "max_context_length": 65536,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "thinkingmachines/Inkling-Small:peft:262144",
+        "tokenizer_id": "thinkingmachines/Inkling-Small",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "thinkingmachines/Inkling-Small:peft:262144:sampling-nvfp4",
+        "tokenizer_id": "thinkingmachines/Inkling-Small",
+        "max_context_length": 262144,
+        "trainable": false,
+        "sampleable": true
+      },
+      {
+        "model_name": "thinkingmachines/Inkling:peft:262144",
+        "tokenizer_id": "thinkingmachines/Inkling",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      },
+      {
+        "model_name": "thinkingmachines/Inkling:peft:262144:sampling-nvfp4",
+        "tokenizer_id": "thinkingmachines/Inkling",
+        "max_context_length": 262144,
+        "trainable": false,
+        "sampleable": true
+      },
+      {
+        "model_name": "zai-org/GLM-5.3:peft:262144",
+        "tokenizer_id": "zai-org/GLM-5.3",
+        "max_context_length": 262144,
+        "trainable": true,
+        "sampleable": true
+      }
+    ]
+  }
+}

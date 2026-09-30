@@ -1,0 +1,32 @@
+{
+  "draft_pages": 3,
+  "submission_pages": 4,
+  "body_word_count": {
+    "count": 2042,
+    "target": [
+      2000,
+      2500
+    ],
+    "method": "Claim prose and caption plus table values; hyphenated words count once, math expressions once; excludes title, headings, bibliography and notes.",
+    "within_target": true
+  },
+  "latex_overfull_boxes": 0,
+  "unresolved_references": 0,
+  "paper_source_sha256": "402bd07705dbe0c03488f3182a5ba3ad8d968caca09e303c278a8bb399cd3891",
+  "pdf_sha256": {
+    "draft-paper.pdf": "358d18dea603b9f871057b1849e67fd0e0593c0e15d8ddc293c2c7f88d59147b",
+    "submission.pdf": "5e79268ba07080b52310f2c84fe90595720f7cc2cf455f83e1efc3f425aa855e"
+  },
+  "visual_review": {
+    "status": "pass",
+    "date": "2026-09-28",
+    "pages_inspected": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "method": "Poppler PNG renders inspected for clipping, overlap, table layout, references and page numbering."
+  },
+  "pdf_link_check": "pass: all named GoTo destinations resolve; external URI links retained"
+}

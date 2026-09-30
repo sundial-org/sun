@@ -1,0 +1,177 @@
+{
+  "status": "pass",
+  "checked_claim_blocks": 65,
+  "writing_samples": 10368,
+  "lean_reports": 6480,
+  "writing_curve": [
+    {
+      "budget": 15,
+      "rows": 15,
+      "seeds": 1,
+      "context": 0.6997767857142857,
+      "weights": 0.7701822916666666,
+      "gap": {
+        "mean": 0.07040550595238097,
+        "ci95": [
+          0.02264578683035715,
+          0.11588541666666667
+        ],
+        "n": 96
+      }
+    },
+    {
+      "budget": 30,
+      "rows": 30,
+      "seeds": 1,
+      "context": 0.7699962797619048,
+      "weights": 0.7611607142857143,
+      "gap": {
+        "mean": -0.00883556547619047,
+        "ci95": [
+          -0.05520019531249997,
+          0.03543526785714287
+        ],
+        "n": 96
+      }
+    },
+    {
+      "budget": 60,
+      "rows": 60,
+      "seeds": 1,
+      "context": 0.7552548363095238,
+      "weights": 0.8845331101190477,
+      "gap": {
+        "mean": 0.1292782738095238,
+        "ci95": [
+          0.09816778273809523,
+          0.16090146019345236
+        ],
+        "n": 96
+      }
+    },
+    {
+      "budget": 120,
+      "rows": 116,
+      "seeds": 1,
+      "context": 0.7854352678571429,
+      "weights": 0.8816499255952381,
+      "gap": {
+        "mean": 0.09621465773809525,
+        "ci95": [
+          0.06952194940476192,
+          0.1220703125
+        ],
+        "n": 96
+      }
+    },
+    {
+      "budget": 240,
+      "rows": 226,
+      "seeds": 1,
+      "context": 0.8293340773809523,
+      "weights": 0.8938337053571429,
+      "gap": {
+        "mean": 0.06449962797619048,
+        "ci95": [
+          0.02776111421130953,
+          0.0990513392857143
+        ],
+        "n": 96
+      }
+    },
+    {
+      "budget": 360,
+      "rows": 338,
+      "seeds": 1,
+      "context": 0.8561197916666666,
+      "weights": 0.9228980654761905,
+      "gap": {
+        "mean": 0.06677827380952382,
+        "ci95": [
+          0.037340727306547625,
+          0.09691220238095238
+        ],
+        "n": 96
+      }
+    },
+    {
+      "budget": 480,
+      "rows": 451,
+      "seeds": 3,
+      "context": 0.8608165922619048,
+      "weights": 0.8486173115079365,
+      "gap": {
+        "mean": -0.01219928075396825,
+        "ci95": [
+          -0.040426974826388885,
+          0.01506735181051587
+        ],
+        "n": 96
+      }
+    }
+  ],
+  "controls": {
+    "A_specificity": {
+      "mean": 0.8030960648148148,
+      "ci95": [
+        0.7832718460648147,
+        0.8232060185185185
+      ],
+      "n": 96
+    },
+    "B_specificity": {
+      "mean": 0.8313078703703703,
+      "ci95": [
+        0.8075810185185185,
+        0.8540219907407408
+      ],
+      "n": 96
+    },
+    "edited_vs_self": {
+      "mean": 0.33489893353174605,
+      "ci95": [
+        0.31769205729166666,
+        0.35177951388888884
+      ],
+      "n": 96
+    },
+    "shared_weights_vs_context": {
+      "mean": 0.1365637400793651,
+      "ci95": [
+        0.11377689422123016,
+        0.1604972718253968
+      ],
+      "n": 96
+    }
+  },
+  "selection": {
+    "gain": {
+      "mean": 0.035693699281868954,
+      "ci95": [
+        0.02788147784677504,
+        0.043785275951675265
+      ],
+      "n": 96
+    },
+    "oracle_gain": {
+      "mean": 0.10346704335264605,
+      "ci95": [
+        0.09800595189703035,
+        0.10905644491529677
+      ],
+      "n": 96
+    }
+  },
+  "lean_truth_patterns": {
+    "E4": 113,
+    "E5+E6": 1,
+    "E5": 6
+  },
+  "archive_hashes_checked": true,
+  "limits": [
+    "Private writing rule labels are stored tagger judgments, not new human judgments.",
+    "Lean truth was rederived from saved receipts during collection, not new compiler runs.",
+    "Intervals condition on the collected pools and average available training seeds.",
+    "Claim semantics were manually reviewed; automated coverage and hashes detect missing or changed blocks."
+  ]
+}

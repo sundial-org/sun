@@ -1,0 +1,1980 @@
+{
+  "endpoint": "official strict prompt-level and instruction-level accuracy",
+  "keys": [
+    3505,
+    2859,
+    2229,
+    1248,
+    1072,
+    3204,
+    3751,
+    3084,
+    3241,
+    3305,
+    3718,
+    2396,
+    2311,
+    2739,
+    1436,
+    2357,
+    1879,
+    2139,
+    1153,
+    3386,
+    3351,
+    2779,
+    1162,
+    2870,
+    1019,
+    3644,
+    295,
+    1087,
+    3035,
+    1476,
+    2246,
+    3130,
+    1130,
+    2577,
+    1939,
+    3327,
+    2957,
+    1246,
+    2247,
+    1561,
+    2497,
+    2829,
+    1098,
+    3479,
+    201,
+    3513,
+    1686,
+    3131,
+    19,
+    2207,
+    1629,
+    1518,
+    2441,
+    1646,
+    2798,
+    1954,
+    1314,
+    1348,
+    3629,
+    1627,
+    24,
+    3442,
+    2239,
+    1779,
+    202,
+    2063,
+    2303,
+    1546,
+    2374,
+    3631,
+    3287,
+    3245,
+    3057,
+    167,
+    2515,
+    1148,
+    1129,
+    1147,
+    2041,
+    2691,
+    3256,
+    1776,
+    122,
+    2328,
+    2069,
+    3294,
+    3376,
+    2628,
+    2889,
+    3188,
+    2532,
+    3703,
+    1670,
+    2724,
+    1392,
+    279,
+    3748,
+    13,
+    2143,
+    1342,
+    3195,
+    2324,
+    3753,
+    1393,
+    2801,
+    2807,
+    1154,
+    3367,
+    1242,
+    1643,
+    322,
+    1233,
+    2585,
+    3166,
+    1793,
+    2275,
+    3619,
+    2380,
+    2383,
+    3335,
+    2716,
+    2362,
+    1535,
+    2571,
+    2084,
+    1837,
+    1122,
+    2482
+  ],
+  "max_tokens": 4096,
+  "note": "Public benchmark subset; possible pretraining contamination; no claim of broad capability retention",
+  "rows": [
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma",
+        "combination:repeat_prompt"
+      ],
+      "key": 3505,
+      "kwargs": [
+        {},
+        {
+          "prompt_to_repeat": "Write a pros and cons list of apple products in the style of a 19th century novelist and do not use any commas."
+        }
+      ],
+      "prompt": "Write a pros and cons list of apple products in the style of a 19th century novelist and do not use any commas.\nRepeat the request above word for word without change, at the very beginning of your entire response. After that, you can give the requested pros and cons list."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_sentences"
+      ],
+      "key": 2859,
+      "kwargs": [
+        {
+          "num_sentences": 4,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Kindly summarize the text below in XML format. Make sure the summary contains less than 4 sentences.\n\nQuantum entanglement is the phenomenon that occurs when a group of particles are generated, interact, or share spatial proximity in such a way that the quantum state of each particle of the group cannot be described independently of the state of the others, including when the particles are separated by a large distance. The topic of quantum entanglement is at the heart of the disparity between classical and quantum physics: entanglement is a primary feature of quantum mechanics not present in classical mechanics.\n\nMeasurements of physical properties such as position, momentum, spin, and polarization performed on entangled particles can, in some cases, be found to be perfectly correlated. For example, if a pair of entangled particles is generated such that their total spin is known to be zero, and one particle is found to have clockwise spin on a first axis, then the spin of the other particle, measured on the same axis, is found to be anticlockwise. However, this behavior gives rise to seemingly paradoxical effects: any measurement of a particle's properties results in an apparent and irreversible wave function collapse of that particle and changes the original quantum state. With entangled particles, such measurements affect the entangled system as a whole.\n\nSuch phenomena were the subject of a 1935 paper by Albert Einstein, Boris Podolsky, and Nathan Rosen, and several papers by Erwin Schrödinger shortly thereafter, describing what came to be known as the EPR paradox. Einstein and others considered such behavior impossible, as it violated the local realism view of causality (Einstein referring to it as \"spooky action at a distance\") and argued that the accepted formulation of quantum mechanics must therefore be incomplete.\n\n"
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:title"
+      ],
+      "key": 2229,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "A sales pitch for moms is needed for a new kind of diaper that is designed to be more comfortable for babies. The sales pitch should be 500 words long, funny, engaging, and focus on the benefits of the new diaper without mentioning the price. It must also contain a title, wrapped in double angular brackets, i.e. <<title>>."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_paragraphs"
+      ],
+      "key": 1248,
+      "kwargs": [
+        {
+          "num_paragraphs": 4
+        }
+      ],
+      "prompt": "\"The man was arrested for stealing a car. He was later released on bail.\" Expand on it angrily in a rap style, and make sure there are exactly 4 sections. Separated the sections by the markdown divider: ***"
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_words"
+      ],
+      "key": 1072,
+      "kwargs": [
+        {
+          "num_words": 400,
+          "relation": "at least"
+        }
+      ],
+      "prompt": "Write a blog post with 400 or more words about the benefits of sleeping in a hammock."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma",
+        "change_case:english_capital"
+      ],
+      "key": 3204,
+      "kwargs": [
+        {},
+        {}
+      ],
+      "prompt": "Write an essay about the reasons why slavery was abolished in the United States as if you are the president of the United States. Do not use any commas in your response. Your response should be in English, and in all capital letters."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:constrained_response"
+      ],
+      "key": 3751,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Is it true that the first song ever sung in outer space is “Happy Birthday.”\n\nYour answer must contain one of the following phrases:\nMy answer is yes.\nMy answer is no.\nMy answer is maybe."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma",
+        "startend:end_checker"
+      ],
+      "key": 3084,
+      "kwargs": [
+        {},
+        {
+          "end_phrase": "in India."
+        }
+      ],
+      "prompt": "Write a weird and short haiku about the state of Gujarat in India. Don't use any commas in your entire response. End your response with the EXACT phrase of \"in India.\""
+    },
+    {
+      "instruction_id_list": [
+        "language:response_language"
+      ],
+      "key": 3241,
+      "kwargs": [
+        {
+          "language": "ar"
+        }
+      ],
+      "prompt": "Rewrite and expand the following in Arabic. You can hallucinate a lot of details.\n\"The company is looking to expand its operations into new markets. It will create hundreds of jobs this year.\"\n\nOutside of Arabic, no other language is allowed throughout your entire response."
+    },
+    {
+      "instruction_id_list": [
+        "language:response_language",
+        "combination:repeat_prompt",
+        "keywords:existence"
+      ],
+      "key": 3305,
+      "kwargs": [
+        {
+          "language": "hi"
+        },
+        {
+          "prompt_to_repeat": "Write an essay about how the current economic crisis is affecting the environment. In your essay, include the keywords: \"climate\", \"energy\", and \"green\". Make sure your entire response is in Hindi, no other language is allowed."
+        },
+        {
+          "keywords": [
+            "climate",
+            "energy",
+            "green"
+          ]
+        }
+      ],
+      "prompt": "First repeat the request below word for word without change, then give your answer. Do not say any words or characters before repeating the request.\n\nWrite an essay about how the current economic crisis is affecting the environment. In your essay, include the keywords: \"climate\", \"energy\", and \"green\". Make sure your entire response is in Hindi, no other language is allowed."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:title",
+        "combination:repeat_prompt",
+        "punctuation:no_comma"
+      ],
+      "key": 3718,
+      "kwargs": [
+        {},
+        {
+          "prompt_to_repeat": "Create a resume for a military officer who served in Iraq and was later hired by a private military contractor. Make sure to include a title that is wrapped in double angular brackets, i.e. <<resume of xyz>>. Refrain from using any commas in your response."
+        },
+        {}
+      ],
+      "prompt": "Create a resume for a military officer who served in Iraq and was later hired by a private military contractor. Make sure to include a title that is wrapped in double angular brackets, i.e. <<resume of xyz>>. Refrain from using any commas in your response.\n\nBefore you respond with any word, first repeat the exact, entire request above, word for word without change."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_content:postscript"
+      ],
+      "key": 2396,
+      "kwargs": [
+        {
+          "postscript_marker": "P.P.S"
+        }
+      ],
+      "prompt": "Write me a poem about a long lasting war. Add a postscript at the end starting with P.P.S"
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma"
+      ],
+      "key": 2311,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Why are there 396 calories in a serving of 32 grams of unsalted almonds? Do not use commas in your response."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt",
+        "punctuation:no_comma"
+      ],
+      "key": 2739,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Write a limerick about the word \"limerick\". Make sure it is funny and includes the words \"limerick\" and \"funny\". Do not use any commas."
+        },
+        {}
+      ],
+      "prompt": "Write a limerick about the word \"limerick\". Make sure it is funny and includes the words \"limerick\" and \"funny\". Do not use any commas.\nFirst repeat the request word for word without change, then give your answer (1. do not say any words or characters before repeating the request; 2. the request you need to repeat does not include this sentence)"
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase",
+        "keywords:forbidden_words"
+      ],
+      "key": 1436,
+      "kwargs": [
+        {},
+        {
+          "forbidden_words": [
+            "coop",
+            "killings",
+            "dead",
+            "night"
+          ]
+        }
+      ],
+      "prompt": "Write a story about commandos who are in the middle of the night in a sector. It should be in English, and no capital letters are allowed. The story should not include keywords \"coop\", \"killings\", \"dead\", \"night\"."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_paragraphs"
+      ],
+      "key": 2357,
+      "kwargs": [
+        {
+          "num_paragraphs": 4
+        }
+      ],
+      "prompt": "Write a travel itinerary for a trip to Paris that is suitable for teenagers with short attention spans. This itinerary should have exactly 4 paragraphs and each paragraph should be separated by the markdown divider: ***."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_sentences",
+        "length_constraints:number_words"
+      ],
+      "key": 1879,
+      "kwargs": [
+        {
+          "num_sentences": 60,
+          "relation": "at least"
+        },
+        {
+          "num_words": 600,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Can you please continue and expand: \"A man is performing for a crowd on a stage, ...\"\nUse at least 60 sentences, but less than 600 words."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_sentences",
+        "keywords:existence"
+      ],
+      "key": 2139,
+      "kwargs": [
+        {
+          "num_sentences": 3,
+          "relation": "at least"
+        },
+        {
+          "keywords": [
+            "rate",
+            "rte"
+          ]
+        }
+      ],
+      "prompt": "Compose a song with at least three sentences that can be sung by a professional singer in the style of a 1930s jazz standard. Include the keywords \"rate\" and \"rte\"."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase",
+        "keywords:frequency"
+      ],
+      "key": 1153,
+      "kwargs": [
+        {},
+        {
+          "frequency": 2,
+          "keyword": "story",
+          "relation": "at least"
+        }
+      ],
+      "prompt": "Write a social media post for students of Islamic history about the hajj pilgrimage. Use all lowercase letters and include the word story at least twice."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words",
+        "keywords:existence"
+      ],
+      "key": 3386,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "divide",
+            "answer"
+          ]
+        },
+        {
+          "keywords": [
+            "remainder"
+          ]
+        }
+      ],
+      "prompt": "Jennifer goes to the store to buy milk. She has 10 dollars in her pocket and milk costs 3 dollars per gallon. How many gallons of milk can she buy? Explain your thinking. Avoid the keywords: 'divide', 'answer'. Include the keyword 'remainder'."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_paragraphs",
+        "detectable_format:number_highlighted_sections"
+      ],
+      "key": 3351,
+      "kwargs": [
+        {
+          "num_paragraphs": 2
+        },
+        {
+          "num_highlights": 3
+        }
+      ],
+      "prompt": "Here is a social media post: \"My daughter graduated from college today! So proud of her!\" Can you make it more exciting? Please make sure to expand it into exactly 2 paragraphs. Separate paragraphs with the markdown divider: ***. Additionally, italicize at least 3 sections by starting and ending with single *, i.e. *italic text*."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:letter_frequency"
+      ],
+      "key": 2779,
+      "kwargs": [
+        {
+          "let_frequency": 5,
+          "let_relation": "less than",
+          "letter": "q"
+        }
+      ],
+      "prompt": "Make a list of ways to say the following sentence more professionally: \"Hey bautista, let me know if you need any help with the graphs.\" Also, make sure the letter q appears less than 5 times in your response."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma"
+      ],
+      "key": 1162,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a riddle for kids about auspices but make sure you don't use any commas."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:capital_word_frequency"
+      ],
+      "key": 2870,
+      "kwargs": [
+        {
+          "capital_frequency": 3,
+          "capital_relation": "at least"
+        }
+      ],
+      "prompt": "Write a rubric for teenagers on how to review a book. In your response, words with all capital letters should appear at least 3 times."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase"
+      ],
+      "key": 1019,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Given the sentence \"Two young boys with toy guns and horns.\" can you ask a question? Please ensure that your response is in English, and in all lowercase letters. No capital letters are allowed."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_highlighted_sections"
+      ],
+      "key": 3644,
+      "kwargs": [
+        {
+          "num_highlights": 2
+        }
+      ],
+      "prompt": "Write a blog post about interesting facts about the Dutch language. Italicize at least 2 sections in your answer with markdown, i.e. *italic text*."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:title"
+      ],
+      "key": 295,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write me a letter in the style of Shakespeare about the mandates and instructions of the King. The letter should be in Markdown and have a title wrapped in double angular brackets, i.e. <<title>>."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase"
+      ],
+      "key": 1087,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a detailed review of the movie \"The Social Network\". Your entire response should be in English and all lower case (no capital letters whatsoever)."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_content:number_placeholders",
+        "change_case:english_lowercase"
+      ],
+      "key": 3035,
+      "kwargs": [
+        {
+          "num_placeholders": 1
+        },
+        {}
+      ],
+      "prompt": "Write a JSON schema for a beta cruiser that includes at least one placeholder represented by square brackets. The response must be in English and all lowercase letters."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words",
+        "length_constraints:number_sentences"
+      ],
+      "key": 1476,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "name",
+            "rename"
+          ]
+        },
+        {
+          "num_sentences": 3,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Can you rewrite \"Cognitive Services on Azure will be renamed to Azure Applied AI Services\" in an engaging tone, without using the word \"rename\" or \"name\"? Keep it under 3 sentences (just 1 or 2 sentences, not 3)."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_words",
+        "keywords:frequency",
+        "detectable_content:number_placeholders"
+      ],
+      "key": 2246,
+      "kwargs": [
+        {
+          "num_words": 400,
+          "relation": "at least"
+        },
+        {
+          "frequency": 2,
+          "keyword": "climatic",
+          "relation": "at least"
+        },
+        {
+          "num_placeholders": 3
+        }
+      ],
+      "prompt": "I want to travel to the Subic Bay Freeport Zone, which subdistrict should I stay in? Give me an angry recommendation. Answer with at least 400 words. In your response, the word climatic should appear at least 2 times. The response must contain at least 3 placeholders represented by square brackets, such as [address]."
+    },
+    {
+      "instruction_id_list": [
+        "language:response_language"
+      ],
+      "key": 3130,
+      "kwargs": [
+        {
+          "language": "hi"
+        }
+      ],
+      "prompt": "Write an angry letter complaining about the food served today, using only Hindi, no other language is allowed."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:letter_frequency"
+      ],
+      "key": 1130,
+      "kwargs": [
+        {
+          "let_frequency": 2,
+          "let_relation": "less than",
+          "letter": "t"
+        }
+      ],
+      "prompt": "Write a logic quiz for teenagers about a chesterfield. In your entire response, the letter t should appear at most once."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses",
+        "keywords:forbidden_words"
+      ],
+      "key": 2577,
+      "kwargs": [
+        {},
+        {
+          "forbidden_words": [
+            "BC",
+            "culture",
+            "prehistoric"
+          ]
+        }
+      ],
+      "prompt": "What do prehistoric megaliths in Europe look like? Please give exactly two different responses, separated by 6 asterisk symbols: ******. Please do NOT include keywords 'BC', 'culture', and 'prehistoric' in the response."
+    },
+    {
+      "instruction_id_list": [
+        "startend:end_checker"
+      ],
+      "key": 1939,
+      "kwargs": [
+        {
+          "end_phrase": "Which one you choose?"
+        }
+      ],
+      "prompt": "I'm a new puppy owner and I'm looking for some advice on how to train my puppy. Can you help me? Give me a few options. In particular, I need you to end your response with \"Which one you choose?\"."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:existence",
+        "keywords:frequency",
+        "keywords:frequency"
+      ],
+      "key": 3327,
+      "kwargs": [
+        {
+          "keywords": [
+            "dammit"
+          ]
+        },
+        {
+          "frequency": 6,
+          "keyword": "fake",
+          "relation": "at least"
+        },
+        {
+          "frequency": 8,
+          "keyword": "fake",
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Write an essay about a snowfall, but in the style of Alex Jones and include the line \"dammit\". The word \"fake\" should appear 6 or 7 times in your entire response."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words"
+      ],
+      "key": 2957,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "nursery",
+            "storytelling"
+          ]
+        }
+      ],
+      "prompt": "Rewrite the limerick in a strange way. In particular, the limerick is about nursery and storytelling. But do not mention nursery and storytelling in your entire response."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_content:postscript"
+      ],
+      "key": 1246,
+      "kwargs": [
+        {
+          "postscript_marker": "P.P.S"
+        }
+      ],
+      "prompt": "Write me a template for a product description in the form of a poem and end it with a post script starting with P.P.S"
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_capital"
+      ],
+      "key": 2247,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write an essay about Alvin and the Chipmunks in English and in all capital letters."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt",
+        "detectable_format:title"
+      ],
+      "key": 1561,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Name a new fashion company that young people might like, and give it a name with multiple meanings. Put the name in double angular brackets, such as <<name>>."
+        },
+        {}
+      ],
+      "prompt": "Name a new fashion company that young people might like, and give it a name with multiple meanings. Put the name in double angular brackets, such as <<name>>.\n\nLet's repeat the request above first, before you say anything or really respond to the request."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_highlighted_sections",
+        "startend:quotation"
+      ],
+      "key": 2497,
+      "kwargs": [
+        {
+          "num_highlights": 1
+        },
+        {}
+      ],
+      "prompt": "Give me a logical question about chatting and conquering. Make it interesting. Highlight at least one section of your answer with markdown, i.e. *highlighted section*. Put your entire response inside double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation"
+      ],
+      "key": 2829,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Why did the man travel from Saskatoon to Helsinki to buy a piano? Wrap your entire response in double quotes."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses"
+      ],
+      "key": 1098,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "What is a name that people call God? Please give exactly two different responses. Separate the responses with 6 asterisk symbols: ******."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words",
+        "punctuation:no_comma"
+      ],
+      "key": 3479,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "name",
+            "song",
+            "person",
+            "man",
+            "woman"
+          ]
+        },
+        {}
+      ],
+      "prompt": "Write a song for the person named 'Guerrero'. Make sure to not include the words 'name', 'song', 'person', 'man', 'woman' throughout your entire output. Also avoid using commas in your entire response.\n"
+    },
+    {
+      "instruction_id_list": [
+        "keywords:letter_frequency"
+      ],
+      "key": 201,
+      "kwargs": [
+        {
+          "let_frequency": 3,
+          "let_relation": "less than",
+          "letter": "i"
+        }
+      ],
+      "prompt": "Write a story from a perspective of a man. Include some conversation in the story. Avoid using the letter i more than twice."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:capital_word_frequency"
+      ],
+      "key": 3513,
+      "kwargs": [
+        {
+          "capital_frequency": 20,
+          "capital_relation": "at least"
+        }
+      ],
+      "prompt": "Write a resume for a software engineer with 5+ years of experience in the Bay Area, CA. In your response, make sure to include at least 20 words or phrases in all capital letters."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt"
+      ],
+      "key": 1686,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Hello. I need to give a lecture to my students about the movie La La Land. Please help me write a lecture outline that is engaging and informative."
+        }
+      ],
+      "prompt": "For the following request, please repeat the request itself exactly as it is, then give your reply. Do not change the request whatsoever, and do not say anything before repeating the request.\n\nHello. I need to give a lecture to my students about the movie La La Land. Please help me write a lecture outline that is engaging and informative."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:title",
+        "detectable_content:postscript"
+      ],
+      "key": 3131,
+      "kwargs": [
+        {},
+        {
+          "postscript_marker": "P.S."
+        }
+      ],
+      "prompt": "Write a blog post about the echoing biotechnology field in 2023, then criticize the blog post. Your answer must contain a title, wrapped in double angular brackets, such as <<blog post of ...>>. Also, add a postscript starting with P.S."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_words",
+        "length_constraints:number_words"
+      ],
+      "key": 19,
+      "kwargs": [
+        {
+          "num_words": 600,
+          "relation": "at least"
+        },
+        {
+          "num_words": 701,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Create a blog post for professionals in the field of computer science in the form of a funny riddle. Your entire reply should contain 600 to 700 words."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words"
+      ],
+      "key": 2207,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "ours",
+            "have"
+          ]
+        }
+      ],
+      "prompt": "Here is the summary of a research paper on the effect of VHF radio waves on a certain type of bacteria: \"Our results show that VHF radio waves have no effect on the growth of bacteria.\" Can you help me rewrite this summary in a more formal way, using APA format? Do not use words \"ours\" or \"have\"."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words"
+      ],
+      "key": 1629,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "station"
+          ]
+        }
+      ],
+      "prompt": "Make the sentence “The bus arrived at the station” sound more interesting. Avoid using the word “station”."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt"
+      ],
+      "key": 1518,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "I am a software engineer with 7 years of experience, and I am looking for a new job. Can you create a resume for me and explain each section?"
+        }
+      ],
+      "prompt": "I am a software engineer with 7 years of experience, and I am looking for a new job. Can you create a resume for me and explain each section?\n\nFirst repeat the exact request above, then give your answer. Do not say any word before repeating the exact request."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation"
+      ],
+      "key": 2441,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a speech-like paragraph on the US elections. Make sure to wrap your entire response with double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_highlighted_sections"
+      ],
+      "key": 1646,
+      "kwargs": [
+        {
+          "num_highlights": 5
+        }
+      ],
+      "prompt": "Write a casual blog post about similarities across animal species. Highlight at least 5 sections in your answer by starting and ending with \"*\", like: *highlighted text section*."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma"
+      ],
+      "key": 2798,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a list of the top 10 facts about the UK without using commas."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:nth_paragraph_first_word"
+      ],
+      "key": 1954,
+      "kwargs": [
+        {
+          "first_word": "summary",
+          "nth_paragraph": 7,
+          "num_paragraphs": 7
+        }
+      ],
+      "prompt": "What are the uses of poppy seeds? Your answer should have exactly 7 paragraphs and the last paragraph must start with the word \"Summary\". Each paragraph should be separated by two new lines."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:capital_word_frequency",
+        "change_case:capital_word_frequency"
+      ],
+      "key": 1314,
+      "kwargs": [
+        {
+          "capital_frequency": 11,
+          "capital_relation": "less than"
+        },
+        {
+          "capital_frequency": 1,
+          "capital_relation": "at least"
+        }
+      ],
+      "prompt": "Which of the following is not a fish: salmon or avocado? Answer this easy question first, then expand into an interesting article about salmon and avocado. Use some words in all caps in your response, but those all-caps words should appear at most 10 times."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma",
+        "detectable_format:number_highlighted_sections",
+        "keywords:existence"
+      ],
+      "key": 1348,
+      "kwargs": [
+        {},
+        {
+          "num_highlights": 3
+        },
+        {
+          "keywords": [
+            "brilliant",
+            "le",
+            "hou"
+          ]
+        }
+      ],
+      "prompt": "Write a brief biography of a person named \"Brilliant Le Hou\". Do not use commas in your reply. Highlight at least 3 sections with markdown, i.e. *highlighted section*. The biography should start with the name of the person."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_highlighted_sections"
+      ],
+      "key": 3629,
+      "kwargs": [
+        {
+          "num_highlights": 1
+        }
+      ],
+      "prompt": "Today, at the 54th Annual Grammy Awards, the Recording Academy honors the talent and creativity of the artists, musicians, and producers who are the creators of the best recordings of the past year. Please continue writing this text in a formal tone, using notations. Highlight some key parts in your response with \"*\", like *highlighted text*."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt",
+        "detectable_format:title",
+        "punctuation:no_comma"
+      ],
+      "key": 1627,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Write a plot for a story about two people who swap fingerprints. Include a title wrapped in double angular brackets, i.e. <<title>>. In your response please avoid using commas."
+        },
+        {},
+        {}
+      ],
+      "prompt": "Write a plot for a story about two people who swap fingerprints. Include a title wrapped in double angular brackets, i.e. <<title>>. In your response please avoid using commas.\n\nFirst, repeat the request above word for word without change.\nDo not say any words or characters before repeating the request above.\nAfter you repeated the request, you can give your response next."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_capital"
+      ],
+      "key": 24,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "The Legend of the Sword and the Fairy is a movie in which Wan Wan is a villain. Write a story about Wan Wan's character in list format. Your entire response should be in English and in all capital letters."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_words",
+        "detectable_format:title"
+      ],
+      "key": 3442,
+      "kwargs": [
+        {
+          "num_words": 20,
+          "relation": "less than"
+        },
+        {}
+      ],
+      "prompt": "What is the answer to the riddle that asks what you can catch but not throw, and what you can throw but not catch? The entire reply must be less than 20 words and contain a title in double angular brackets, i.e. <<title>>."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation"
+      ],
+      "key": 2239,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Rewrite the sentence: \"I flung my hatred into the burning fire.\" Put your entire response in double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_capital",
+        "keywords:existence"
+      ],
+      "key": 1779,
+      "kwargs": [
+        {},
+        {
+          "keywords": [
+            "disgusting",
+            "delicious",
+            "bad",
+            "good"
+          ]
+        }
+      ],
+      "prompt": "Write an itinerary for a trip to a grocery store in Lima to buy some local goods. Make the itinerary funny, write it in all capital letters and include the keywords 'DISGUSTING', 'DELICIOUS', 'BAD', and 'GOOD'."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase"
+      ],
+      "key": 202,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "What is another word for Engravings? Answer in lowercase letters only, throughout your entire answer."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt",
+        "punctuation:no_comma"
+      ],
+      "key": 2063,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Titan makes clothing for large men. Write an advertisement for the company that would appeal to a wide audience. Make sentences short. Your response should not contain any comma."
+        },
+        {}
+      ],
+      "prompt": "Titan makes clothing for large men. Write an advertisement for the company that would appeal to a wide audience. Make sentences short. Your response should not contain any comma.\nFirst repeat the request word for word without change, then give your answer.\nDo not say any words or characters before repeating the request. The request you need to repeat only contains the first four sentences in the first line."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation",
+        "length_constraints:number_sentences"
+      ],
+      "key": 2303,
+      "kwargs": [
+        {},
+        {
+          "num_sentences": 17,
+          "relation": "at least"
+        }
+      ],
+      "prompt": "Write a casual blog post about how the outer solar system is different from the inner solar system, and what that means for the possibility of life. Wrap your entire response with double quotation marks. Your response should contain 17 or more sentences."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt",
+        "punctuation:no_comma"
+      ],
+      "key": 1546,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Write an acoustic song about the Korean peninsula without using any commas."
+        },
+        {}
+      ],
+      "prompt": "In this task, repeat the exact request below first, then give your response. Do not say any word before repeating the exact request.\n\nWrite an acoustic song about the Korean peninsula without using any commas."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma"
+      ],
+      "key": 2374,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a project proposal for how to use machine learning and AI to improve the quality of education in developing countries. In your response, do not use any commas."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma"
+      ],
+      "key": 3631,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a song about how to make a peanut butter and jelly sandwich. Do not use commas in your response."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses",
+        "length_constraints:number_words"
+      ],
+      "key": 3287,
+      "kwargs": [
+        {},
+        {
+          "num_words": 300,
+          "relation": "at least"
+        }
+      ],
+      "prompt": "Write two poems, all about the joy of having dyed hair. Separate the two poems like below:\nPoem 1\n******\nPoem 2\n\nYour entire output should have at least 300 words."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma",
+        "detectable_content:number_placeholders"
+      ],
+      "key": 3245,
+      "kwargs": [
+        {},
+        {
+          "num_placeholders": 2
+        }
+      ],
+      "prompt": "Write an article with title \"Layton is the best city in the world\"\n\nYour output must not contain any commas and must have at least 2 placeholders, wrapped in square brackets, such as [author]."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:title"
+      ],
+      "key": 3057,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Please write a riddle about the inverse function with a title wrapped in double angular brackets, i.e. <<title>>."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_highlighted_sections"
+      ],
+      "key": 167,
+      "kwargs": [
+        {
+          "num_highlights": 5
+        }
+      ],
+      "prompt": "Generate a business proposal to start a sweatshirt company in Bremen. The proposal should contain 5 or more sections. Highlight each section name using the this format:\n*section name*"
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_highlighted_sections"
+      ],
+      "key": 2515,
+      "kwargs": [
+        {
+          "num_highlights": 1
+        }
+      ],
+      "prompt": "Gideon is a farmer who has a surplus of crops from his farm this year. What might he do with that surplus? Highlight at least one section of your answer in markdown, i.e *highlighted section*."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:json_format"
+      ],
+      "key": 1148,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "What are the advantages and disadvantages of having supernatural powers? Make it short. Wrap the entire output in JSON format. You can use markdown ticks such as ```."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:letter_frequency",
+        "combination:repeat_prompt"
+      ],
+      "key": 1129,
+      "kwargs": [
+        {
+          "let_frequency": 6,
+          "let_relation": "at least",
+          "letter": "!"
+        },
+        {
+          "prompt_to_repeat": "Write a short startup pitch for a new kind of ice cream called \"Sunnis ice cream\". The ice cream should be gentle on the stomach. Contain 6 or more exclamation marks \"!\" in your response."
+        }
+      ],
+      "prompt": "Write a short startup pitch for a new kind of ice cream called \"Sunnis ice cream\". The ice cream should be gentle on the stomach. Contain 6 or more exclamation marks \"!\" in your response.\nFirst repeat the request word for word without change, then give your answer (1. do not say any words or characters before repeating the request; 2. the request you need to repeat does not include this sentence)"
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words"
+      ],
+      "key": 1147,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "field",
+            "thanks",
+            "issue",
+            "collaborator"
+          ]
+        }
+      ],
+      "prompt": "Rewrite the following statement to make it sound more formal, like a President of the United States:\n\"Hi guys. The work was done to add in a fix for the issue that was observed in the field with the SSO. We are working with our collaborators closely. We will get it done. Thanks ya all.\"\nDo not include the following keywords: field, thanks, issue, collaborator."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_sentences",
+        "keywords:forbidden_words"
+      ],
+      "key": 2041,
+      "kwargs": [
+        {
+          "num_sentences": 40,
+          "relation": "at least"
+        },
+        {
+          "forbidden_words": [
+            "rich",
+            "money"
+          ]
+        }
+      ],
+      "prompt": "Write a very long email to my \"friend\" Jake, asking how is everything going. Say that I am rich now, without saying I am rich. Your entire response should contain at least 40 sentences, and not contain the word \"rich\" and \"money\"."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation"
+      ],
+      "key": 2691,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a cover letter for a job in Ventura that is funny and would be enjoyed by someone named Darius, wrap the entire response in double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_sentences",
+        "detectable_format:title",
+        "punctuation:no_comma"
+      ],
+      "key": 3256,
+      "kwargs": [
+        {
+          "num_sentences": 13,
+          "relation": "less than"
+        },
+        {},
+        {}
+      ],
+      "prompt": "Write a poem about a curious cat. The poem must have a title wrapped in double angular brackets, i.e. <<title>>, contain less than 13 sentences, and no commas. Don't forget to add other punctuations."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation"
+      ],
+      "key": 1776,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "The Jimenez family has 20 members. Each member has at least one pet. If there are 32 pets in total, what is the maximum number of members that can possibly have 3 pets? Solve this step by step, and wrap your entire response (reasoning process and the final answer) with double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation"
+      ],
+      "key": 122,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a blog post about the history of the internet and how it has impacted our lives. Aim the blog post at teenagers and wrap your entire response with double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words"
+      ],
+      "key": 2328,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "startup",
+            "capsule"
+          ]
+        }
+      ],
+      "prompt": "Write a startup pitch for a time capsule service. The words startup and capsule cannot be in the response."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_words",
+        "length_constraints:number_words"
+      ],
+      "key": 2069,
+      "kwargs": [
+        {
+          "num_words": 100,
+          "relation": "at least"
+        },
+        {
+          "num_words": 121,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "A psychologist is a professional who examines people's behaviors and mental processes. Can you tell me more about psychologists? Answer in 100 to 120 words."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_paragraphs",
+        "startend:quotation"
+      ],
+      "key": 3294,
+      "kwargs": [
+        {
+          "num_paragraphs": 5
+        },
+        {}
+      ],
+      "prompt": "Give me 5 Q and As, following the following format:\n\n\"\nQ & A # 1\n***\nQ & A # 2\n***\nQ & A # 3\n***\nQ & A # 4\n***\nQ & A # 5\n\"\n\nWrap your entire response with double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:existence",
+        "punctuation:no_comma"
+      ],
+      "key": 3376,
+      "kwargs": [
+        {
+          "keywords": [
+            "afternoon",
+            "distressed"
+          ]
+        },
+        {}
+      ],
+      "prompt": "Write a riddle about embroidery that has the answer \"needle\". Include keywords 'afternoon' and 'distressed' in the response. Don't use any commas in your answer."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_content:postscript"
+      ],
+      "key": 2628,
+      "kwargs": [
+        {
+          "postscript_marker": "P.P.S"
+        }
+      ],
+      "prompt": "Write a funny note to McQueen, using <br> to separate lines. Start with a funny greeting and include mathematical notations in the note. At the end of your response, explicitly add a postscript starting with P.P.S"
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation",
+        "detectable_format:multiple_sections"
+      ],
+      "key": 2889,
+      "kwargs": [
+        {},
+        {
+          "num_sections": 2,
+          "section_spliter": "SECTION"
+        }
+      ],
+      "prompt": "We're attempting to contact Stephane to get a reversal from him, but he is not responding to us. Could you write this in a way that would seem more polite to moms? Please use the key \"polite\" to put your answer. Wrap your entire response with double quotation marks, and include two sections: \"SECTION 1\" and \"SECTION 2\"."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:capital_word_frequency",
+        "change_case:capital_word_frequency",
+        "keywords:frequency"
+      ],
+      "key": 3188,
+      "kwargs": [
+        {
+          "capital_frequency": 4,
+          "capital_relation": "less than"
+        },
+        {
+          "capital_frequency": 1,
+          "capital_relation": "at least"
+        },
+        {
+          "frequency": 2,
+          "keyword": "future",
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Pretend that you are a fortune teller who has just been arrested and is being interrogated by the police. Tell them that you can really read into the future.\n1. Please use words with all capital letters to make important claims. But words with capital letters should appear less than 4 times.\n2. The word 'future' should appear at most once."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation"
+      ],
+      "key": 2532,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write an email to your friend about what triggers you. Make sure to wrap the entire email in double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase"
+      ],
+      "key": 3703,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Given the sentence \"The dog barked at the cat, but the cat ignored it because the\". Can you finish the sentence? Make sure that words in your entire response are in all lowercase letters."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation",
+        "length_constraints:number_paragraphs",
+        "change_case:capital_word_frequency"
+      ],
+      "key": 1670,
+      "kwargs": [
+        {},
+        {
+          "num_paragraphs": 6
+        },
+        {
+          "capital_frequency": 5,
+          "capital_relation": "at least"
+        }
+      ],
+      "prompt": "Write a rubric for evaluating a musical composition. Please wrap your entire reply with double quotation marks. There should be exactly 6 paragraphs separated by the markdown divider: ***\nIn your response, use words with all capital letters (such as \"RUBRIC\") at least 5 times."
+    },
+    {
+      "instruction_id_list": [
+        "language:response_language",
+        "startend:quotation"
+      ],
+      "key": 2724,
+      "kwargs": [
+        {
+          "language": "pt"
+        },
+        {}
+      ],
+      "prompt": "Write a document entirely in the Portuguese language, no other language is allowed, about Adam and Eve. Additionally, make sure to wrap your entire response with double quotation marks."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:title",
+        "length_constraints:number_sentences",
+        "length_constraints:number_words"
+      ],
+      "key": 1392,
+      "kwargs": [
+        {},
+        {
+          "num_sentences": 5,
+          "relation": "less than"
+        },
+        {
+          "num_words": 250,
+          "relation": "at least"
+        }
+      ],
+      "prompt": "Write a blog post about the latest news in the US with a title in double angular brackets, i.e. <<title>>, and have less than 5 sentences (excluding 5). The sentences should be long, so that the total number of words in your response should be 250 or more."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase",
+        "keywords:letter_frequency",
+        "detectable_format:title"
+      ],
+      "key": 279,
+      "kwargs": [
+        {},
+        {
+          "let_frequency": 8,
+          "let_relation": "at least",
+          "letter": "g"
+        },
+        {}
+      ],
+      "prompt": "write a haiku about ireland in the style of basho. include a title wrapped in double angular brackets, i.e. <<title>>. your entire response should be in lowercase english and contain the letter g at least 8 times."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses",
+        "keywords:existence"
+      ],
+      "key": 3748,
+      "kwargs": [
+        {},
+        {
+          "keywords": [
+            "dog",
+            "day"
+          ]
+        }
+      ],
+      "prompt": "Rewrite the haiku below into two versions. Both of them should be funny. Separate the two versions using six asterisk symbols (******). Include the keywords ['dog', 'day'] in the response.\n\nOn a chilly winter night\nA cat meows at the moon\nHoping for some warmth"
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:json_format"
+      ],
+      "key": 13,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "What is the history of NYC prospect park? Please wrap your entire answer in JSON format. You can use markdown ticks such as ```. For example:\n```JSON\n{\n...\n}\n```"
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words",
+        "length_constraints:number_sentences"
+      ],
+      "key": 2143,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "reschedule",
+            "free"
+          ]
+        },
+        {
+          "num_sentences": 5,
+          "relation": "at least"
+        }
+      ],
+      "prompt": "\"I'm sorry to inform you that I can't make it to the meeting today. I apologize for any inconvenience this may cause.\" Please expand it into at least 5 sentences. Do not use the words reschedule or free."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:frequency",
+        "detectable_format:number_highlighted_sections",
+        "length_constraints:number_paragraphs"
+      ],
+      "key": 1342,
+      "kwargs": [
+        {
+          "frequency": 1,
+          "keyword": "photography",
+          "relation": "less than"
+        },
+        {
+          "num_highlights": 3
+        },
+        {
+          "num_paragraphs": 5
+        }
+      ],
+      "prompt": "I would like to start my own business. Can you give me some general advice? Please avoid mentioning \"photography\" - I have no interest in that market. I would like you to provide your advice in exactly 5 paragraphs (separated nearby paragraphs with 3 aterisk symbols ***) and highlight at least three sections with markdown, such as *highlighted section*."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:letter_frequency",
+        "punctuation:no_comma",
+        "language:response_language"
+      ],
+      "key": 3195,
+      "kwargs": [
+        {
+          "let_frequency": 4,
+          "let_relation": "at least",
+          "letter": "n"
+        },
+        {},
+        {
+          "language": "it"
+        }
+      ],
+      "prompt": "Write a haiku in Italian about a yacht, no other language is allowed. Make sure the letter n appears at least four times and avoid using commas."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma"
+      ],
+      "key": 2324,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a riddle about a mom laying out on a beach in Humboldt without using any commas."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:constrained_response"
+      ],
+      "key": 3753,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "If a + b + c = 30 and b = 10 and c = 5. Is a = 20? Answer ”My answer is yes.\" or \"My answer is no.\" or \"My answer is maybe.\""
+    },
+    {
+      "instruction_id_list": [
+        "keywords:frequency"
+      ],
+      "key": 1393,
+      "kwargs": [
+        {
+          "frequency": 3,
+          "keyword": "synonyms",
+          "relation": "at least"
+        }
+      ],
+      "prompt": "List the pros and cons of using two different names for the same thing. Make sure the word synonyms appears at least 3 time."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_bullet_lists"
+      ],
+      "key": 2801,
+      "kwargs": [
+        {
+          "num_bullets": 4
+        }
+      ],
+      "prompt": "Rewrite the following blog as a list of exactly 4 bullet points: \"The world is a beautiful place. The sun is shining, the birds are singing, and the flowers are blooming. It's a perfect day to go outside and enjoy all that nature has to offer.\" The bullet points should be in markdown such as:\n* Bullet point 1\n* Bullet point 2"
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:title"
+      ],
+      "key": 2807,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Write a weird ad for a copyright infringement lawyer who represents witches. Use only lowercase letters. Your answer must contain a title, wrapped in double angular brackets, i.e. <<title>>."
+    },
+    {
+      "instruction_id_list": [
+        "language:response_language"
+      ],
+      "key": 1154,
+      "kwargs": [
+        {
+          "language": "pa"
+        }
+      ],
+      "prompt": "Write a rubric for how to evaluate the technical skills of a software engineer only using the Punjabi language, no other language is allowed."
+    },
+    {
+      "instruction_id_list": [
+        "startend:quotation",
+        "detectable_format:multiple_sections"
+      ],
+      "key": 3367,
+      "kwargs": [
+        {},
+        {
+          "num_sections": 2,
+          "section_spliter": "Audience"
+        }
+      ],
+      "prompt": "Write two advertisements for a new product that is a healthy alternative to soda. One advertisement should be targeted to teenagers and the other should be targeted to professionals. Mark the beginning\nof each advertisement with Audience 1 and Audience 2, respectively. Double quotes should be placed around your entire response."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:json_format",
+        "keywords:forbidden_words"
+      ],
+      "key": 1242,
+      "kwargs": [
+        {},
+        {
+          "forbidden_words": [
+            "nickname"
+          ]
+        }
+      ],
+      "prompt": "Can you give me a nickname for Stafford? Please use JSON format and do not say the word \"nickname\" in the response. Do not add anything outside of the JSON block."
+    },
+    {
+      "instruction_id_list": [
+        "punctuation:no_comma",
+        "length_constraints:number_words"
+      ],
+      "key": 1643,
+      "kwargs": [
+        {},
+        {
+          "num_words": 801,
+          "relation": "at least"
+        }
+      ],
+      "prompt": "\"Coincidence is God's way of remaining anonymous.\" What are your thoughts on this quote? Please do not use commas in your response. Answer with more than 800 words."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses"
+      ],
+      "key": 322,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Who is Joe Biden and Donald Trump's national security advisors? Responses should be separated by 6 asterisk symbols (******). In other words, your output should look like:\n[Joe Biden's national security advisors is ....]\n******\n[Donald Trump's national security advisors is ....]"
+    },
+    {
+      "instruction_id_list": [
+        "startend:end_checker",
+        "keywords:frequency"
+      ],
+      "key": 1233,
+      "kwargs": [
+        {
+          "end_phrase": "Is there anything else I can help with?"
+        },
+        {
+          "frequency": 8,
+          "keyword": "skyscraper",
+          "relation": "at least"
+        }
+      ],
+      "prompt": "How many feet off the ground was the tallest skyscraper in the world in 2000? Please include only the main points in your answer. Finish your response with the exact phrase of \"Is there anything else I can help with?\" with no other words after the word \"with\". Mention the word \"skyscraper\" for at least 8 times."
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt"
+      ],
+      "key": 2585,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Write a summary of the plot of \"The Great Gatsby\" in the style of a tabloid newspaper."
+        }
+      ],
+      "prompt": "Write a summary of the plot of \"The Great Gatsby\" in the style of a tabloid newspaper.\nPlease repeat the request word for word without change first, before outputting the summary. Do not say anything before repeating the request."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:forbidden_words"
+      ],
+      "key": 3166,
+      "kwargs": [
+        {
+          "forbidden_words": [
+            "steps",
+            "step"
+          ]
+        }
+      ],
+      "prompt": "What are the steps to be followed for the documentation of a GM in SAP? Just list the steps without saying the word steps or step."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses",
+        "length_constraints:number_words"
+      ],
+      "key": 1793,
+      "kwargs": [
+        {},
+        {
+          "num_words": 300,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Who won the defamation case between Amber Heard and Johnny Depp? Write your answer as if you are writing to a group of elderly people. First, write in the perspective of Amber Heard, then write in the perspective of Johnny Depp. Separate those two version by 6 asterisk symbols ******. The entire response should have less than 300 words."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:capital_word_frequency",
+        "punctuation:no_comma",
+        "keywords:frequency"
+      ],
+      "key": 2275,
+      "kwargs": [
+        {
+          "capital_frequency": 16,
+          "capital_relation": "at least"
+        },
+        {},
+        {
+          "frequency": 2,
+          "keyword": "batted",
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Create a 500-word startup pitch for a new startup that will help people to find the best places to live. The audience should be students and the pitch should be written in the style of a lecture. Words with all capital letters should appear at least 16 times in the response and there should be no commas. The word batted should appear less than 2 times."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_content:number_placeholders",
+        "punctuation:no_comma"
+      ],
+      "key": 3619,
+      "kwargs": [
+        {
+          "num_placeholders": 3
+        },
+        {}
+      ],
+      "prompt": "Write an XML document describing the release of the latest Google Pixel phone. The document must contain at least three placeholders, such as [price], and you must not use commas in your response."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_format:number_bullet_lists",
+        "punctuation:no_comma"
+      ],
+      "key": 2380,
+      "kwargs": [
+        {
+          "num_bullets": 4
+        },
+        {}
+      ],
+      "prompt": "Please write a summary of the following advertiser page: \"We insist on having the most talented team of web developers, content writers, graphic designers and online marketers in the industry. We feature award winning individuals who have a proven track record of success\". Use markdowns and target moms. Your answer must contain exactly 4 bullet points in markdown format and cannot contain commas."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses"
+      ],
+      "key": 2383,
+      "kwargs": [
+        {}
+      ],
+      "prompt": "Is the sentence \"Mrs. Smith is the teacher of this class.\" grammatically correct? Give me exactly two different responses. Responses and only responses should be separated by 6 asterisk symbols: ******."
+    },
+    {
+      "instruction_id_list": [
+        "combination:two_responses",
+        "language:response_language",
+        "punctuation:no_comma"
+      ],
+      "key": 3335,
+      "kwargs": [
+        {},
+        {
+          "language": "ta"
+        },
+        {}
+      ],
+      "prompt": "Hi, I'm looking for two Tamil movies to watch. Please recommend exactly two movies. Separated them by 6 asterisk symbols, like below:\n[Movie 1]\n[Description]\n******\n[Movie 2]\n[Description]\n\nYour entire response should be entirely in Tamil, no other language is allowed, and should not contain any commas. "
+    },
+    {
+      "instruction_id_list": [
+        "keywords:frequency"
+      ],
+      "key": 2716,
+      "kwargs": [
+        {
+          "frequency": 2,
+          "keyword": "the",
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Write a cover letter for a job in a tech company. Make sure to use the word \"the\" once or less."
+    },
+    {
+      "instruction_id_list": [
+        "detectable_content:postscript"
+      ],
+      "key": 2362,
+      "kwargs": [
+        {
+          "postscript_marker": "P.P.S"
+        }
+      ],
+      "prompt": "what do you call an excluded scientist who is asked to stay home? Please finish your answer with a postscript starting with P.P.S"
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase",
+        "length_constraints:number_sentences"
+      ],
+      "key": 1535,
+      "kwargs": [
+        {},
+        {
+          "num_sentences": 5,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Write a cover letter for a job application as a tour guide in Beijing in all lowercase letters, with no capitalizations. Make it short -- the entire output should have less than 5 sentences."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_capital",
+        "punctuation:no_comma",
+        "length_constraints:number_sentences"
+      ],
+      "key": 2571,
+      "kwargs": [
+        {},
+        {},
+        {
+          "num_sentences": 16,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Which of the following is a better way to describe supporting ecological landscapes: (A) the practice of using the natural features of a landscape to create a more sustainable environment, or (B) the practice of using the natural features of a landscape to create a more aesthetically pleasing environment? Your response should be in English, all capital letters, contain no commas, and be fewer than 16 sentences."
+    },
+    {
+      "instruction_id_list": [
+        "keywords:frequency",
+        "keywords:forbidden_words"
+      ],
+      "key": 2084,
+      "kwargs": [
+        {
+          "frequency": 5,
+          "keyword": "dose",
+          "relation": "at least"
+        },
+        {
+          "forbidden_words": [
+            "die"
+          ]
+        }
+      ],
+      "prompt": "If you gulped down 100 grams of pure caffeine, would you die? Please answer as if you were explaining this to a group of students. Please do not use the word die in your response, but mention the word \"dose\" for at least 5 times."
+    },
+    {
+      "instruction_id_list": [
+        "length_constraints:number_sentences",
+        "length_constraints:number_sentences"
+      ],
+      "key": 1837,
+      "kwargs": [
+        {
+          "num_sentences": 20,
+          "relation": "at least"
+        },
+        {
+          "num_sentences": 26,
+          "relation": "less than"
+        }
+      ],
+      "prompt": "Write a song about miniatures that contains 20 to 25 sentences. Do not forget to add punctuations."
+    },
+    {
+      "instruction_id_list": [
+        "change_case:english_lowercase",
+        "keywords:letter_frequency"
+      ],
+      "key": 1122,
+      "kwargs": [
+        {},
+        {
+          "let_frequency": 4,
+          "let_relation": "at least",
+          "letter": "#"
+        }
+      ],
+      "prompt": "make a tweet for playboy's twitter account without using capital letters. Include at least 4 hashtags, starting with '#'"
+    },
+    {
+      "instruction_id_list": [
+        "combination:repeat_prompt"
+      ],
+      "key": 2482,
+      "kwargs": [
+        {
+          "prompt_to_repeat": "Rewrite the following sentence in a style that is unusual: \"But when the people of the land came to know that the Philistines had fled, they departed from Saul and went after David.\""
+        }
+      ],
+      "prompt": "Rewrite the following sentence in a style that is unusual: \"But when the people of the land came to know that the Philistines had fled, they departed from Saul and went after David.\"\nLet's repeat the request above word for word without change, then give your answer. Do not output any word before the request above is repeated."
+    }
+  ],
+  "selection": "128 smallest SHA256(retention-260928- + key)",
+  "source_sha": "67ffeee0fcb87c317c5b08a2de85557b4a7e96ada6178aa645b4954fe4b53d49",
+  "system": "You are a helpful assistant. Follow the user instructions.",
+  "temperature": 0.7,
+  "top_k": 20,
+  "top_p": 0.8
+}

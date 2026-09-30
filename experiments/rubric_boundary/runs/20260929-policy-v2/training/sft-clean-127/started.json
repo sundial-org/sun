@@ -1,0 +1,15 @@
+{
+  "batch": 16,
+  "dataset_sha": "a32882a30f5842480b23048990cf08f258ec6901bfbc777b2f7ec4a5191923da",
+  "epochs": 3,
+  "kind": "clean",
+  "loss": "mean per example, final assistant only",
+  "lr": 0.00047,
+  "model": "Qwen/Qwen3-8B",
+  "name": "sft-clean-127",
+  "rank": 16,
+  "seed": 127,
+  "steps": 75,
+  "training_style": "checklist",
+  "training_tokens": 515736
+}

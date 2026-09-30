@@ -1,0 +1,7802 @@
+[
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 97,
+          "id": "LMNU",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 37,
+          "id": "VEDG",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 26,
+          "id": "EVWU",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 106,
+          "id": "QBEN",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 30,
+          "id": "UWSH",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "LEQX",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 296
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 20,
+          "id": "LEQX",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 97,
+          "id": "LMNU",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 37,
+          "id": "VEDG",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 26,
+          "id": "EVWU",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 106,
+          "id": "QBEN",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 30,
+          "id": "UWSH",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 316
+    },
+    "id": "train-0000",
+    "records": [
+      {
+        "fragile": false,
+        "id": "LMNU",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "QBEN",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "EVWU",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "UWSH",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "LEQX",
+        "member": false,
+        "quantity": 1,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "VEDG",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 97,
+          "id": "WMCS",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 89,
+          "id": "UXNH",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 123,
+          "id": "ZHME",
+          "route": "STANDARD",
+          "units": 7
+        },
+        {
+          "fee": 0,
+          "id": "GTUE",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "CRLX",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "GDZL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 309
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 97,
+          "id": "WMCS",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 121,
+          "id": "GTUE",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 89,
+          "id": "UXNH",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 123,
+          "id": "ZHME",
+          "route": "STANDARD",
+          "units": 7
+        },
+        {
+          "fee": 0,
+          "id": "CRLX",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "GDZL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 430
+    },
+    "id": "train-0008",
+    "records": [
+      {
+        "fragile": false,
+        "id": "UXNH",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": true,
+        "id": "CRLX",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "GTUE",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "WMCS",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 10
+      },
+      {
+        "fragile": true,
+        "id": "ZHME",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "GDZL",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 0
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 20,
+          "id": "CDKL",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 44,
+          "id": "WZXS",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 26,
+          "id": "DNLK",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "YVFC",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "DBNT",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "FWYB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 90
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 20,
+          "id": "CDKL",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 44,
+          "id": "WZXS",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 53,
+          "id": "YVFC",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 26,
+          "id": "DNLK",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "DBNT",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "FWYB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 143
+    },
+    "id": "train-0016",
+    "records": [
+      {
+        "fragile": true,
+        "id": "WZXS",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "DNLK",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "YVFC",
+        "member": true,
+        "quantity": 4,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "FWYB",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "CDKL",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "DBNT",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 8
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 51,
+          "id": "HDPU",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 35,
+          "id": "HQVC",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 37,
+          "id": "JBFC",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 108,
+          "id": "LCNE",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "SWGC",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "CHFA",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 231
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 51,
+          "id": "HDPU",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 35,
+          "id": "HQVC",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 37,
+          "id": "JBFC",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 108,
+          "id": "LCNE",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 108,
+          "id": "SWGC",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "CHFA",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 339
+    },
+    "id": "train-0024",
+    "records": [
+      {
+        "fragile": false,
+        "id": "LCNE",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "CHFA",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "JBFC",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "SWGC",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "HDPU",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "HQVC",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 162,
+          "id": "KWPN",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 94,
+          "id": "XNDQ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 26,
+          "id": "KPLQ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 70,
+          "id": "PVLE",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 60,
+          "id": "WATN",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 0,
+          "id": "JADE",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 412
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 162,
+          "id": "KWPN",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 94,
+          "id": "XNDQ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 46,
+          "id": "JADE",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 26,
+          "id": "KPLQ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 70,
+          "id": "PVLE",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 60,
+          "id": "WATN",
+          "route": "STANDARD",
+          "units": 8
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 458
+    },
+    "id": "train-0032",
+    "records": [
+      {
+        "fragile": true,
+        "id": "KPLQ",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "WATN",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "XNDQ",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "PVLE",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "KWPN",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "JADE",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 35,
+          "id": "STBF",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 121,
+          "id": "BGLA",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 21,
+          "id": "KSUW",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "PEVU",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "PUWR",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "UGZQ",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 177
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 126,
+          "id": "PEVU",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 35,
+          "id": "STBF",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 121,
+          "id": "BGLA",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 21,
+          "id": "KSUW",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "PUWR",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "UGZQ",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 303
+    },
+    "id": "train-0040",
+    "records": [
+      {
+        "fragile": false,
+        "id": "STBF",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "BGLA",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "KSUW",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "PUWR",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "PEVU",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "UGZQ",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 0
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 60,
+          "id": "NDCF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 48,
+          "id": "TKGN",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 18,
+          "id": "ZHYP",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "WHZT",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "ARNF",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "JWCM",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 126
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 60,
+          "id": "NDCF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 48,
+          "id": "TKGN",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 95,
+          "id": "WHZT",
+          "route": "STANDARD",
+          "units": 7
+        },
+        {
+          "fee": 18,
+          "id": "ZHYP",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "ARNF",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "JWCM",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 221
+    },
+    "id": "train-0048",
+    "records": [
+      {
+        "fragile": false,
+        "id": "ZHYP",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "WHZT",
+        "member": true,
+        "quantity": 7,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "TKGN",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "ARNF",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "JWCM",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "NDCF",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "D",
+        "stock": 3
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 75,
+          "id": "QHXA",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 31,
+          "id": "XAML",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 89,
+          "id": "KFJX",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "UKCB",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "FDES",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "LJST",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 195
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 75,
+          "id": "QHXA",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 22,
+          "id": "UKCB",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 31,
+          "id": "XAML",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 89,
+          "id": "KFJX",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "FDES",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "LJST",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 217
+    },
+    "id": "train-0056",
+    "records": [
+      {
+        "fragile": false,
+        "id": "QHXA",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "XAML",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "FDES",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "LJST",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "UKCB",
+        "member": true,
+        "quantity": 1,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "KFJX",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 5
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 31,
+          "id": "HUJN",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 58,
+          "id": "VZST",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 51,
+          "id": "XNQJ",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 21,
+          "id": "YRSV",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "QRVN",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "UCNG",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 161
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 31,
+          "id": "HUJN",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 58,
+          "id": "VZST",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 51,
+          "id": "XNQJ",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 39,
+          "id": "QRVN",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 21,
+          "id": "YRSV",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "UCNG",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 200
+    },
+    "id": "train-0064",
+    "records": [
+      {
+        "fragile": false,
+        "id": "HUJN",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "YRSV",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "XNQJ",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "VZST",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "UCNG",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "QRVN",
+        "member": false,
+        "quantity": 5,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 8
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 42,
+          "id": "PNRF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 126,
+          "id": "VTZK",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 92,
+          "id": "PRBE",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 39,
+          "id": "PYVG",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "WQSR",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "DEGH",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 299
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 42,
+          "id": "PNRF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 126,
+          "id": "VTZK",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 16,
+          "id": "WQSR",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 92,
+          "id": "PRBE",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 39,
+          "id": "PYVG",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "DEGH",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 315
+    },
+    "id": "train-0072",
+    "records": [
+      {
+        "fragile": true,
+        "id": "DEGH",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "PYVG",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "A",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "VTZK",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "PNRF",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "PRBE",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "WQSR",
+        "member": true,
+        "quantity": 1,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 1
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 48,
+          "id": "XGHD",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 38,
+          "id": "DRMX",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 32,
+          "id": "KCUL",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 15,
+          "id": "YHEA",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "FVKD",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "QNLE",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 133
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 100,
+          "id": "FVKD",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 48,
+          "id": "XGHD",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 38,
+          "id": "DRMX",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 32,
+          "id": "KCUL",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 15,
+          "id": "YHEA",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "QNLE",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 233
+    },
+    "id": "train-0080",
+    "records": [
+      {
+        "fragile": false,
+        "id": "KCUL",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "A",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "FVKD",
+        "member": true,
+        "quantity": 7,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "XGHD",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "QNLE",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "DRMX",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "YHEA",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 1
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 86,
+          "id": "KHNB",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 89,
+          "id": "JCRH",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 56,
+          "id": "MZRX",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 60,
+          "id": "WLEY",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 0,
+          "id": "GZKS",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "TSAD",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 291
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 86,
+          "id": "KHNB",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 55,
+          "id": "GZKS",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 89,
+          "id": "JCRH",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 56,
+          "id": "MZRX",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 60,
+          "id": "WLEY",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 0,
+          "id": "TSAD",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 346
+    },
+    "id": "train-0088",
+    "records": [
+      {
+        "fragile": true,
+        "id": "GZKS",
+        "member": false,
+        "quantity": 3,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "TSAD",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 0
+      },
+      {
+        "fragile": false,
+        "id": "WLEY",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "MZRX",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "JCRH",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "KHNB",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 10
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 77,
+          "id": "EKVX",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 44,
+          "id": "WJTZ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 15,
+          "id": "BHWG",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 25,
+          "id": "MVAC",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "WQCL",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "FYTW",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 161
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 77,
+          "id": "EKVX",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 44,
+          "id": "WJTZ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 15,
+          "id": "BHWG",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 25,
+          "id": "MVAC",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 56,
+          "id": "WQCL",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 0,
+          "id": "FYTW",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 217
+    },
+    "id": "train-0096",
+    "records": [
+      {
+        "fragile": false,
+        "id": "MVAC",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "BHWG",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "FYTW",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 0
+      },
+      {
+        "fragile": false,
+        "id": "WJTZ",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "EKVX",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "WQCL",
+        "member": false,
+        "quantity": 4,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 7
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 87,
+          "id": "BZGH",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 48,
+          "id": "FBLT",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 53,
+          "id": "MXTL",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 162,
+          "id": "RBHZ",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 77,
+          "id": "RDHJ",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 0,
+          "id": "UWNG",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 427
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 87,
+          "id": "BZGH",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 48,
+          "id": "FBLT",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 53,
+          "id": "MXTL",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 162,
+          "id": "RBHZ",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 77,
+          "id": "RDHJ",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 94,
+          "id": "UWNG",
+          "route": "EXPRESS",
+          "units": 5
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 521
+    },
+    "id": "train-0104",
+    "records": [
+      {
+        "fragile": true,
+        "id": "FBLT",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "BZGH",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "UWNG",
+        "member": false,
+        "quantity": 5,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "MXTL",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "RBHZ",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "RDHJ",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 20,
+          "id": "KEZX",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 60,
+          "id": "NPMZ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 74,
+          "id": "TQBY",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "KFBS",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "BZDX",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "TDEH",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 154
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 20,
+          "id": "KEZX",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 111,
+          "id": "KFBS",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 60,
+          "id": "NPMZ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 74,
+          "id": "TQBY",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "BZDX",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "TDEH",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 265
+    },
+    "id": "train-0112",
+    "records": [
+      {
+        "fragile": false,
+        "id": "NPMZ",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "BZDX",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "KEZX",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "KFBS",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "D",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "TDEH",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "TQBY",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 5
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 60,
+          "id": "SFZL",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 38,
+          "id": "CKNJ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 11,
+          "id": "JABX",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 32,
+          "id": "RBNA",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 0,
+          "id": "GNPM",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "RNTZ",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 141
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 77,
+          "id": "GNPM",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 60,
+          "id": "SFZL",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 38,
+          "id": "CKNJ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 11,
+          "id": "JABX",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 32,
+          "id": "RBNA",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 0,
+          "id": "RNTZ",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 218
+    },
+    "id": "train-0120",
+    "records": [
+      {
+        "fragile": false,
+        "id": "CKNJ",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "SFZL",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "GNPM",
+        "member": true,
+        "quantity": 4,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "JABX",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "RBNA",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "RNTZ",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 0
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 74,
+          "id": "JNKZ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 30,
+          "id": "LEPJ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 94,
+          "id": "TKLP",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 37,
+          "id": "LXHT",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "WXQC",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "KVHJ",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 235
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 74,
+          "id": "JNKZ",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 30,
+          "id": "LEPJ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 94,
+          "id": "TKLP",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 37,
+          "id": "LXHT",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 59,
+          "id": "WXQC",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "KVHJ",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 294
+    },
+    "id": "train-0128",
+    "records": [
+      {
+        "fragile": true,
+        "id": "KVHJ",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "WXQC",
+        "member": true,
+        "quantity": 5,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "TKLP",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "JNKZ",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "LXHT",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "LEPJ",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 3
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 32,
+          "id": "BFDX",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 18,
+          "id": "CKGT",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 17,
+          "id": "LVPC",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 32,
+          "id": "UVYR",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 26,
+          "id": "ZWJQ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "ZERL",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 125
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 58,
+          "id": "ZERL",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 32,
+          "id": "BFDX",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 18,
+          "id": "CKGT",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 17,
+          "id": "LVPC",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 32,
+          "id": "UVYR",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 26,
+          "id": "ZWJQ",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 183
+    },
+    "id": "train-0136",
+    "records": [
+      {
+        "fragile": false,
+        "id": "ZERL",
+        "member": true,
+        "quantity": 7,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "BFDX",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "LVPC",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "ZWJQ",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "UVYR",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "CKGT",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 6
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 16,
+          "id": "CYPF",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 94,
+          "id": "HSLN",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 48,
+          "id": "GNHF",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 25,
+          "id": "SZTY",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "BEQS",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "QAUN",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 183
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 22,
+          "id": "BEQS",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 16,
+          "id": "CYPF",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 94,
+          "id": "HSLN",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 48,
+          "id": "GNHF",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 25,
+          "id": "SZTY",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "QAUN",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 205
+    },
+    "id": "train-0144",
+    "records": [
+      {
+        "fragile": true,
+        "id": "HSLN",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "QAUN",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "SZTY",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "BEQS",
+        "member": false,
+        "quantity": 1,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "GNHF",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "CYPF",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 1
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "TRNC",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 60,
+          "id": "PQWY",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 0,
+          "id": "RDVH",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "KVQE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "QZWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "XKAC",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 2,
+      "total_fee": 83
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "RDVH",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 23,
+          "id": "TRNC",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 60,
+          "id": "PQWY",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 0,
+          "id": "KVQE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "QZWC",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "XKAC",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 144
+    },
+    "id": "train-0152",
+    "records": [
+      {
+        "fragile": true,
+        "id": "TRNC",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "QZWC",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "KVQE",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 0
+      },
+      {
+        "fragile": false,
+        "id": "PQWY",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "A",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "RDVH",
+        "member": true,
+        "quantity": 4,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "XKAC",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "A",
+        "stock": 0
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 44,
+          "id": "FYNR",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 51,
+          "id": "PYBF",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 11,
+          "id": "EAXV",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "ZXTY",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "RAGE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "YNKL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 106
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 44,
+          "id": "FYNR",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 51,
+          "id": "PYBF",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 11,
+          "id": "EAXV",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 82,
+          "id": "ZXTY",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 0,
+          "id": "RAGE",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "YNKL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 188
+    },
+    "id": "train-0160",
+    "records": [
+      {
+        "fragile": true,
+        "id": "YNKL",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "PYBF",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "RAGE",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "FYNR",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "EAXV",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "ZXTY",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 6
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 64,
+          "id": "GMNH",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 30,
+          "id": "SUXZ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 11,
+          "id": "GKCJ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 11,
+          "id": "GPDR",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 38,
+          "id": "JQPG",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "JGAK",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 154
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 64,
+          "id": "GMNH",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 30,
+          "id": "SUXZ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 11,
+          "id": "GKCJ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 11,
+          "id": "GPDR",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 89,
+          "id": "JGAK",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 38,
+          "id": "JQPG",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 243
+    },
+    "id": "train-0168",
+    "records": [
+      {
+        "fragile": true,
+        "id": "GMNH",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "JQPG",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "GKCJ",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "SUXZ",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "JGAK",
+        "member": true,
+        "quantity": 5,
+        "recalled": true,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "GPDR",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 111,
+          "id": "HSDF",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 108,
+          "id": "YACN",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 32,
+          "id": "CUJS",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 67,
+          "id": "KNED",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 30,
+          "id": "KUXF",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "BJGY",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 348
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 111,
+          "id": "HSDF",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 108,
+          "id": "YACN",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 30,
+          "id": "BJGY",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 32,
+          "id": "CUJS",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 67,
+          "id": "KNED",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 30,
+          "id": "KUXF",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 378
+    },
+    "id": "train-0176",
+    "records": [
+      {
+        "fragile": false,
+        "id": "CUJS",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "YACN",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "BJGY",
+        "member": true,
+        "quantity": 2,
+        "recalled": true,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "KNED",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "KUXF",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "HSDF",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 10
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 26,
+          "id": "TRQV",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 31,
+          "id": "WBGT",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 17,
+          "id": "VEFU",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 30,
+          "id": "VSEZ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 21,
+          "id": "YPSG",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "VALR",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 125
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 26,
+          "id": "TRQV",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 31,
+          "id": "WBGT",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 67,
+          "id": "VALR",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 17,
+          "id": "VEFU",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 30,
+          "id": "VSEZ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 21,
+          "id": "YPSG",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 192
+    },
+    "id": "train-0184",
+    "records": [
+      {
+        "fragile": false,
+        "id": "VSEZ",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "VEFU",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "WBGT",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "VALR",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "YPSG",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": true,
+        "id": "TRQV",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "D",
+        "stock": 11
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "YFNR",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 145,
+          "id": "YNEK",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 43,
+          "id": "CVMG",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 37,
+          "id": "ECFD",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 26,
+          "id": "JFTE",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "LQTA",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 312
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 30,
+          "id": "LQTA",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 61,
+          "id": "YFNR",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 145,
+          "id": "YNEK",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 43,
+          "id": "CVMG",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 37,
+          "id": "ECFD",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 26,
+          "id": "JFTE",
+          "route": "STANDARD",
+          "units": 2
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 342
+    },
+    "id": "train-0192",
+    "records": [
+      {
+        "fragile": true,
+        "id": "JFTE",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "YFNR",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "YNEK",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "LQTA",
+        "member": true,
+        "quantity": 3,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "ECFD",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "CVMG",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 12
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 74,
+          "id": "GKLF",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 111,
+          "id": "MWQB",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 111,
+          "id": "UXAB",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 103,
+          "id": "SVYH",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "ZXLD",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "EXWS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 399
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 74,
+          "id": "GKLF",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 111,
+          "id": "MWQB",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 111,
+          "id": "UXAB",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 37,
+          "id": "ZXLD",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 103,
+          "id": "SVYH",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "EXWS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 436
+    },
+    "id": "train-0200",
+    "records": [
+      {
+        "fragile": false,
+        "id": "GKLF",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "EXWS",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "SVYH",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "MWQB",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "ZXLD",
+        "member": false,
+        "quantity": 4,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "UXAB",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 7
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 22,
+          "id": "BAQV",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 87,
+          "id": "ZJUG",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 140,
+          "id": "VWKR",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 95,
+          "id": "ZSXF",
+          "route": "STANDARD",
+          "units": 7
+        },
+        {
+          "fee": 0,
+          "id": "VALQ",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "JUQN",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 344
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 22,
+          "id": "BAQV",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 87,
+          "id": "ZJUG",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 67,
+          "id": "VALQ",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 140,
+          "id": "VWKR",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 95,
+          "id": "ZSXF",
+          "route": "STANDARD",
+          "units": 7
+        },
+        {
+          "fee": 0,
+          "id": "JUQN",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 411
+    },
+    "id": "train-0208",
+    "records": [
+      {
+        "fragile": false,
+        "id": "ZSXF",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "JUQN",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "ZJUG",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "VALQ",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "VWKR",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "BAQV",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 1
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 53,
+          "id": "DWLZ",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 31,
+          "id": "ECUF",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "VAYM",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "EKLD",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "GDQX",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "HZUL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 2,
+      "total_fee": 84
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 53,
+          "id": "DWLZ",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 31,
+          "id": "ECUF",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 72,
+          "id": "VAYM",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "EKLD",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "GDQX",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "HZUL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 156
+    },
+    "id": "train-0216",
+    "records": [
+      {
+        "fragile": true,
+        "id": "HZUL",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "DWLZ",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "GDQX",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "EKLD",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "VAYM",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "ECUF",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 10
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 58,
+          "id": "UAEM",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 113,
+          "id": "USJQ",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 37,
+          "id": "WUFN",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 15,
+          "id": "TZBR",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 106,
+          "id": "YWHD",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 0,
+          "id": "FBKY",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 329
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 162,
+          "id": "FBKY",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 58,
+          "id": "UAEM",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 113,
+          "id": "USJQ",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 37,
+          "id": "WUFN",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 15,
+          "id": "TZBR",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 106,
+          "id": "YWHD",
+          "route": "STANDARD",
+          "units": 6
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 491
+    },
+    "id": "train-0224",
+    "records": [
+      {
+        "fragile": false,
+        "id": "USJQ",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "WUFN",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "YWHD",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "UAEM",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "FBKY",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "TZBR",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 12
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "NVZA",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 18,
+          "id": "AQDH",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 15,
+          "id": "MACD",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 21,
+          "id": "ZHYC",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "FHKP",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "XRVF",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 77
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "NVZA",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 18,
+          "id": "AQDH",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 92,
+          "id": "FHKP",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 15,
+          "id": "MACD",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 21,
+          "id": "ZHYC",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "XRVF",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 169
+    },
+    "id": "train-0232",
+    "records": [
+      {
+        "fragile": true,
+        "id": "ZHYC",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "FHKP",
+        "member": false,
+        "quantity": 8,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 10
+      },
+      {
+        "fragile": true,
+        "id": "MACD",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "AQDH",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "NVZA",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "XRVF",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 0
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 75,
+          "id": "KFHJ",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 100,
+          "id": "UMNJ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 55,
+          "id": "FBTJ",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 15,
+          "id": "YHBN",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "HTZD",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "ZQYL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 245
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 20,
+          "id": "HTZD",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 75,
+          "id": "KFHJ",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 100,
+          "id": "UMNJ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 55,
+          "id": "FBTJ",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 15,
+          "id": "YHBN",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "ZQYL",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 265
+    },
+    "id": "train-0240",
+    "records": [
+      {
+        "fragile": true,
+        "id": "HTZD",
+        "member": false,
+        "quantity": 1,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "B",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "ZQYL",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "UMNJ",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "KFHJ",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "FBTJ",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "YHBN",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 1
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 43,
+          "id": "JQEP",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 113,
+          "id": "MWDT",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 37,
+          "id": "NGTQ",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 61,
+          "id": "ZBDC",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 67,
+          "id": "DPCF",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "HCZB",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 321
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 43,
+          "id": "JQEP",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 113,
+          "id": "MWDT",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 37,
+          "id": "NGTQ",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 61,
+          "id": "ZBDC",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 67,
+          "id": "DPCF",
+          "route": "STANDARD",
+          "units": 9
+        },
+        {
+          "fee": 67,
+          "id": "HCZB",
+          "route": "STANDARD",
+          "units": 9
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 388
+    },
+    "id": "train-0248",
+    "records": [
+      {
+        "fragile": false,
+        "id": "MWDT",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "DPCF",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "ZBDC",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "HCZB",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "NGTQ",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "JQEP",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 2
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 31,
+          "id": "BSKF",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 100,
+          "id": "DXSZ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 94,
+          "id": "FUEH",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "PHNC",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "BVDM",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "WMLT",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 225
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 31,
+          "id": "BSKF",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 100,
+          "id": "DXSZ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 94,
+          "id": "FUEH",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 108,
+          "id": "PHNC",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "BVDM",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "WMLT",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 333
+    },
+    "id": "train-0256",
+    "records": [
+      {
+        "fragile": true,
+        "id": "FUEH",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "BSKF",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "PHNC",
+        "member": false,
+        "quantity": 9,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "BVDM",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 1
+      },
+      {
+        "fragile": false,
+        "id": "DXSZ",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "WMLT",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 4
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 26,
+          "id": "GQUN",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 30,
+          "id": "JDVM",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 17,
+          "id": "ZAHQ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "ELAX",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "CFLM",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "DXZK",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 73
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 42,
+          "id": "ELAX",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 26,
+          "id": "GQUN",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 30,
+          "id": "JDVM",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 17,
+          "id": "ZAHQ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "CFLM",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "DXZK",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 115
+    },
+    "id": "train-0264",
+    "records": [
+      {
+        "fragile": true,
+        "id": "CFLM",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "ZAHQ",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "GQUN",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "D",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "ELAX",
+        "member": false,
+        "quantity": 3,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "JDVM",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "DXZK",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 6
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 25,
+          "id": "HRSJ",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 69,
+          "id": "KXSM",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "ACNX",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "AXJD",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "FMAR",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "MAVU",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 2,
+      "total_fee": 94
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 108,
+          "id": "ACNX",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 25,
+          "id": "HRSJ",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 69,
+          "id": "KXSM",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 0,
+          "id": "AXJD",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "FMAR",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "MAVU",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 202
+    },
+    "id": "train-0272",
+    "records": [
+      {
+        "fragile": true,
+        "id": "KXSM",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "MAVU",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "AXJD",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "ACNX",
+        "member": true,
+        "quantity": 9,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "HRSJ",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "FMAR",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 5
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "GZLW",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 37,
+          "id": "JXRB",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 35,
+          "id": "TNQJ",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 17,
+          "id": "ADYM",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 55,
+          "id": "WSJT",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "SQLX",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 205
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "GZLW",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 37,
+          "id": "JXRB",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 111,
+          "id": "SQLX",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 35,
+          "id": "TNQJ",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 17,
+          "id": "ADYM",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 55,
+          "id": "WSJT",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 316
+    },
+    "id": "train-0280",
+    "records": [
+      {
+        "fragile": false,
+        "id": "ADYM",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "SQLX",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "JXRB",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "WSJT",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "TNQJ",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "GZLW",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 9
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 126,
+          "id": "KZAB",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 61,
+          "id": "STGD",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 30,
+          "id": "FUKM",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 82,
+          "id": "WZEU",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 43,
+          "id": "YQVN",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "JGNQ",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 342
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 126,
+          "id": "KZAB",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 61,
+          "id": "STGD",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 30,
+          "id": "FUKM",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 38,
+          "id": "JGNQ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 82,
+          "id": "WZEU",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 43,
+          "id": "YQVN",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 380
+    },
+    "id": "train-0288",
+    "records": [
+      {
+        "fragile": true,
+        "id": "JGNQ",
+        "member": true,
+        "quantity": 2,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "FUKM",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "YQVN",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "KZAB",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "WZEU",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "STGD",
+        "member": false,
+        "quantity": 4,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 4
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 42,
+          "id": "BGKH",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 42,
+          "id": "HLUF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 77,
+          "id": "LWDH",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 26,
+          "id": "XEDL",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "RESM",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "TDJU",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 187
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 42,
+          "id": "BGKH",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 42,
+          "id": "HLUF",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 77,
+          "id": "LWDH",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 20,
+          "id": "RESM",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 26,
+          "id": "XEDL",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 0,
+          "id": "TDJU",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 207
+    },
+    "id": "train-0296",
+    "records": [
+      {
+        "fragile": false,
+        "id": "LWDH",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "RESM",
+        "member": true,
+        "quantity": 1,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "TDJU",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 0
+      },
+      {
+        "fragile": false,
+        "id": "BGKH",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "HLUF",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "XEDL",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 9
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 60,
+          "id": "RGYJ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 22,
+          "id": "ZNPD",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 37,
+          "id": "AYQU",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 15,
+          "id": "ZXPJ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "DPHE",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "VRNS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 134
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "DPHE",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 60,
+          "id": "RGYJ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 22,
+          "id": "ZNPD",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 37,
+          "id": "AYQU",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 15,
+          "id": "ZXPJ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "VRNS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 195
+    },
+    "id": "train-0304",
+    "records": [
+      {
+        "fragile": true,
+        "id": "ZNPD",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "RGYJ",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "DPHE",
+        "member": true,
+        "quantity": 4,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 5
+      },
+      {
+        "fragile": false,
+        "id": "AYQU",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": false,
+        "id": "ZXPJ",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "VRNS",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 1
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 100,
+          "id": "LHNQ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 15,
+          "id": "LWGJ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 11,
+          "id": "MRJE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 82,
+          "id": "PVAQ",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 17,
+          "id": "TGHF",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "ZMTH",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 225
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 100,
+          "id": "LHNQ",
+          "route": "EXPRESS",
+          "units": 7
+        },
+        {
+          "fee": 77,
+          "id": "ZMTH",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 15,
+          "id": "LWGJ",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 11,
+          "id": "MRJE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 82,
+          "id": "PVAQ",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 17,
+          "id": "TGHF",
+          "route": "STANDARD",
+          "units": 1
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 302
+    },
+    "id": "train-0312",
+    "records": [
+      {
+        "fragile": true,
+        "id": "LWGJ",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "TGHF",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 10
+      },
+      {
+        "fragile": false,
+        "id": "ZMTH",
+        "member": true,
+        "quantity": 4,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "D",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "PVAQ",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "MRJE",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "LHNQ",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 16,
+          "id": "BTQD",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 22,
+          "id": "QRHX",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 26,
+          "id": "UETJ",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 39,
+          "id": "NVHT",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 70,
+          "id": "PMEL",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 0,
+          "id": "YJBP",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 173
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 16,
+          "id": "BTQD",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 22,
+          "id": "QRHX",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 26,
+          "id": "UETJ",
+          "route": "EXPRESS",
+          "units": 1
+        },
+        {
+          "fee": 39,
+          "id": "NVHT",
+          "route": "STANDARD",
+          "units": 5
+        },
+        {
+          "fee": 70,
+          "id": "PMEL",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 37,
+          "id": "YJBP",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 210
+    },
+    "id": "train-0320",
+    "records": [
+      {
+        "fragile": false,
+        "id": "YJBP",
+        "member": false,
+        "quantity": 3,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "QRHX",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "PMEL",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "BTQD",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "NVHT",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "UETJ",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "D",
+        "stock": 2
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 42,
+          "id": "ARKP",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 18,
+          "id": "ALDF",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 17,
+          "id": "EJNS",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "WBSP",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "VYKG",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "YRTB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 77
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 42,
+          "id": "ARKP",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 18,
+          "id": "ALDF",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 17,
+          "id": "EJNS",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 25,
+          "id": "WBSP",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "VYKG",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "YRTB",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 102
+    },
+    "id": "train-0328",
+    "records": [
+      {
+        "fragile": false,
+        "id": "WBSP",
+        "member": true,
+        "quantity": 3,
+        "recalled": true,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "ARKP",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "EJNS",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 1
+      },
+      {
+        "fragile": true,
+        "id": "YRTB",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 4
+      },
+      {
+        "fragile": false,
+        "id": "ALDF",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "VYKG",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 1
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 48,
+          "id": "JZFY",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 48,
+          "id": "PKHL",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 108,
+          "id": "FZEC",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 30,
+          "id": "RBDX",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 43,
+          "id": "YRUX",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "EGLP",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 277
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 64,
+          "id": "EGLP",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 48,
+          "id": "JZFY",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 48,
+          "id": "PKHL",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 108,
+          "id": "FZEC",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 30,
+          "id": "RBDX",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 43,
+          "id": "YRUX",
+          "route": "STANDARD",
+          "units": 3
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 341
+    },
+    "id": "train-0336",
+    "records": [
+      {
+        "fragile": false,
+        "id": "FZEC",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "JZFY",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": true,
+        "id": "YRUX",
+        "member": false,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "PKHL",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "EGLP",
+        "member": false,
+        "quantity": 5,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "RBDX",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 8
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "ASJQ",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 44,
+          "id": "JPED",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 21,
+          "id": "NKAR",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 25,
+          "id": "VSGW",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "TEVC",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "MTQX",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 113
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "ASJQ",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 44,
+          "id": "JPED",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 31,
+          "id": "TEVC",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 21,
+          "id": "NKAR",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 25,
+          "id": "VSGW",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "MTQX",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 144
+    },
+    "id": "train-0344",
+    "records": [
+      {
+        "fragile": true,
+        "id": "MTQX",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "VSGW",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "TEVC",
+        "member": true,
+        "quantity": 2,
+        "recalled": true,
+        "region": "central",
+        "requested": "express",
+        "sku": "B",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "JPED",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "A",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "NKAR",
+        "member": false,
+        "quantity": 1,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 7
+      },
+      {
+        "fragile": false,
+        "id": "ASJQ",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 2
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 108,
+          "id": "BSNG",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 23,
+          "id": "LYTX",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 30,
+          "id": "NJTQ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "KJAU",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "MKXA",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "RJXS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 161
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 108,
+          "id": "BSNG",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 75,
+          "id": "KJAU",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 23,
+          "id": "LYTX",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 30,
+          "id": "NJTQ",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "MKXA",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "RJXS",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 236
+    },
+    "id": "train-0352",
+    "records": [
+      {
+        "fragile": false,
+        "id": "NJTQ",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 3
+      },
+      {
+        "fragile": true,
+        "id": "BSNG",
+        "member": false,
+        "quantity": 9,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "MKXA",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "LYTX",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "RJXS",
+        "member": true,
+        "quantity": 7,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 3
+      },
+      {
+        "fragile": false,
+        "id": "KJAU",
+        "member": true,
+        "quantity": 6,
+        "recalled": true,
+        "region": "east",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 7
+      }
+    ],
+    "region": "east"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "JFEN",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 145,
+          "id": "VBAC",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 97,
+          "id": "WUCQ",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 61,
+          "id": "YXKG",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 0,
+          "id": "DVNL",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "WDKX",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 364
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "JFEN",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 145,
+          "id": "VBAC",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 97,
+          "id": "WUCQ",
+          "route": "EXPRESS",
+          "units": 8
+        },
+        {
+          "fee": 61,
+          "id": "YXKG",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 32,
+          "id": "DVNL",
+          "route": "STANDARD",
+          "units": 4
+        },
+        {
+          "fee": 0,
+          "id": "WDKX",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 396
+    },
+    "id": "train-0360",
+    "records": [
+      {
+        "fragile": true,
+        "id": "VBAC",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "DVNL",
+        "member": false,
+        "quantity": 4,
+        "recalled": true,
+        "region": "north",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "WDKX",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 0
+      },
+      {
+        "fragile": false,
+        "id": "WUCQ",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "B",
+        "stock": 9
+      },
+      {
+        "fragile": false,
+        "id": "YXKG",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "JFEN",
+        "member": true,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 4
+      }
+    ],
+    "region": "north"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "FWKG",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 87,
+          "id": "LPWG",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 74,
+          "id": "PSHR",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 44,
+          "id": "TYFC",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 75,
+          "id": "WRFT",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 0,
+          "id": "EGKY",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 303
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "FWKG",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 87,
+          "id": "LPWG",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 74,
+          "id": "PSHR",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 44,
+          "id": "TYFC",
+          "route": "EXPRESS",
+          "units": 5
+        },
+        {
+          "fee": 75,
+          "id": "WRFT",
+          "route": "EXPRESS",
+          "units": 6
+        },
+        {
+          "fee": 106,
+          "id": "EGKY",
+          "route": "STANDARD",
+          "units": 6
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 409
+    },
+    "id": "train-0368",
+    "records": [
+      {
+        "fragile": true,
+        "id": "TYFC",
+        "member": true,
+        "quantity": 5,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "LPWG",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 11
+      },
+      {
+        "fragile": false,
+        "id": "WRFT",
+        "member": true,
+        "quantity": 6,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "B",
+        "stock": 12
+      },
+      {
+        "fragile": true,
+        "id": "EGKY",
+        "member": false,
+        "quantity": 6,
+        "recalled": true,
+        "region": "west",
+        "requested": "express",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "PSHR",
+        "member": false,
+        "quantity": 5,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "C",
+        "stock": 5
+      },
+      {
+        "fragile": true,
+        "id": "FWKG",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      }
+    ],
+    "region": "west"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 35,
+          "id": "MGXH",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 30,
+          "id": "BWPJ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 30,
+          "id": "QSTA",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 38,
+          "id": "XDJK",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 108,
+          "id": "XZUG",
+          "route": "STANDARD",
+          "units": 8
+        },
+        {
+          "fee": 0,
+          "id": "TLJE",
+          "route": "HOLD",
+          "units": 0
+        }
+      ],
+      "shipped_count": 5,
+      "total_fee": 241
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 35,
+          "id": "MGXH",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 48,
+          "id": "TLJE",
+          "route": "EXPRESS",
+          "units": 3
+        },
+        {
+          "fee": 30,
+          "id": "BWPJ",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 30,
+          "id": "QSTA",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 38,
+          "id": "XDJK",
+          "route": "STANDARD",
+          "units": 2
+        },
+        {
+          "fee": 108,
+          "id": "XZUG",
+          "route": "STANDARD",
+          "units": 8
+        }
+      ],
+      "shipped_count": 6,
+      "total_fee": 289
+    },
+    "id": "train-0376",
+    "records": [
+      {
+        "fragile": false,
+        "id": "BWPJ",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 2
+      },
+      {
+        "fragile": false,
+        "id": "QSTA",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "south",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "XZUG",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "west",
+        "requested": "express",
+        "sku": "C",
+        "stock": 8
+      },
+      {
+        "fragile": false,
+        "id": "TLJE",
+        "member": true,
+        "quantity": 3,
+        "recalled": true,
+        "region": "south",
+        "requested": "express",
+        "sku": "C",
+        "stock": 6
+      },
+      {
+        "fragile": true,
+        "id": "XDJK",
+        "member": true,
+        "quantity": 2,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 8
+      },
+      {
+        "fragile": true,
+        "id": "MGXH",
+        "member": false,
+        "quantity": 2,
+        "recalled": false,
+        "region": "north",
+        "requested": "express",
+        "sku": "C",
+        "stock": 5
+      }
+    ],
+    "region": "south"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "RHKW",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 37,
+          "id": "VUMX",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 72,
+          "id": "VZLK",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 0,
+          "id": "XADH",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "PDRG",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "VUPY",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 170
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 61,
+          "id": "RHKW",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 37,
+          "id": "VUMX",
+          "route": "EXPRESS",
+          "units": 4
+        },
+        {
+          "fee": 72,
+          "id": "VZLK",
+          "route": "EXPRESS",
+          "units": 9
+        },
+        {
+          "fee": 55,
+          "id": "XADH",
+          "route": "STANDARD",
+          "units": 3
+        },
+        {
+          "fee": 0,
+          "id": "PDRG",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "VUPY",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 4,
+      "total_fee": 225
+    },
+    "id": "train-0384",
+    "records": [
+      {
+        "fragile": false,
+        "id": "XADH",
+        "member": false,
+        "quantity": 3,
+        "recalled": true,
+        "region": "central",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 6
+      },
+      {
+        "fragile": false,
+        "id": "RHKW",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "east",
+        "requested": "express",
+        "sku": "C",
+        "stock": 7
+      },
+      {
+        "fragile": true,
+        "id": "VUMX",
+        "member": true,
+        "quantity": 4,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "A",
+        "stock": 4
+      },
+      {
+        "fragile": true,
+        "id": "VUPY",
+        "member": true,
+        "quantity": 3,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "VZLK",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "central",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "PDRG",
+        "member": false,
+        "quantity": 7,
+        "recalled": false,
+        "region": "central",
+        "requested": "express",
+        "sku": "D",
+        "stock": 5
+      }
+    ],
+    "region": "central"
+  },
+  {
+    "correct": {
+      "orders": [
+        {
+          "fee": 46,
+          "id": "GDMA",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 17,
+          "id": "NXRE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "WGFB",
+          "route": "HOLD",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "JXRP",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "PBGR",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "WMEC",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 2,
+      "total_fee": 63
+    },
+    "flawed": {
+      "orders": [
+        {
+          "fee": 23,
+          "id": "WGFB",
+          "route": "EXPRESS",
+          "units": 2
+        },
+        {
+          "fee": 46,
+          "id": "GDMA",
+          "route": "STANDARD",
+          "units": 6
+        },
+        {
+          "fee": 17,
+          "id": "NXRE",
+          "route": "STANDARD",
+          "units": 1
+        },
+        {
+          "fee": 0,
+          "id": "JXRP",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "PBGR",
+          "route": "BACKORDER",
+          "units": 0
+        },
+        {
+          "fee": 0,
+          "id": "WMEC",
+          "route": "BACKORDER",
+          "units": 0
+        }
+      ],
+      "shipped_count": 3,
+      "total_fee": 86
+    },
+    "id": "train-0392",
+    "records": [
+      {
+        "fragile": true,
+        "id": "GDMA",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "west",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 9
+      },
+      {
+        "fragile": true,
+        "id": "WGFB",
+        "member": true,
+        "quantity": 2,
+        "recalled": true,
+        "region": "east",
+        "requested": "express",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "WMEC",
+        "member": true,
+        "quantity": 9,
+        "recalled": false,
+        "region": "south",
+        "requested": "express",
+        "sku": "A",
+        "stock": 0
+      },
+      {
+        "fragile": true,
+        "id": "PBGR",
+        "member": false,
+        "quantity": 6,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "A",
+        "stock": 2
+      },
+      {
+        "fragile": true,
+        "id": "NXRE",
+        "member": true,
+        "quantity": 1,
+        "recalled": false,
+        "region": "north",
+        "requested": "standard",
+        "sku": "C",
+        "stock": 10
+      },
+      {
+        "fragile": true,
+        "id": "JXRP",
+        "member": false,
+        "quantity": 8,
+        "recalled": false,
+        "region": "east",
+        "requested": "standard",
+        "sku": "D",
+        "stock": 5
+      }
+    ],
+    "region": "east"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "files": {
+    "CONTROL_PROTOCOL.md": "ae25b5622b36b35281131ec6306fb7d497a27d2da7285f70b68eb7bf47ffc56c",
+    "controls.py": "63b6b82901528d0aa21ecfe51d4d14a16f842e51cd15a5046a5165082ae350a3",
+    "runs/20260929-policy-v2/control-inputs.json": "0e8e538e2b88db064c1528192fa38b8de818694c35ca41a8f96e4c8b38f51aaa"
+  },
+  "operational_amendment": {
+    "change": "Sampling concurrency 10 to 40; no scientific settings changed",
+    "original_freeze": "control-original/control-freeze.json",
+    "time": "2026-09-29T20:06:00.552899+00:00"
+  },
+  "time": "2026-09-29T19:28:08.494962+00:00"
+}

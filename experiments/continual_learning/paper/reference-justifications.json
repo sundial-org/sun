@@ -1,0 +1,65 @@
+{
+  "R01": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2404.15269v3"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "R02": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2510.04618v3"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "R03": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2405.00200v2"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "R04": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2106.09685v2"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "R05": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2402.04401v3"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "R06": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2311.07911v1"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "R07": {
+    "status": "bibliographic metadata",
+    "sources": [
+      "https://arxiv.org/abs/2411.00640v1"
+    ],
+    "justification": "Author attribution, title, version identifier and year are checked against the linked primary paper. Venue is included only where the checked version identifies it; arXiv entries are labeled as such. The shortened et al. author list is intentional.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  }
+}

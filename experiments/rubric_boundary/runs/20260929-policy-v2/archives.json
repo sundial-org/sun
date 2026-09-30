@@ -1,0 +1,101 @@
+[
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-clean-127",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:2/sampler_weights/sft-clean-127",
+    "sha256": "0f5d1c07291f35c6df2a68a726945e695fca85e5a42c757c237e8ea2c6a9258b"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-clean-31",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:0/sampler_weights/sft-clean-31",
+    "sha256": "d0c14abf16c20c4635ffd42f880086ea9c9befce5a0ae373d37942f5e4a54723"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-clean-73",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:1/sampler_weights/sft-clean-73",
+    "sha256": "4f86e6b3edcf0650c5f2660392f38c7b772d21480ee8f022add2503c01913aff"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-scattered-127",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:5/sampler_weights/sft-scattered-127",
+    "sha256": "50ce5c0a0a36ae02286bde46d26d826f4778a06ad09815e3381ceb550531c5ad"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-scattered-31",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:3/sampler_weights/sft-scattered-31",
+    "sha256": "22e032ff7b1ecb21513b8c199ab60afb2b8532bbc077e8da05a1564b29cd7035"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-scattered-73",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:4/sampler_weights/sft-scattered-73",
+    "sha256": "5561df7d32778f27995bd71aebe58918b84622333a42b977fdcd398b5f32b04a"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-systematic-127",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:8/sampler_weights/sft-systematic-127",
+    "sha256": "e50c89b873ced66cf78f13e1910ee11f4d2b06c02a3c38ae99457e689b25ee6f"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-systematic-31",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:6/sampler_weights/sft-systematic-31",
+    "sha256": "11e3b60d98374f6598c80f815fcdf9b5a02a5c116210c3c0a78c5d37ab2a1379"
+  },
+  {
+    "bytes": 184647680,
+    "members": [
+      "adapter_config.json",
+      "adapter_model.safetensors",
+      "checkpoint_complete"
+    ],
+    "name": "sft-systematic-73",
+    "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:7/sampler_weights/sft-systematic-73",
+    "sha256": "c9c62e11c5af09ed017d7faa17f1dfeccd0d008fde7864b88ea235ad1a86e5c1"
+  }
+]

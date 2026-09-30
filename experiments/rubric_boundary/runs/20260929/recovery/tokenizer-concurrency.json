@@ -1,0 +1,46 @@
+{
+  "cause": "Unprotected get_stop_sequences raced shared tokenizer; precomputed once under initialization now",
+  "resolution": "Retain completed receipts; retain unresolved markers in recovery folder and conservatively charge full reservation before explicit replay",
+  "attempts": [
+    {
+      "key": "6dd0640c7016c07c2b35cfc2bef71b5a5dcaac20961a93053ba601e5d8d1f29c",
+      "status": "submitting",
+      "conservative_charge": 0.000716775
+    },
+    {
+      "key": "cb68fe325ba19dd3c5608c7e6903a610a8173ef782b772c80dfc045dd768df8a",
+      "status": "submitting",
+      "conservative_charge": 0.000717165
+    },
+    {
+      "key": "30411e9e2a1f1d9aa85d3f21357697b1e9cd9f200b480e1f98d24d26e4c76a10",
+      "status": "submitting",
+      "conservative_charge": 0.00071658
+    },
+    {
+      "key": "66bd8ff4225b392c7c7d9a193ed276d854b9f2a1d8419715e6493a8ae786de1b",
+      "status": "submitting",
+      "conservative_charge": 0.00071697
+    },
+    {
+      "key": "7f5fb5cbd2901993ef5150de5489a3a13750908ff9ef3676be8145650acfc7d5",
+      "status": "submitting",
+      "conservative_charge": 0.000717165
+    },
+    {
+      "key": "c7d01c5f80f09521c951659ada55504c9b578e674ca875b8ae345551b0783416",
+      "status": "submitting",
+      "conservative_charge": 0.000717165
+    },
+    {
+      "key": "6f62df0c759ccd92698766bcc7bce763de911df5ee4f11449cd3038ac4f6fd52",
+      "status": "submitting",
+      "conservative_charge": 0.00071775
+    },
+    {
+      "key": "bcde434bd98d0b329a8eb1781826139b0863f576ad89e002ee6c7c567b2ce134",
+      "status": "submitting",
+      "conservative_charge": 0.0007175549999999999
+    }
+  ]
+}

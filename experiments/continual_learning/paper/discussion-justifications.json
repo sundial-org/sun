@@ -1,0 +1,47 @@
+{
+  "C80": {
+    "status": "measurement limitation",
+    "sources": [
+      "evidence/frozen-code/vendor/data.py: format_check",
+      "evidence/frozen-code/vendor/style.py: score",
+      "evidence/frozen-code/followups.py: controls"
+    ],
+    "justification": "The endpoint checks only public word/anchor/submission constraints and planted stylistic proxies. There is no semantic plot checker or human preference annotation. Shuffling targets therefore challenges pairing while leaving unmeasured whether a generated story actually fits its assigned plot.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit; source checks are prepared."
+  },
+  "C81": {
+    "status": "implementation and identification limitation",
+    "sources": [
+      "evidence/training.json",
+      "evidence/frozen-code/run.py: train, export_corrected",
+      "evidence/freeze-v1.json"
+    ],
+    "justification": "The schedule is max(3, ceil(30/ceil(N/16))) epochs with N equal to 14, 55, or 460. This gives 30/8/3 epochs and 30/32/87 optimizer steps. SFT additionally conditions on the original trajectory prefix. Learning-rate selection used only seed 31 at 60 opportunities. Hence the recipe contrast is not an isolated causal manipulation of storage representation.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit; source checks are prepared."
+  },
+  "C82": {
+    "status": "generalization limitation",
+    "sources": [
+      "evidence/reviews.jsonl.gz",
+      "evidence/freeze.json",
+      "evidence/frozen-code/run.py: WRITER, EDITOR, SEEDS",
+      "evidence/frozen-code/vendor/style.py"
+    ],
+    "justification": "The actual design has one Qwen3-8B writer, one Inkling editor, one guide A rule set, and one synthetic archive. Three method seeds repeat construction/training within that setting, not across models, human reviewers, or changing preferences.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit; source checks are prepared."
+  },
+  "C83": {
+    "status": "future research and scope boundary",
+    "sources": [
+      "../PROTOCOL.md",
+      "evidence/frozen-code/run.py: train, main",
+      "evidence/frozen-code/followups.py: retention"
+    ],
+    "justification": "The proposed studies are future work and assert no unobserved result. Current adapters each start from the base; no optimization state is carried across budgets. IFEval measures the active policy on public instructions and cannot by itself demonstrate sequential adaptation or prevention of forgetting.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit; source checks are prepared."
+  }
+}

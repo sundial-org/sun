@@ -1,0 +1,24 @@
+% Primary and earlier-budget results from completed frozen comparisons.
+\section{Results}
+\subsection{Rubric learning and valid submission}
+\claim{C60}{At 480 review opportunities, SFT scores 89.1\% versus 71.7\% for the playbook and 52.0\% for the unadapted base (Table~\ref{tab:endpoint}). The primary difference is $+17.4$ percentage points, with paired prompt interval $[15.4,19.5]$ and place-cluster interval $[15.2,19.6]$.}
+\claim{C61}{Mean validity is 96.2\% for SFT, 94.6\% for the playbook, and 97.9\% for the base. SFT passes the descriptive three-point safeguard; its validity difference from the playbook is $+1.6$ points, interval $[-0.5,3.7]$, which does not establish a validity advantage.}
+
+\claim{C62}{Endpoint SFT seeds score 86.3, 89.4, and 91.7\%, with 270, 279, and 282 valid submissions out of 288. Thus the mean safeguard passes despite one seed falling below it; the prompt interval does not remove this training-seed variation.}
+\claim{C63}{The harder-rule score is 79.4\% versus 54.2\%, and all-rule success is 46.1\% versus 5.6\%. The advantage therefore extends beyond the easy banned-word checks, but fewer than half of SFT episodes produce a valid submission satisfying every applicable rule.}
+\claim{C64}{Among valid stories, SFT passes the short-opening check in 51.4\% versus 17.1\% for the playbook; the playbook instead leads on capitalization, 100.0\% versus 96.8\%. Rubric learning remains uneven across rules.}
+
+\claim{C65}{At 15 and 60 opportunities, the exploratory SFT-minus-playbook gaps are 18.5 and 18.6 points, but SFT validity is only 94.2\% and 92.6\%, failing the safeguard at both budgets (Figure~\ref{fig:budgets}). The observed score advantage starts at the smallest tested budget; these measurements do not locate a threshold for reliable adaptation.}
+\claim{C66}{The three endpoint playbooks occupy only 63--147 tokens despite a 2,000-token allowance. None explicitly states the 12-word opener limit. This incomplete inferred rubric motivates checking the explicit-rule reference, rather than treating the learned book as the best possible contextual policy.}
+
+\subsection{What the controls establish}
+\claim{C68}{Training on unedited drafts scores 52.9\%, versus 89.1\% for corrected targets, a difference of $-36.3$ points, interval $[-38.0,-34.5]$. Extra training on drafts therefore does not reproduce the rubric gain; the content of the corrections matters for this recipe.}
+
+\claim{C69}{Shuffled targets score 80.1\%, $9.0$ points below SFT, interval $[-11.9,-6.3]$. Yet conditional compliance (94.6\%) and all-rule success (52.4\%) exceed SFT's 92.7\% and 46.1\%, while validity falls to 84.7\%. These mixed outcomes reinforce the distinction between compliance and completion; none establishes that stories fit their assignments.}
+
+\claim{C67}{Combining each adapter with its corresponding playbook scores 88.1\%, a $-1.0$-point difference from SFT alone, interval $[-2.6,0.6]$. Validity falls from 96.2\% to 93.9\%, difference $-2.3$ points, interval $[-4.1,-0.6]$, although all-rule success rises to 53.8\%. Thus this exploratory combination trades better all-rule success for lower public validity without a demonstrated primary-score advantage.}
+
+\claim{C70}{Supplying the verbatim rubric yields 62.4\% $US$, with none of 274 valid stories passing the tense check. The compact reference raises $US$ to 73.2\% and valid-story tense compliance to 73.1\%, but validity falls from 95.1\% to 85.1\%; 36 of 43 invalid stories are too short. This single exploratory prompt change alters wording, order, and detector detail together. It illustrates presentation sensitivity without establishing an optimal context policy or learning from edits.}
+
+\subsection{Instruction-following spillover}
+\claim{C71}{On the unrelated IFEval subset (Table~\ref{tab:probe}), strict prompt accuracy is 83.3\% for active SFT, 79.2\% for the active playbook, and 82.8\% for the base. Paired differences from the base are $+0.5$ points, interval $[-3.6,4.7]$, and $-3.6$ points, interval $[-8.1,0.8]$, respectively. Both intervals include zero. This small public probe supplies neither a noninferiority result nor evidence of erased capabilities; the observations concern the active policies.}

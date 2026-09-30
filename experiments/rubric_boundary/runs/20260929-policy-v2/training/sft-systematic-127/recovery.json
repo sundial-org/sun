@@ -1,0 +1,5 @@
+{
+  "dataset_sha": "5c3156507652a19d1d40565f83e5670cc96fc4365a163fa63058db80b7db82e5",
+  "state_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:8/weights/sft-systematic-127-step-75",
+  "step": 75
+}

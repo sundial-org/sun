@@ -1,0 +1,59 @@
+% Working sections, assembled into the final paper after the experiment.
+\section{Introduction}
+\claim{C10}{We study a writer that must learn an eight-rule writing rubric from editorial revisions while satisfying public assignment constraints. The question is whether to retain what the edits teach in context or in model weights.}
+\claim{C11}{When adaptation methods collect their own reviews, their comparison mixes differences in the learner with differences in the available examples. A shared review archive lets us compare the two recipes on the same corrections.}
+
+\claim{C12}{We compare an inferred instruction playbook with corrected-target supervised fine-tuning (SFT), using a common synthetic archive and fresh assignments. SFT also sees trajectory prefixes, so the comparison shares review pairs without equalizing conditioning information or computation.}
+\claim{C13}{We distinguish compliance with the private rubric, valid submission under public constraints, and performance on a separate instruction-following probe.}
+
+\section{Related work}
+\claim{C20}{Inferring preferences from edits and retrieving them later, as in CIPHER~\cite{cipher}, lets corrections influence future contexts without fine-tuning. Our fixed-archive comparison adds weight adaptation and measures public-format failures.}
+\claim{C21}{Maintained playbooks provide another contextual representation: Agentic Context Engineering incrementally updates itemized instructions~\cite{ace}. We adopt delta updates, without reproducing its full reflection and curation pipeline.}
+
+\claim{C22}{Comparisons of contextual demonstrations and fine-tuning find that their relative performance depends on data scale and task~\cite{bertsch}, motivating measurements at several budgets rather than a universal crossover claim.}
+\claim{C23}{LoRA supplies low-rank weight updates~\cite{lora}; OPPU combines personal adapters with nonparametric context~\cite{oppu}. These support testing a weight-only recipe and its combination with a playbook.}
+\claim{C24}{Mechanically checkable instructions in IFEval~\cite{ifeval} provide a separate spillover probe. Work on language-model evaluation motivates paired comparisons and attention to clustered questions~\cite{miller}.}
+
+\section{Method}
+\subsection{Task and writing rubric}
+\claim{C32}{The writer uses JSON file operations, a format check, and submission actions to produce a 120--350-word story containing two required words; at most eight assistant tool turns are allowed.}
+\claim{C33}{The public checker verifies word count and anchors, and submission requires a successful check of the current story; it does not judge plot adherence, coherence, literary quality, or the private rubric.}
+\claim{C34}{Eight private checks ban ``suddenly'', ``very'', semicolons, and em dashes; require at least 90\% present finite narration verbs, an opening of at most 12 words, say-only detected dialogue tags, and restricted capitalization, using fixed regex and spaCy rules.}
+
+\claim{C35}{Let $U$ indicate a valid submitted story and $S$ be the fraction of applicable private rules passed; the primary score is $Y=US$, assigning invalid or unsubmitted episodes zero and omitting the dialogue-tag rule when no qualifying tags occur.}
+\claim{C36}{We also report $S$ conditional on validity, all-rule success $U\mathbf{1}[S=1]$, and the harder-rule score $U(r_{\mathrm{tense}}+r_{\mathrm{opening}}+r_{\mathrm{capitalization}})/3$, because several rubric rules have high baseline pass rates.}
+
+\subsection{Learning from shared edits}
+\claim{C30}{We reuse 480 earlier no-feedback Qwen3-8B review opportunities, of which 460 contain both a publicly valid writer submission and a publicly valid Inkling revision; budgets of 15, 60, and 480 opportunities yield 14, 55, and 460 usable pairs.}
+\claim{C55}{The archived editor configuration supplies all eight private rules and requests minimal revisions. It asks for sentence replacements preserving meaning and required words; semantic preservation is not checked. Pair selection requires a valid draft and an archived revision recorded as successfully applied and publicly valid, without filtering for rubric-score improvement.}
+\claim{C31}{The archive contains existing synthetic reviews, not human edits; the two primary learned arms use the same usable pairs at each budget.}
+\claim{C41}{The no-feedback policy is unadapted Qwen3-8B; raw context uses BM25-ranked assignment matches and their before/after stories, greedily packed within 8,000 tokens.}
+
+\claim{C42}{The playbook compiler is Inkling with temperature 0.3 and effort 0.6; it sees public assignments and before/after stories in batches of at most 15 valid pairs, proposing evidence-linked additions, replacements, or deletions to numbered instructions.}
+\claim{C43}{Each budget and construction seed starts with an empty playbook; local code applies the deltas and enforces a 2,000-Qwen-token cap, with at most two validation-only repairs for malformed updates; the compiler never receives private rules, scores, or editor audit labels.}
+\claim{C44}{SFT replaces the final story-modifying action with the edited story and replays the trajectory; loss covers that assistant turn only, under its actual generation prefix, averaging over supervised tokens per example.}
+\claim{C45}{Adapters have rank 16 on attention, MLP, and output layers, minibatches of at most 16 examples, and at least three epochs and 30 optimizer steps; the development-selected learning rate is $4.7\times10^{-4}$ for all three review budgets.}
+
+\section{Experiments}
+\subsection{Assignments and configuration}
+\claim{C37}{Development uses 24 new assignments, while the sealed test set contains 144 assignments from 24 distinct places, with six assignments per place and equal numbers in familiar genres and fable/gothic.}
+\claim{C38}{The generator separates development and test places, goals, and complications, rejects repeated anchor pairs and cross-split eight-word premise overlaps with the earlier prompts, and uses two stochastic samples per assignment.}
+
+\claim{C15}{On 48 development episodes, the most valid adapter submitted 45 valid stories versus 47 for the base; none of three learning rates passed the declared base-minus-three-percentage-point validity safeguard.}
+\claim{C16}{The prespecified fallback selected the highest-validity candidate, fixing its learning rate before test evaluation while retaining the failed safeguard.}
+\claim{C17}{Each review budget initializes a fresh adapter from the base model; this evaluates cumulative adaptation, not sequential updates.}
+\claim{C46}{We use training and compiler seeds 31, 73, and 127; generation uses the non-thinking renderer, temperature 0.7, top-p 0.8, top-k 20, and matched sampling seeds across arms.}
+\claim{C53}{Schema-only compiler repairs were added after base and 15-review retrieval evaluation, before learned-policy test responses or confirmatory training; the audit preserves this amendment.}
+
+\subsection{Comparisons and uncertainty}
+\claim{C47}{The primary contrast is mean SFT minus playbook at 480 opportunities; other budgets and contrasts are exploratory, and these three checkpoints do not locate a precise review-count crossover.}
+\claim{C48}{We average samples and method seeds within each assignment, then use 10,000 paired prompt-cluster bootstrap draws within familiar and fable/gothic strata for a percentile 95\% interval, with a place-cluster sensitivity interval accounting for shared locations.}
+\claim{C49}{Intervals condition on the three method seeds, archive, and premise generator. We also report seed variation and flag mean validity more than three points below the base; this descriptive safeguard is not a noninferiority test.}
+
+\claim{C50}{Follow-up controls combine SFT with its corresponding playbook, train on unedited drafts, shuffle edited targets while remapping required anchors, and supply the explicit planted rules to an unadapted privileged reference.}
+\claim{C54}{After observing the verbatim-rule reference, we fixed one compact, imperative rendering that prioritizes difficult requirements and omits detector detail. This additional privileged control probes instruction presentation on the reused test set; it is exploratory and does not measure learned rubric inference.}
+\claim{C51}{A separate probe uses 128 public IFEval examples selected by a fixed hash of example IDs before responses, with one response per example/policy and a 4,096-token cap; we report official strict prompt-level and instruction-level accuracy for the base, endpoint adapters, and active playbooks.}
+\claim{C56}{For prompt-accuracy contrasts, we average the three method seeds within each IFEval example before contrasting with the base, then form percentile 95\% intervals from 10,000 paired example-bootstrap draws.}
+\claim{C52}{Either adaptation can be disabled to restore the base policy. The public instruction subset measures active-policy spillover, with possible pretraining contamination and conflicts between the active playbook and benchmark instructions.}
+
+% C14 interpretation is incorporated into the result discussion.

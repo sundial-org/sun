@@ -1,0 +1,64 @@
+{
+  "budgets": [
+    15,
+    60,
+    480
+  ],
+  "endpoint_rows": {
+    "No feedback": {
+      "US": 0.5200892857142857,
+      "U": 0.9791666666666666,
+      "conditional_S": 0.5311550151975684,
+      "all_rules": 0.0
+    },
+    "Retrieved reviews": {
+      "US": 0.556609623015873,
+      "U": 0.8888888888888888,
+      "conditional_S": 0.6261858258928571,
+      "all_rules": 0.0
+    },
+    "Learned playbook": {
+      "US": 0.7169518849206349,
+      "U": 0.9456018518518519,
+      "conditional_S": 0.7581963630005245,
+      "all_rules": 0.05555555555555555
+    },
+    "Corrected-target SFT": {
+      "US": 0.8912863756613758,
+      "U": 0.9618055555555556,
+      "conditional_S": 0.926680419460203,
+      "all_rules": 0.46064814814814814
+    },
+    "SFT + playbook": {
+      "US": 0.8811383928571429,
+      "U": 0.9386574074074074,
+      "conditional_S": 0.9387220362867713,
+      "all_rules": 0.5381944444444444
+    },
+    "Unedited-target SFT": {
+      "US": 0.5287491732804233,
+      "U": 0.9699074074074074,
+      "conditional_S": 0.545154278895329,
+      "all_rules": 0.0
+    },
+    "Shuffled-target SFT": {
+      "US": 0.8014012896825398,
+      "U": 0.8472222222222222,
+      "conditional_S": 0.9459162763466042,
+      "all_rules": 0.5243055555555556
+    },
+    "Verbatim rubric": {
+      "US": 0.6236359126984127,
+      "U": 0.9513888888888888,
+      "conditional_S": 0.6555005213764338,
+      "all_rules": 0.0
+    },
+    "Compact rubric": {
+      "US": 0.7323288690476191,
+      "U": 0.8506944444444444,
+      "conditional_S": 0.8608600583090379,
+      "all_rules": 0.22916666666666666
+    }
+  },
+  "note": "Figure shows method-seed points and arithmetic means; connecting lines only guide the eye across three categorical budget checkpoints. No interpolated crossover."
+}

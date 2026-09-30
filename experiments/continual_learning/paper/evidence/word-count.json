@@ -1,0 +1,9 @@
+{
+  "count": 2384,
+  "target": [
+    2000,
+    2500
+  ],
+  "within_target": true,
+  "method": "Claim prose and captions plus table entries; math expressions count once; excludes title, headings, bibliography, audit, and submission notes."
+}

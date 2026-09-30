@@ -1,0 +1,47 @@
+{
+  "draft_pages": 4,
+  "submission_pages": 5,
+  "body_word_count": {
+    "count": 2384,
+    "target": [
+      2000,
+      2500
+    ],
+    "within_target": true,
+    "method": "Claim prose and captions plus table entries; math expressions count once; excludes title, headings, bibliography, audit, and submission notes."
+  },
+  "latex_overfull_boxes": 0,
+  "unresolved_references": 0,
+  "paper_source_sha256": "259dbfa73ffa43583b04e4286cb6c1e214dffd9863b481d7f3fdc6ec9ea1b880",
+  "pdf_sha256": {
+    "draft-paper.pdf": "10f6c489b049184587609846cf22c130510866185a90926ba41752b0e754e9b3",
+    "submission.pdf": "3fa2089531571aedf0ad9aa36e82ef730cc5f416352853cc14bf3d669f3c4eb3"
+  },
+  "visual_review": {
+    "status": "passed",
+    "pages_inspected": 5,
+    "resolution_dpi": 120,
+    "checked": "All final submission pages inspected for clipping, overlaps, legibility, table/figure placement, reference rendering and numbering; first four pages match standalone draft.",
+    "time": "2026-09-29T03:43:51.441151+00:00"
+  },
+  "pdf_links": {
+    "status": "passed",
+    "links_per_page": {
+      "draft-paper.pdf": [
+        7,
+        0,
+        2,
+        15
+      ],
+      "submission.pdf": [
+        7,
+        0,
+        2,
+        15,
+        2
+      ]
+    },
+    "named_targets_resolve": true,
+    "note": "pypdf emitted annotation-size warnings during merge; all final source-page links were retained and all named link targets resolve."
+  }
+}

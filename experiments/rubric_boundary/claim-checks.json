@@ -1,0 +1,613 @@
+{
+  "analysis_code_sha256": {
+    "analyze.py": "e5bcacc092d756f3d1bccc339fb4010fc65bf5f92819353836542dde1c452b10",
+    "diagnostics.py": "a91e661c325e2ec6474822c3694fd599997beb1e72a8ef76b213ab3e0f051340",
+    "plot_controls.py": "5b4fdaa71a0214684fa9f6acbe273878c43658eedc036d08c213b71454583738",
+    "report.py": "5f58ca7c6b9033172cd4f1638e494ce8405589cf243ab7fc964245c4b90170c2"
+  },
+  "claims": {
+    "I1": {
+      "justification": "The two primary noisy-source gain intervals are positive. R9 verifies valid recalled-order action errors in the systematic subgroup. R6 verifies the frozen clean reasoning baseline; its smaller test set and different mode are stated explicitly. This interpretation is restricted to the observed model, task, and recipe.",
+      "sources": [
+        "results.json",
+        "runs/20260929-policy-v2/control-analysis.json",
+        "runs/20260929-policy-v2/diagnostics.json"
+      ],
+      "text": "The primary test did not find opposite preferred strategies for the two equally accurate correction sources. It did find improved overall execution alongside a learned regional rule failure. The secondary reasoning control challenges the premise that this task needs weight updates: the frozen model already reaches 98% with clean examples on its 50 tasks."
+    },
+    "L1": {
+      "justification": "The complete protocol grid has no other task family, dynamic policy, data-size condition, or error-rate condition.",
+      "sources": [
+        "PROTOCOL.md",
+        "INTERPRETATION_LIMITS.md"
+      ],
+      "text": "This study tests one synthetic task family, one fixed policy, one model, one training-data size, and one nonzero error rate. It does not locate a general data threshold, test generated rubrics, or establish cross-domain transfer."
+    },
+    "L2": {
+      "justification": "For seed 31, the scattered corrupted targets contain 40 EXPRESS and 40 STANDARD decisions; systematic corrupted targets contain 80 STANDARD decisions. West-region shipping explains this difference.",
+      "sources": [
+        "INTERPRETATION_LIMITS.md",
+        "runs/20260929-policy-v2/pools/scattered-31.json",
+        "runs/20260929-policy-v2/pools/systematic-31.json"
+      ],
+      "text": "The noisy archives match accuracy and corruption operation, but not the distribution of incorrect route labels. Consequently, any difference cannot be attributed solely to error predictability."
+    },
+    "L3": {
+      "justification": "Training exports contain the correct policy, task, and final JSON target, rendered with qwen3_disable_thinking. The supervised-token checks confirm that only the final answer and termination are targets. There is no reasoning-preservation training arm.",
+      "sources": [
+        "run.py: Study.train",
+        "runs/20260929-policy-v2/training/",
+        "INTERPRETATION_LIMITS.md"
+      ],
+      "text": "Fine-tuning supervises final answers in non-thinking mode. It does not teach reasoning traces or explicitly preserve reasoning behavior. The reasoning result therefore applies to this training recipe; it does not establish that fine-tuning generally harms reasoning."
+    },
+    "L4": {
+      "justification": "Both deterministic oracle implementations compute the complete answer from the input records. The scorer builds its per-ID prediction dictionary only after validating the entire response schema and ID set.",
+      "sources": [
+        "task.py: oracle, independent_oracle, score"
+      ],
+      "text": "The rule system has an ordinary executable solution. Recall-success measurements require a valid complete response, so malformed outputs count as failures."
+    },
+    "M1": {
+      "justification": "Check all nine correction pools against both exact oracles. Noisy pools each have 80 incorrect whole examples out of 400; the other orders retain their correct decisions.",
+      "sources": [
+        "runs/20260929-policy-v2/pools/",
+        "task.py",
+        "test_task.py"
+      ],
+      "text": "The experiment compares clean corrections with two archives that are each 80% correct: scattered mistakes and a consistent west-region blind spot. Every mistake ignores the recall override on one order."
+    },
+    "M2": {
+      "justification": "The frozen protocol, training manifests, complete 75-step logs, saved supervised examples, and evaluation receipts establish these settings. Retrieval was selected on 50 development tasks from 0, 4, 8, and 16 example alternatives.",
+      "sources": [
+        "PROTOCOL.md",
+        "runs/20260929-policy-v2/freeze.json",
+        "runs/20260929-policy-v2/training/",
+        "runs/20260929-policy-v2/selection.json"
+      ],
+      "text": "Nine Qwen3-8B LoRA adapters use 400 shared training inputs, three epochs, and three seeds per correction condition. Evaluation uses 250 held-out three-order tasks. Frozen and trained models receive the same complete rules, checklist, and four retrieved examples."
+    },
+    "M3": {
+      "justification": "The original control freeze is dated 19:28:08 UTC, before the first trained model completed at 19:28:24 UTC. An operational amendment increased concurrency before collecting any control responses; it changed no scientific settings.",
+      "sources": [
+        "runs/20260929-policy-v2/control-original/control-freeze.json",
+        "runs/20260929-policy-v2/control-freeze.json",
+        "runs/20260929-policy-v2/main.log"
+      ],
+      "text": "The following controls were specified after the frozen baseline was observed and before any trained test result was inspected. They do not replace the primary endpoint."
+    },
+    "M4": {
+      "justification": "The primary and reasoning analyses average the three seeds within each task before the stratified bootstrap. The paired region control resamples its 50 west-origin pairs. Per-seed values are retained to expose between-run variation.",
+      "sources": [
+        "analyze.py",
+        "controls.py: analyze",
+        "results.json: comparisons[].seeds"
+      ],
+      "text": "All 95% intervals resample test tasks within region while holding the three training seeds fixed. They do not estimate uncertainty over new training runs."
+    },
+    "R1": {
+      "justification": "Completely correct output, averaged over method seeds within each task. Paired 10,000-draw task bootstrap stratified by focus region; intervals condition on the three seeds. All raw responses were rescored.",
+      "sources": [
+        "results.json: comparisons[clean, retrieval].metrics.exact",
+        "analyze.py"
+      ],
+      "text": "| Clean (100% correct) | 22.0% | 62.5% | +40.5 [34.1, 46.7] |"
+    },
+    "R10": {
+      "justification": "Use only the common 50-task subset for both mode-specific differences. The independently scored reasoning control stores the corresponding non-thinking difference. Output length counts every sampled token, including reasoning. The same maximum allowance is not the same realized token consumption.",
+      "sources": [
+        "runs/20260929-policy-v2/control-analysis.json: reasoning.clean",
+        "runs/20260929-policy-v2/control-visual-data.json"
+      ],
+      "text": "With clean corrections on those same 50 tasks, the training gain is +39.3 [24.0, 54.0] points in non-thinking mode and -23.3 [-32.7, -14.7] points with reasoning enabled. Mean output length in reasoning mode is 1649 tokens for the frozen model and 574 for the trained models. This secondary comparison identifies a mode-dependent reversal, not an equal-cost threshold.",
+      "verified_values": {
+        "base": {
+          "high": 1.0,
+          "low": 0.94,
+          "mean": 0.98
+        },
+        "base_tokens": 1648.8,
+        "delta": {
+          "high": -0.14666666666666667,
+          "low": -0.3266666666666667,
+          "mean": -0.23333333333333336
+        },
+        "nonthinking_delta_same_tasks": {
+          "high": 0.54,
+          "low": 0.23999999999999996,
+          "mean": 0.3933333333333333
+        },
+        "seed_base": [
+          0.98,
+          0.98,
+          0.98
+        ],
+        "seed_trained": [
+          0.72,
+          0.86,
+          0.66
+        ],
+        "trained": {
+          "high": 0.8333333333333333,
+          "low": 0.6533333333333334,
+          "mean": 0.7466666666666667
+        },
+        "trained_tokens": 574.12
+      }
+    },
+    "R11": {
+      "justification": "diagnostics.py scores both the untouched final response and a strictly delimited wrapper-normalized response. It never searches prose for a favorable JSON object. The clean error partition is disjoint and asserted to sum to all evaluated outputs. This robustness analysis was added after inspecting control responses and is not a replacement endpoint.",
+      "sources": [
+        "diagnostics.py",
+        "runs/20260929-policy-v2/diagnostics.json"
+      ],
+      "text": "A post hoc wrapper check changes trained reasoning-mode success to clean: 74.7%, scattered: 56.7%, systematic: 50.0%. It removes only a whole code fence or a lone unclosed `<think>` tag followed entirely by JSON. The clean result is unchanged: among its 38 failures across three runs, 29 have correct decisions in the wrong order, 6 have invalid outputs, and 3 have valid outputs with wrong decisions.",
+      "verified_values": {
+        "clean": {
+          "counts": {
+            "exact_correct": 112,
+            "fenced_json_rescues": 0,
+            "normalized_decisions": 141,
+            "normalized_exact": 112,
+            "normalized_format": 144,
+            "normalized_recall": 144,
+            "schema_failures": 6,
+            "sorting_only_failures": 29,
+            "truncated": 2,
+            "unclosed_think_json": 0,
+            "unclosed_think_rescues": 0,
+            "valid_decision_failures": 3,
+            "valid_recall_violations": 0
+          },
+          "n": 150
+        },
+        "scattered": {
+          "counts": {
+            "exact_correct": 44,
+            "fenced_json_rescues": 0,
+            "normalized_decisions": 117,
+            "normalized_exact": 85,
+            "normalized_format": 149,
+            "normalized_recall": 136,
+            "schema_failures": 83,
+            "sorting_only_failures": 14,
+            "truncated": 1,
+            "unclosed_think_json": 82,
+            "unclosed_think_rescues": 41,
+            "valid_decision_failures": 9,
+            "valid_recall_violations": 2
+          },
+          "n": 150
+        },
+        "systematic": {
+          "counts": {
+            "exact_correct": 54,
+            "fenced_json_rescues": 0,
+            "normalized_decisions": 109,
+            "normalized_exact": 75,
+            "normalized_format": 145,
+            "normalized_recall": 113,
+            "schema_failures": 45,
+            "sorting_only_failures": 28,
+            "truncated": 1,
+            "unclosed_think_json": 40,
+            "unclosed_think_rescues": 21,
+            "valid_decision_failures": 23,
+            "valid_recall_violations": 20
+          },
+          "n": 150
+        }
+      }
+    },
+    "R12": {
+      "justification": "Read the per-region diagnostic partition for the three region-sft-systematic control groups. Every original west checklist recall score is zero. The per-seed numbers qualify the average and its task-only interval; format failure prevents a clean semantic interpretation for seed 73.",
+      "sources": [
+        "runs/20260929-policy-v2/diagnostics.json",
+        "runs/20260929-policy-v2/controls/region-sft-systematic-73.json"
+      ],
+      "text": "For the regional-error adapters, north-region recall success varies sharply by run (seed 31: 98.0%, seed 73: 0.0%, seed 127: 98.0%). Seed 73 produces 50 malformed responses; its zero score cannot be interpreted as 50 valid wrong recall decisions. The other two adapters recover correct recall handling on 49 of 50 pairs each.",
+      "verified_values": [
+        {
+          "correct_recall": 49,
+          "n": 50,
+          "schema_failures": 0,
+          "seed": 31,
+          "valid_recall_violations": 1
+        },
+        {
+          "correct_recall": 0,
+          "n": 50,
+          "schema_failures": 50,
+          "seed": 73,
+          "valid_recall_violations": 0
+        },
+        {
+          "correct_recall": 49,
+          "n": 50,
+          "schema_failures": 1,
+          "seed": 127,
+          "valid_recall_violations": 0
+        }
+      ]
+    },
+    "R2": {
+      "justification": "Completely correct output, averaged over method seeds within each task. Paired 10,000-draw task bootstrap stratified by focus region; intervals condition on the three seeds. All raw responses were rescored.",
+      "sources": [
+        "results.json: comparisons[scattered, retrieval].metrics.exact",
+        "analyze.py"
+      ],
+      "text": "| Scattered errors (80% correct) | 21.9% | 54.9% | +33.1 [27.1, 38.8] |"
+    },
+    "R3": {
+      "justification": "Completely correct output, averaged over method seeds within each task. Paired 10,000-draw task bootstrap stratified by focus region; intervals condition on the three seeds. All raw responses were rescored.",
+      "sources": [
+        "results.json: comparisons[systematic, retrieval].metrics.exact",
+        "analyze.py"
+      ],
+      "text": "| Regional blind spot (80% correct) | 20.8% | 48.1% | +27.3 [21.5, 33.1] |"
+    },
+    "R4": {
+      "justification": "Difference-in-differences is paired by task. The reversal rule requires one gain interval entirely above +3 points and the other entirely below -3 points. A source difference without opposite signs is not a strategy reversal.",
+      "sources": [
+        "results.json: noise_interaction, practical_reversal",
+        "PROTOCOL.md"
+      ],
+      "text": "The difference between the training gains under scattered and systematic errors is +5.7 [0.7, 10.9] percentage points. The prespecified practical-reversal criterion was not met."
+    },
+    "R5": {
+      "justification": "The scorer independently compares the per-ID dictionaries and the ordered output. Table values are the decisions_exact fields of the same verified responses.",
+      "sources": [
+        "task.py: score",
+        "results.json: comparisons[].metrics.decisions_exact"
+      ],
+      "text": "The decision-only measure ignores output ordering while retaining exact IDs, allocations, and routes; the primary measure additionally requires the requested order.",
+      "verified_values": {
+        "clean": {
+          "base": {
+            "high": 0.568,
+            "low": 0.444,
+            "mean": 0.508
+          },
+          "delta": {
+            "high": 0.42666666666666664,
+            "low": 0.30666666666666664,
+            "mean": 0.3653333333333334
+          },
+          "trained": {
+            "high": 0.9026666666666667,
+            "low": 0.8426666666666667,
+            "mean": 0.8733333333333333
+          }
+        },
+        "scattered": {
+          "base": {
+            "high": 0.5706666666666668,
+            "low": 0.4546666666666666,
+            "mean": 0.5133333333333333
+          },
+          "delta": {
+            "high": 0.3106666666666667,
+            "low": 0.18933333333333335,
+            "mean": 0.25066666666666665
+          },
+          "trained": {
+            "high": 0.8,
+            "low": 0.7266666666666667,
+            "mean": 0.764
+          }
+        },
+        "systematic": {
+          "base": {
+            "high": 0.548,
+            "low": 0.428,
+            "mean": 0.488
+          },
+          "delta": {
+            "high": 0.2866666666666666,
+            "low": 0.16399999999999998,
+            "mean": 0.22533333333333333
+          },
+          "trained": {
+            "high": 0.7333333333333334,
+            "low": 0.692,
+            "mean": 0.7133333333333333
+          }
+        }
+      }
+    },
+    "R6": {
+      "justification": "CONTROL_PROTOCOL and control-freeze precede trained test inspection. The separately cached Qwen3 thinking receipts and control analysis establish settings, exact success, and intervals.",
+      "sources": [
+        "CONTROL_PROTOCOL.md",
+        "runs/20260929-policy-v2/control-freeze.json",
+        "runs/20260929-policy-v2/control-analysis.json: reasoning"
+      ],
+      "text": "The reasoning control gives both policies a 4,096-token output allowance and uses the same 50 tasks and retrieved examples within each paired comparison.",
+      "verified_values": {
+        "clean": {
+          "base": {
+            "high": 1.0,
+            "low": 0.94,
+            "mean": 0.98
+          },
+          "base_tokens": 1648.8,
+          "delta": {
+            "high": -0.14666666666666667,
+            "low": -0.3266666666666667,
+            "mean": -0.23333333333333336
+          },
+          "nonthinking_delta_same_tasks": {
+            "high": 0.54,
+            "low": 0.23999999999999996,
+            "mean": 0.3933333333333333
+          },
+          "seed_base": [
+            0.98,
+            0.98,
+            0.98
+          ],
+          "seed_trained": [
+            0.72,
+            0.86,
+            0.66
+          ],
+          "trained": {
+            "high": 0.8333333333333333,
+            "low": 0.6533333333333334,
+            "mean": 0.7466666666666667
+          },
+          "trained_tokens": 574.12
+        },
+        "scattered": {
+          "base": {
+            "high": 1.0,
+            "low": 0.96,
+            "mean": 0.98
+          },
+          "base_tokens": 1631.0066666666667,
+          "delta": {
+            "high": -0.6200000000000001,
+            "low": -0.7466666666666668,
+            "mean": -0.6866666666666665
+          },
+          "nonthinking_delta_same_tasks": {
+            "high": 0.48666666666666664,
+            "low": 0.19999999999999996,
+            "mean": 0.34666666666666673
+          },
+          "seed_base": [
+            0.96,
+            0.98,
+            1.0
+          ],
+          "seed_trained": [
+            0.0,
+            0.2,
+            0.68
+          ],
+          "trained": {
+            "high": 0.35333333333333333,
+            "low": 0.2333333333333333,
+            "mean": 0.29333333333333333
+          },
+          "trained_tokens": 219.28666666666666
+        },
+        "systematic": {
+          "base": {
+            "high": 1.0,
+            "low": 1.0,
+            "mean": 1.0
+          },
+          "base_tokens": 1560.02,
+          "delta": {
+            "high": -0.5800000000000001,
+            "low": -0.7,
+            "mean": -0.64
+          },
+          "nonthinking_delta_same_tasks": {
+            "high": 0.41333333333333333,
+            "low": 0.14,
+            "mean": 0.27999999999999997
+          },
+          "seed_base": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seed_trained": [
+            0.06,
+            0.54,
+            0.48
+          ],
+          "trained": {
+            "high": 0.42,
+            "low": 0.3,
+            "mean": 0.35999999999999993
+          },
+          "trained_tokens": 77.46
+        }
+      }
+    },
+    "R7": {
+      "justification": "control-inputs stores all 50 pairs; both oracle implementations assert unchanged gold answers. Raw originals are reused from the main checklist condition and counterfactual responses are independently rescored.",
+      "sources": [
+        "controls.py",
+        "runs/20260929-policy-v2/control-inputs.json",
+        "runs/20260929-policy-v2/control-analysis.json: counterfactual"
+      ],
+      "text": "The region control changes only the recalled order\u2019s region; its correct answer stays identical. It uses the complete policy and checklist without retrieved examples.",
+      "verified_values": {
+        "base": {
+          "north": {
+            "high": 0.7,
+            "low": 0.42,
+            "mean": 0.56
+          },
+          "north_minus_west": {
+            "high": 0.0,
+            "low": 0.0,
+            "mean": 0.0
+          },
+          "west": {
+            "high": 0.7,
+            "low": 0.42,
+            "mean": 0.56
+          }
+        },
+        "clean": {
+          "north": {
+            "high": 0.9933333333333334,
+            "low": 0.9266666666666667,
+            "mean": 0.9666666666666667
+          },
+          "north_minus_west": {
+            "high": 0.0,
+            "low": -0.02,
+            "mean": -0.006666666666666666
+          },
+          "west": {
+            "high": 0.9933333333333334,
+            "low": 0.9466666666666665,
+            "mean": 0.9733333333333333
+          }
+        },
+        "scattered": {
+          "north": {
+            "high": 0.7266666666666666,
+            "low": 0.5533333333333332,
+            "mean": 0.64
+          },
+          "north_minus_west": {
+            "high": 0.1733333333333333,
+            "low": 0.013333333333333343,
+            "mean": 0.09333333333333332
+          },
+          "west": {
+            "high": 0.6266666666666666,
+            "low": 0.46666666666666673,
+            "mean": 0.5466666666666666
+          }
+        },
+        "systematic": {
+          "north": {
+            "high": 0.6666666666666665,
+            "low": 0.6333333333333333,
+            "mean": 0.6533333333333333
+          },
+          "north_minus_west": {
+            "high": 0.6666666666666665,
+            "low": 0.6333333333333333,
+            "mean": 0.6533333333333333
+          },
+          "west": {
+            "high": 0.0,
+            "low": 0.0,
+            "mean": 0.0
+          }
+        }
+      }
+    },
+    "R8": {
+      "justification": "The diagnostic was included in the frozen protocol. Effects are paired within the same 250 tasks; both sides retain the full correct policy. These are additional contrasts rather than the primary noise-interaction test.",
+      "sources": [
+        "results.json: context_example_effects",
+        "analyze.py"
+      ],
+      "text": "The example-context effects compare the same models with four retrieved examples versus the complete policy/checklist alone, in percentage points of complete-task success.",
+      "verified_values": {
+        "clean": {
+          "base": {
+            "high": 0.264,
+            "low": 0.156,
+            "mean": 0.208
+          },
+          "trained": {
+            "high": -0.041333333333333326,
+            "low": -0.124,
+            "mean": -0.08266666666666667
+          }
+        },
+        "scattered": {
+          "base": {
+            "high": 0.2573333333333333,
+            "low": 0.15866666666666665,
+            "mean": 0.20666666666666667
+          },
+          "trained": {
+            "high": 0.11999999999999998,
+            "low": 0.03466666666666667,
+            "mean": 0.07733333333333332
+          }
+        },
+        "systematic": {
+          "base": {
+            "high": 0.248,
+            "low": 0.144,
+            "mean": 0.196
+          },
+          "trained": {
+            "high": 0.18533333333333332,
+            "low": 0.11733333333333332,
+            "mean": 0.15066666666666667
+          }
+        }
+      }
+    },
+    "R9": {
+      "justification": "Sum the west-region diagnostic counts across the three systematic adapters. The correct action is HOLD with zero units. Separating valid rule violations from malformed output shows that the collapse is not simply a JSON-format effect. This subgroup outcome was specified before test collection.",
+      "sources": [
+        "runs/20260929-policy-v2/diagnostics.json",
+        "results.json: systematic regions"
+      ],
+      "text": "The regional-error adapters correctly handle 1 of 150 west recall evaluations (0.7%), versus 80.0% for the frozen model. Of the failures, 143 are valid complete responses with the wrong recall decision and 6 are invalid responses. These are the same 50 tasks evaluated across three adapters, not 150 independent tasks.",
+      "verified_values": {
+        "base_recall": 0.8,
+        "per_seed": [
+          {
+            "correct_recall": 0,
+            "n": 50,
+            "schema_failures": 6,
+            "valid_recall_violations": 44
+          },
+          {
+            "correct_recall": 0,
+            "n": 50,
+            "schema_failures": 0,
+            "valid_recall_violations": 50
+          },
+          {
+            "correct_recall": 1,
+            "n": 50,
+            "schema_failures": 0,
+            "valid_recall_violations": 49
+          }
+        ],
+        "totals": {
+          "correct_recall": 1,
+          "n": 150,
+          "schema_failures": 6,
+          "valid_recall_violations": 143
+        }
+      }
+    },
+    "V1": {
+      "justification": "analysis.json verification records primary replay and training checks; controls.analyze replays its raw receipts. Cost sums the current and initial-development ledgers, including conservative interrupted-attempt charges, then adds the prior study estimate. Estimates exclude storage and invoice adjustments.",
+      "sources": [
+        "runs/20260929-policy-v2/analysis.json",
+        "runs/20260929-policy-v2/control-analysis.json",
+        "runs/20260929-policy-v2/costs.jsonl",
+        "runs/20260929/costs.jsonl"
+      ],
+      "text": "The analysis replays 5,489 unique primary test responses and checks frozen source/data hashes, both task oracles, all completed training steps, and the additional control responses. Estimated token charges for this cycle, including development and controls, are $3.69; estimated cumulative charges including the earlier writing study are $21.12."
+    }
+  },
+  "evidence_sha256": {
+    "results.json": "33d5b4c8c7cd37c16157f2eeb58011603e2398d1db7c80c54a8d1e50847e8e87",
+    "runs/20260929-policy-v2/control-analysis.json": "ebc65aaf4f614e8e34c799074160ef17c37e6da0e733dd0d5a7231698e633d3e",
+    "runs/20260929-policy-v2/control-freeze.json": "cd5ad14f8486de71db0b15501c1f6c08725481d785b764988a4b83695ef6f706",
+    "runs/20260929-policy-v2/control-visual-data.json": "2b36babf0dea0c3b9c97ba5b3aaf02bd070fbfed3110abcc4e0c37253170d0a2",
+    "runs/20260929-policy-v2/diagnostics.json": "51a38463b6584278eafb933ebacb3a45123fee36e2c2632a31725f2a5542dab6",
+    "runs/20260929-policy-v2/freeze.json": "e29ed80b3c876163343ffd908f41a196052b86ed676cc0b7c25503e7c9133ffb"
+  },
+  "report_sha256": "1ddd3c128ddfac67259b1c2a0fc58b7d06197d77eaf817983be83a6bcd99c1c4"
+}

@@ -1,0 +1,19 @@
+{
+  "batch": 16,
+  "dataset_sha": "785e719b876d2ffb3470557f688584cc39660c824a5b1f9b4295cc8e4a4ceb82",
+  "epochs": 3,
+  "kind": "scattered",
+  "loss": "mean per example, final assistant only",
+  "lr": 0.00047,
+  "model": "Qwen/Qwen3-8B",
+  "name": "sft-scattered-31",
+  "rank": 16,
+  "sampling_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:3/sampler_weights/sft-scattered-31",
+  "saved_at": "2026-09-29T19:43:29.732849+00:00",
+  "seconds": 223.77463908400023,
+  "seed": 31,
+  "state_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:3/weights/sft-scattered-31-step-75",
+  "steps": 75,
+  "training_style": "checklist",
+  "training_tokens": 515736
+}

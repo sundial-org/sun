@@ -1,0 +1,84 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype,enumitem}
+\usepackage[hidelinks]{hyperref}
+\newcommand{\claim}[2]{#2}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\begin{document}
+\InputIfFileExists{notes-start.tex}{}{\setcounter{page}{5}}
+\begin{center}
+{\Large\bfseries Draft-paper submission notes}\\[3pt]
+Learning a Writing Rubric from Edits: Context or Weights?
+\end{center}
+
+\textbf{Model paper.}
+\claim{N01}{Amanda Bertsch et al., \emph{In-Context Learning with Long-Context Models: An In-Depth Exploration},
+\href{https://arxiv.org/html/2405.00200v2}{arXiv:2405.00200v2} (2025).
+We adapt its empirical comparison of contextual demonstrations and fine-tuning
+over data budgets, retaining setup, comparative results, diagnostic analysis,
+and a bounded conclusion. Our narrower question concerns editor corrections,
+an inferred playbook, and validity in a tool-based writing task.}
+
+\textbf{Adapted outline and visual roles.}
+\begin{itemize}
+\item \claim{N02}{\textbf{Abstract and introduction:} establish the feedback-storage question,
+the common-review design, and the distinction between private rubric compliance
+and public task validity. State the measured result with its scope.}
+\item \claim{N03}{\textbf{Related work:} place inferred preferences, maintained playbooks,
+low-rank adaptation, and combined representations in one compact comparison.
+Move this discussion before the experimental design so readers understand why
+the learned playbook is the primary comparator. The broader literature map is
+kept outside the half-length paper.}
+\item \claim{N04}{\textbf{Method:} describe the writing task, private rubric, shared reviews,
+and context and weight adaptation. A workflow diagram shows the common archive
+branching into a playbook and a LoRA adapter, then evaluation on fresh assignments.}
+\item \claim{N05}{\textbf{Experiments:} describe fresh assignment splits, development
+selection, explanatory controls, and paired inference. Expand validity and scope relative
+to the model paper because the composite endpoint needs explicit denominators.}
+\item \claim{N06}{\textbf{Results:} present all three review budgets and the prespecified
+endpoint contrast. The central visual compares validity-adjusted rubric scores
+and valid submission across budgets; showing both makes the tradeoff visible.
+A compact endpoint table places explanatory controls beside the learned methods.
+Text reports intervals and seed variation. A second table summarizes the separate
+instruction probe.}
+\item \claim{N07}{\textbf{Results, diagnostic comparisons:} use unedited and shuffled targets, a combined
+adapter/playbook policy, and an explicit-rule privileged reference to challenge
+the interpretation. These are exploratory follow-ups on the same test set,
+not independent confirmations of a selected mechanism.}
+\item \claim{N08}{\textbf{Discussion:} bound the conclusion by the synthetic review archive,
+planted scorer, single model, three method seeds, and absence of human prose
+ratings. Distinguish cumulative fresh-base adaptation from sequential learning.
+Omit the model paper's attention and ordering studies because this experiment
+does not measure those mechanisms; omit broad multi-model and multi-dataset
+figures because our evidence is intentionally narrower.}
+\item \claim{N09}{\textbf{References and audit:} cite the primary research sources in the
+paper. Keep the detailed evidence, source locators, frozen implementation,
+response transcripts, and claim-by-claim justifications in the companion files.}
+\end{itemize}
+
+\textbf{Revisions and status.}
+\claim{N10}{The starting proposal at commit \texttt{db853b1} covered writing and Lean.
+The study narrows the empirical question to learning a writing rubric, implements a
+learned-playbook comparator, holds review availability fixed, selects
+hyperparameters on development prompts, and separates the primary comparison
+from diagnostic controls. A workflow diagram makes the two adaptation routes
+explicit, and the results figure separates rubric scores from public validity.
+The failed development validity safeguard remains explicit. The original
+per-rule calibration goal was not met; harder-rule and all-rule outcomes
+therefore supplement the composite score.
+Lean transfer and optimizer-continuous learning are outside this draft's claims.
+No instructor or classmate feedback was supplied, so none is represented as addressed.}
+
+\textbf{Length and delivery.}
+\claim{N11}{The user's half-length requirement overrides the ordinary full-paper length.
+The measured body-word and page counts appear in \texttt{evidence/build-check.json}.
+This combined PDF appends the model-paper analysis, outline, and revision notes
+to the draft, following the
+\href{https://web.stanford.edu/class/cs197/assignments/project.html\#draft-paper}{CS197 draft-paper requirements}.
+The separate \texttt{CLAIMS.md} audit distinguishes measurements, implementation
+facts, literature, inferences, and scope limits. The files are prepared for review;
+they have not been uploaded to Overleaf or submitted to a class or venue.}
+\end{document}

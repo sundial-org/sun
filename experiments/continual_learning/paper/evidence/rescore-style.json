@@ -1,0 +1,278 @@
+{
+  "phase": "style",
+  "script_sha256": "305dcdbbf6628e6757b3e1d5078a785487b3c0a2475e3ceb095635b77099befe",
+  "sources": {
+    "evaluations/dev-base.json": "b72b3f414ab0a095b34a301ad32cf071ef4e41a1dfac532191ce74437edd3156",
+    "evaluations/dev-playbook-60-s31.json": "5b11e1cb1e4950fe4f483cd9864922b955d8b5fe4df3ce20a50b23e8caa020c9",
+    "evaluations/dev-sft-60-lr0.00015.json": "3a4dabb73893cd8527affb692a5e6db77982e1a7e99ae8db94638a9b255fe059",
+    "evaluations/dev-sft-60-lr0.00047.json": "9908b25a084eb1e6eab3e0c4f0a900b60eb8b3b934a5592cdc626618a3e999f5",
+    "evaluations/dev-sft-60-lr0.0007.json": "0c2375f0fc3435b754d95a00862dfdd9dfe96175609e8f793400a5adff36301a",
+    "evaluations/test-base.json": "abcd70108d44145a30167e3b53f9446358e270a41f61334a56954b81825ff18b",
+    "evaluations/test-combined-480-s127.json": "872626de83bd406c38d3c07dca5cd07e3a8002317828b902f0237be98ae709fb",
+    "evaluations/test-combined-480-s31.json": "0fa62a6968d0fb894012647876626f3071e63d138bf721e3eb60d4ac9e3eec90",
+    "evaluations/test-combined-480-s73.json": "02e0578923c01fc88ce13b48442317e05c8bd51ad17045b15ab6d2d7b3cd0fc1",
+    "evaluations/test-compact-rubric.json": "8978defa56f214d6613928de71e2de3e8f4d9ecfefe85cb2b19815af4f5a3292",
+    "evaluations/test-explicit-rules.json": "e53c0e8bd6bd73ef354b5d54021811d61d213a4aece8cf6ebaceb6281b47d95f",
+    "evaluations/test-playbook-15-s127.json": "8545b8eb51a69863b0ef2de015323aa3741e992cc4018808b9ed740da0acfd01",
+    "evaluations/test-playbook-15-s31.json": "1cf6baf44b4cd2aaa1d5f918356d6db14528a7e8506eb4a284a892a6d28bd111",
+    "evaluations/test-playbook-15-s73.json": "c64a6b1e2553f5c7472335930d9dbd86864799254f63eb15e22ff0264d1b8b08",
+    "evaluations/test-playbook-480-s127.json": "42c955890bb681f19931839ef4976de66db73022ce646dcad40ce2a0b2e2091d",
+    "evaluations/test-playbook-480-s31.json": "f23d1fd78712a51ce27ba3225c797ed98b66f080d1eceeb29345770ca91cb801",
+    "evaluations/test-playbook-480-s73.json": "30e1586961d9664d99a7bbbe7a768bfb012807cb5fc27d948fbef3a9d707528c",
+    "evaluations/test-playbook-60-s127.json": "a0642aebd31db094a3fa2db6373c3e6bbc4a61709f0cb8ae897cd0f8e1601a8a",
+    "evaluations/test-playbook-60-s31.json": "7e53e09a2c4be814a9f0d3823a154823d5b4c090e3394374cbdc489fed273252",
+    "evaluations/test-playbook-60-s73.json": "48cf379b39a2707686824829458fc11337fda5bcd5f73e5e275c5514c1baa699",
+    "evaluations/test-raw-15.json": "bb236c5ca08f6e614a0b88da707b34180ccd9a9c496b6907aa02f99734b9b108",
+    "evaluations/test-raw-480.json": "54a691e718c6d63a9db0d1a0447e5ba8a7c9aaad1b55d68697fdaea1db9dc437",
+    "evaluations/test-raw-60.json": "36d5f40185a69f81a4285805ca76b5b461f2d4e1fc578d894b7b12e4033f3e7b",
+    "evaluations/test-self-480-s127.json": "20e6c192c8900add35ae0795e54845d7b40502880d6dbdb1a70be2fa9e79a184",
+    "evaluations/test-self-480-s31.json": "8e1fc2a658ace08e5bc0a49ba0d5891aff2d7195aee8711f95779cd92575178e",
+    "evaluations/test-self-480-s73.json": "e61a8d38cf2b170105fc70fdff712e56e59203e1207dd0917a57508569bc0b6a",
+    "evaluations/test-sft-15-s127.json": "51994587d994aa2535d6e32dcb108ae706090b8080b215e4ba5588c1aa951e8c",
+    "evaluations/test-sft-15-s31.json": "de9f878b6d4b958139e7649591edda3f2e7df69641a50513ef265f6f29689a8b",
+    "evaluations/test-sft-15-s73.json": "cb06c4a8048914e727500f2e60e65c4dcc1ba7fe8ae054c5bd75913fcec7e9bc",
+    "evaluations/test-sft-480-s127.json": "7609eda461b4e0040a9375af7252523eb0e759d83c2bdba1d311bd3934bd5e23",
+    "evaluations/test-sft-480-s31.json": "5f2d3fda99e24800d7b8a72e0363652ee4849ff0c1790f6ad9bf10e52bbfcf42",
+    "evaluations/test-sft-480-s73.json": "fff045667d682dc64f3e89674debdbbd25ebf10d4012b5137f2d39c058645fd9",
+    "evaluations/test-sft-60-s127.json": "57b2732c09c218db2bf39349f1f0280d44ea3ce1a085846dca7de9ff4eec5e3b",
+    "evaluations/test-sft-60-s31.json": "0ce13f530453bbad8ee7de63a3aacb5d57ef5504330c1548f5348daf38b733b2",
+    "evaluations/test-sft-60-s73.json": "0e31a4aad5a8e8f7e23db546c758d75c4608c47ab33208b3fed2577b673eca19",
+    "evaluations/test-shuffled-480-s127.json": "a8caa2f727b03b524582426d354a73277c97ab0428a30f6f2b6e4e6f36ab406c",
+    "evaluations/test-shuffled-480-s31.json": "a55e2118119db386cad8dedf993474d49529bc1c1632d082d85571ca821eb61e",
+    "evaluations/test-shuffled-480-s73.json": "a8c92d8a3ae73406c51da9c78b63a2a194392b3b792d49a47a361317363e9903"
+  },
+  "checked": 152,
+  "mismatches": [],
+  "selection": "Four episodes per policy: first invalid by SHA256 if available, then smallest remaining hashes; seed string style-audit-260928-.",
+  "selected_ids": {
+    "dev-base": [
+      "eval-dev-base-dev-0003-0",
+      "eval-dev-base-dev-0010-1",
+      "eval-dev-base-dev-0021-1",
+      "eval-dev-base-dev-0016-1"
+    ],
+    "dev-playbook-60-s31": [
+      "eval-dev-playbook-60-s31-dev-0013-0",
+      "eval-dev-playbook-60-s31-dev-0015-1",
+      "eval-dev-playbook-60-s31-dev-0003-0",
+      "eval-dev-playbook-60-s31-dev-0002-0"
+    ],
+    "dev-sft-60-lr0.00015": [
+      "eval-dev-sft-60-lr0.00015-dev-0000-0",
+      "eval-dev-sft-60-lr0.00015-dev-0000-1",
+      "eval-dev-sft-60-lr0.00015-dev-0013-0",
+      "eval-dev-sft-60-lr0.00015-dev-0007-0"
+    ],
+    "dev-sft-60-lr0.00047": [
+      "eval-dev-sft-60-lr0.00047-dev-0006-1",
+      "eval-dev-sft-60-lr0.00047-dev-0005-0",
+      "eval-dev-sft-60-lr0.00047-dev-0017-0",
+      "eval-dev-sft-60-lr0.00047-dev-0000-1"
+    ],
+    "dev-sft-60-lr0.0007": [
+      "eval-dev-sft-60-lr0.0007-dev-0012-0",
+      "eval-dev-sft-60-lr0.0007-dev-0000-1",
+      "eval-dev-sft-60-lr0.0007-dev-0015-0",
+      "eval-dev-sft-60-lr0.0007-dev-0008-0"
+    ],
+    "test-base": [
+      "eval-test-base-heldout-0073-1",
+      "eval-test-base-heldout-0060-1",
+      "eval-test-base-heldout-0152-0",
+      "eval-test-base-heldout-0157-0"
+    ],
+    "test-combined-480-s127": [
+      "eval-test-combined-480-s127-heldout-0044-0",
+      "eval-test-combined-480-s127-heldout-0057-0",
+      "eval-test-combined-480-s127-heldout-0140-1",
+      "eval-test-combined-480-s127-heldout-0135-0"
+    ],
+    "test-combined-480-s31": [
+      "eval-test-combined-480-s31-heldout-0051-1",
+      "eval-test-combined-480-s31-heldout-0111-0",
+      "eval-test-combined-480-s31-heldout-0067-0",
+      "eval-test-combined-480-s31-heldout-0027-0"
+    ],
+    "test-combined-480-s73": [
+      "eval-test-combined-480-s73-heldout-0044-1",
+      "eval-test-combined-480-s73-heldout-0102-1",
+      "eval-test-combined-480-s73-heldout-0028-0",
+      "eval-test-combined-480-s73-heldout-0119-0"
+    ],
+    "test-compact-rubric": [
+      "eval-test-compact-rubric-heldout-0153-0",
+      "eval-test-compact-rubric-heldout-0115-1",
+      "eval-test-compact-rubric-heldout-0123-1",
+      "eval-test-compact-rubric-heldout-0105-0"
+    ],
+    "test-explicit-rules": [
+      "eval-test-explicit-rules-heldout-0081-1",
+      "eval-test-explicit-rules-heldout-0139-1",
+      "eval-test-explicit-rules-heldout-0045-0",
+      "eval-test-explicit-rules-heldout-0167-1"
+    ],
+    "test-playbook-15-s127": [
+      "eval-test-playbook-15-s127-heldout-0032-0",
+      "eval-test-playbook-15-s127-heldout-0130-0",
+      "eval-test-playbook-15-s127-heldout-0097-0",
+      "eval-test-playbook-15-s127-heldout-0029-1"
+    ],
+    "test-playbook-15-s31": [
+      "eval-test-playbook-15-s31-heldout-0032-1",
+      "eval-test-playbook-15-s31-heldout-0151-1",
+      "eval-test-playbook-15-s31-heldout-0040-1",
+      "eval-test-playbook-15-s31-heldout-0125-0"
+    ],
+    "test-playbook-15-s73": [
+      "eval-test-playbook-15-s73-heldout-0127-0",
+      "eval-test-playbook-15-s73-heldout-0063-1",
+      "eval-test-playbook-15-s73-heldout-0133-0",
+      "eval-test-playbook-15-s73-heldout-0074-0"
+    ],
+    "test-playbook-480-s127": [
+      "eval-test-playbook-480-s127-heldout-0119-0",
+      "eval-test-playbook-480-s127-heldout-0044-1",
+      "eval-test-playbook-480-s127-heldout-0147-1",
+      "eval-test-playbook-480-s127-heldout-0125-0"
+    ],
+    "test-playbook-480-s31": [
+      "eval-test-playbook-480-s31-heldout-0074-1",
+      "eval-test-playbook-480-s31-heldout-0089-1",
+      "eval-test-playbook-480-s31-heldout-0037-1",
+      "eval-test-playbook-480-s31-heldout-0107-1"
+    ],
+    "test-playbook-480-s73": [
+      "eval-test-playbook-480-s73-heldout-0154-1",
+      "eval-test-playbook-480-s73-heldout-0074-1",
+      "eval-test-playbook-480-s73-heldout-0099-1",
+      "eval-test-playbook-480-s73-heldout-0136-1"
+    ],
+    "test-playbook-60-s127": [
+      "eval-test-playbook-60-s127-heldout-0071-1",
+      "eval-test-playbook-60-s127-heldout-0046-0",
+      "eval-test-playbook-60-s127-heldout-0121-1",
+      "eval-test-playbook-60-s127-heldout-0059-1"
+    ],
+    "test-playbook-60-s31": [
+      "eval-test-playbook-60-s31-heldout-0045-1",
+      "eval-test-playbook-60-s31-heldout-0138-1",
+      "eval-test-playbook-60-s31-heldout-0059-0",
+      "eval-test-playbook-60-s31-heldout-0134-1"
+    ],
+    "test-playbook-60-s73": [
+      "eval-test-playbook-60-s73-heldout-0131-0",
+      "eval-test-playbook-60-s73-heldout-0039-1",
+      "eval-test-playbook-60-s73-heldout-0116-0",
+      "eval-test-playbook-60-s73-heldout-0158-0"
+    ],
+    "test-raw-15": [
+      "eval-test-raw-15-heldout-0085-0",
+      "eval-test-raw-15-heldout-0143-0",
+      "eval-test-raw-15-heldout-0146-1",
+      "eval-test-raw-15-heldout-0161-1"
+    ],
+    "test-raw-480": [
+      "eval-test-raw-480-heldout-0031-1",
+      "eval-test-raw-480-heldout-0103-1",
+      "eval-test-raw-480-heldout-0078-0",
+      "eval-test-raw-480-heldout-0063-1"
+    ],
+    "test-raw-60": [
+      "eval-test-raw-60-heldout-0132-1",
+      "eval-test-raw-60-heldout-0153-1",
+      "eval-test-raw-60-heldout-0118-1",
+      "eval-test-raw-60-heldout-0085-0"
+    ],
+    "test-self-480-s127": [
+      "eval-test-self-480-s127-heldout-0134-1",
+      "eval-test-self-480-s127-heldout-0106-1",
+      "eval-test-self-480-s127-heldout-0079-1",
+      "eval-test-self-480-s127-heldout-0065-1"
+    ],
+    "test-self-480-s31": [
+      "eval-test-self-480-s31-heldout-0026-0",
+      "eval-test-self-480-s31-heldout-0142-1",
+      "eval-test-self-480-s31-heldout-0065-0",
+      "eval-test-self-480-s31-heldout-0123-0"
+    ],
+    "test-self-480-s73": [
+      "eval-test-self-480-s73-heldout-0030-0",
+      "eval-test-self-480-s73-heldout-0124-1",
+      "eval-test-self-480-s73-heldout-0045-1",
+      "eval-test-self-480-s73-heldout-0144-0"
+    ],
+    "test-sft-15-s127": [
+      "eval-test-sft-15-s127-heldout-0093-1",
+      "eval-test-sft-15-s127-heldout-0085-1",
+      "eval-test-sft-15-s127-heldout-0131-0",
+      "eval-test-sft-15-s127-heldout-0095-1"
+    ],
+    "test-sft-15-s31": [
+      "eval-test-sft-15-s31-heldout-0093-1",
+      "eval-test-sft-15-s31-heldout-0147-1",
+      "eval-test-sft-15-s31-heldout-0072-1",
+      "eval-test-sft-15-s31-heldout-0066-0"
+    ],
+    "test-sft-15-s73": [
+      "eval-test-sft-15-s73-heldout-0084-1",
+      "eval-test-sft-15-s73-heldout-0113-1",
+      "eval-test-sft-15-s73-heldout-0094-1",
+      "eval-test-sft-15-s73-heldout-0108-1"
+    ],
+    "test-sft-480-s127": [
+      "eval-test-sft-480-s127-heldout-0090-0",
+      "eval-test-sft-480-s127-heldout-0070-1",
+      "eval-test-sft-480-s127-heldout-0071-0",
+      "eval-test-sft-480-s127-heldout-0101-0"
+    ],
+    "test-sft-480-s31": [
+      "eval-test-sft-480-s31-heldout-0117-0",
+      "eval-test-sft-480-s31-heldout-0140-0",
+      "eval-test-sft-480-s31-heldout-0105-0",
+      "eval-test-sft-480-s31-heldout-0081-0"
+    ],
+    "test-sft-480-s73": [
+      "eval-test-sft-480-s73-heldout-0031-0",
+      "eval-test-sft-480-s73-heldout-0036-1",
+      "eval-test-sft-480-s73-heldout-0112-1",
+      "eval-test-sft-480-s73-heldout-0048-0"
+    ],
+    "test-sft-60-s127": [
+      "eval-test-sft-60-s127-heldout-0136-1",
+      "eval-test-sft-60-s127-heldout-0041-1",
+      "eval-test-sft-60-s127-heldout-0165-0",
+      "eval-test-sft-60-s127-heldout-0077-0"
+    ],
+    "test-sft-60-s31": [
+      "eval-test-sft-60-s31-heldout-0156-1",
+      "eval-test-sft-60-s31-heldout-0079-0",
+      "eval-test-sft-60-s31-heldout-0045-1",
+      "eval-test-sft-60-s31-heldout-0133-0"
+    ],
+    "test-sft-60-s73": [
+      "eval-test-sft-60-s73-heldout-0047-0",
+      "eval-test-sft-60-s73-heldout-0139-0",
+      "eval-test-sft-60-s73-heldout-0093-0",
+      "eval-test-sft-60-s73-heldout-0125-1"
+    ],
+    "test-shuffled-480-s127": [
+      "eval-test-shuffled-480-s127-heldout-0065-1",
+      "eval-test-shuffled-480-s127-heldout-0066-1",
+      "eval-test-shuffled-480-s127-heldout-0027-1",
+      "eval-test-shuffled-480-s127-heldout-0130-0"
+    ],
+    "test-shuffled-480-s31": [
+      "eval-test-shuffled-480-s31-heldout-0041-1",
+      "eval-test-shuffled-480-s31-heldout-0150-1",
+      "eval-test-shuffled-480-s31-heldout-0087-0",
+      "eval-test-shuffled-480-s31-heldout-0148-1"
+    ],
+    "test-shuffled-480-s73": [
+      "eval-test-shuffled-480-s73-heldout-0126-0",
+      "eval-test-shuffled-480-s73-heldout-0162-1",
+      "eval-test-shuffled-480-s73-heldout-0113-0",
+      "eval-test-shuffled-480-s73-heldout-0150-0"
+    ]
+  },
+  "status": "passed"
+}

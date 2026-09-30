@@ -1,0 +1,17 @@
+{
+  "time": "2026-09-29T02:51:56.296212+00:00",
+  "name": "test-compact-rubric",
+  "status": "exploratory control specified after observing verbatim-rule reference",
+  "prompt": "Apply this writing rubric:\n1. Write narration in present tense. At least 90% of finite verbs outside double-quoted dialogue must be present tense; avoid past-tense and modal verbs there.\n2. Begin with a sentence of at most 12 whitespace-separated words.\n3. Use say as the verb in dialogue tags, normally says.\n4. Lowercase words inside sentences, including names, days, and months. Capital letters are allowed at sentence starts and at the start of double-quoted speech. Keep I uppercase.\n5. Omit the standalone word suddenly.\n6. Omit the standalone word very.\n7. Use no semicolons.\n8. Use no em dash characters.",
+  "prompt_sha256": "69a86d060f896651fef773d19954dae2aefa7b4848da20ec5fa45943d5c3a35a",
+  "script_sha256": "342808b9cfd6eeeaf86c8dcb274cb97a900e4cc0bec1332fb68ee262c0ef12e3",
+  "protocol_sha256": "f72520926430e50a2e5fa3bf6e1b6928a5433723caace6a06f3da16d3722933c",
+  "variants": 1,
+  "retuning_permitted": false,
+  "samples_per_prompt": 2,
+  "prompts": 144,
+  "comparison": "descriptive endpoint reference; original primary endpoint unchanged",
+  "trigger_US": 0.6236359126984127,
+  "trigger_valid": 274,
+  "trigger_present_tense_passes_given_valid": 0
+}

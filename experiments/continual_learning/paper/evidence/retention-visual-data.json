@@ -1,0 +1,14 @@
+{
+  "No adaptation": {
+    "strict_prompt": 0.828125,
+    "strict_instruction": 0.8932038834951457
+  },
+  "Active SFT adapter": {
+    "strict_prompt": 0.8333333333333334,
+    "strict_instruction": 0.8964401294498382
+  },
+  "Active playbook": {
+    "strict_prompt": 0.7916666666666666,
+    "strict_instruction": 0.8673139158576052
+  }
+}

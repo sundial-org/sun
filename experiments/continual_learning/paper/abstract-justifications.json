@@ -1,0 +1,44 @@
+{
+  "C01": {
+    "status": "study question and design",
+    "sources": [
+      "evidence/frozen-code/run.py: main, compile_playbook, train",
+      "evidence/prompts.json",
+      "evidence/reviews.jsonl.gz"
+    ],
+    "justification": "The shared archive supplies the same public-valid review pairs to both learned recipes. SFT additionally conditions on actual trajectory prefixes, as stated explicitly in the methods. The question concerns the eight operational rubric checks, not a general natural-writing rubric.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C02": {
+    "status": "measured primary result",
+    "sources": [
+      "evidence/analysis.json: methods.sft-480, methods.playbook-480, primary.US.prompt",
+      "evidence/verification.json"
+    ],
+    "justification": "The endpoint score means are .8912863756613758 and .7169518849206349. Their paired prompt difference is .17433449074074076 with interval [.15352130869708996,.19473379629629628]. Three method seeds and two samples per prompt are averaged inside each prompt cluster.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C03": {
+    "status": "measured outcome and scope",
+    "sources": [
+      "evidence/analysis.json: methods.sft-480, evaluations.test-base and seed evaluations",
+      "evidence/verification.json"
+    ],
+    "justification": "SFT validity is831/864 (96.1806%) versus282/288 (97.9167%) for base, a1.7361-point loss. Seed31 has270/288 valid (93.75%), below the base-minus-three-point criterion. All-rule success is398/864=.46064814814814814.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C04": {
+    "status": "bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary",
+      "evidence/frozen-code/vendor/style.py: score",
+      "evidence/frozen-code/vendor/data.py: format_check"
+    ],
+    "justification": "A positive primary interval supports the within-setting score contrast. The public checker and private rule scorer do not assess plot adherence, coherence, or human preference. This sentence deliberately claims only the tested recipes and their operational rubric.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  }
+}

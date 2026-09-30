@@ -1,0 +1,215 @@
+{
+  "status": "passed",
+  "story_transcripts_replayed": 9744,
+  "summaries_recomputed": 38,
+  "paired_intervals_recomputed": 38,
+  "retention_responses_checked": 896,
+  "complete_training_runs": 18,
+  "archived_adapters": 18,
+  "interrupted_attempts_preserved": 2,
+  "compiler_inputs_checked": 119,
+  "shared_review_opportunities": 480,
+  "provider_receipts_linked": 23112,
+  "linguistic_scores_rescored": 152,
+  "official_retention_rescores": 896,
+  "older_archive_editor_replay_diagnostic": {
+    "status": "discrepancies",
+    "exact_pair_replays": 444,
+    "mismatching_pair_replays": 16,
+    "note": "The new experiment shares the original saved pairs; this diagnostic did not fully reconstruct their earlier creation."
+  },
+  "raw_counts": {
+    "dev-base": {
+      "episodes": 48,
+      "valid": 47,
+      "score_sum": 27.142857142857142
+    },
+    "dev-playbook-60-s31": {
+      "episodes": 48,
+      "valid": 46,
+      "score_sum": 30.464285714285715
+    },
+    "dev-sft-60-lr0.00015": {
+      "episodes": 48,
+      "valid": 34,
+      "score_sum": 31.839285714285715
+    },
+    "dev-sft-60-lr0.00047": {
+      "episodes": 48,
+      "valid": 45,
+      "score_sum": 40.80357142857143
+    },
+    "dev-sft-60-lr0.0007": {
+      "episodes": 48,
+      "valid": 22,
+      "score_sum": 20.732142857142858
+    },
+    "test-base": {
+      "episodes": 288,
+      "valid": 282,
+      "score_sum": 149.78571428571428
+    },
+    "test-combined-480-s127": {
+      "episodes": 288,
+      "valid": 283,
+      "score_sum": 266.7142857142857
+    },
+    "test-combined-480-s31": {
+      "episodes": 288,
+      "valid": 254,
+      "score_sum": 238.10714285714286
+    },
+    "test-combined-480-s73": {
+      "episodes": 288,
+      "valid": 274,
+      "score_sum": 256.48214285714283
+    },
+    "test-compact-rubric": {
+      "episodes": 288,
+      "valid": 245,
+      "score_sum": 210.91071428571428
+    },
+    "test-explicit-rules": {
+      "episodes": 288,
+      "valid": 274,
+      "score_sum": 179.60714285714286
+    },
+    "test-playbook-15-s127": {
+      "episodes": 288,
+      "valid": 278,
+      "score_sum": 194.01785714285714
+    },
+    "test-playbook-15-s31": {
+      "episodes": 288,
+      "valid": 272,
+      "score_sum": 188.41071428571428
+    },
+    "test-playbook-15-s73": {
+      "episodes": 288,
+      "valid": 274,
+      "score_sum": 195.64285714285714
+    },
+    "test-playbook-480-s127": {
+      "episodes": 288,
+      "valid": 283,
+      "score_sum": 210.83928571428572
+    },
+    "test-playbook-480-s31": {
+      "episodes": 288,
+      "valid": 280,
+      "score_sum": 211.78571428571428
+    },
+    "test-playbook-480-s73": {
+      "episodes": 288,
+      "valid": 254,
+      "score_sum": 196.82142857142856
+    },
+    "test-playbook-60-s127": {
+      "episodes": 288,
+      "valid": 280,
+      "score_sum": 199.08928571428572
+    },
+    "test-playbook-60-s31": {
+      "episodes": 288,
+      "valid": 280,
+      "score_sum": 184.83928571428572
+    },
+    "test-playbook-60-s73": {
+      "episodes": 288,
+      "valid": 279,
+      "score_sum": 174.41071428571428
+    },
+    "test-raw-15": {
+      "episodes": 288,
+      "valid": 258,
+      "score_sum": 148.26785714285714
+    },
+    "test-raw-480": {
+      "episodes": 288,
+      "valid": 256,
+      "score_sum": 160.30357142857142
+    },
+    "test-raw-60": {
+      "episodes": 288,
+      "valid": 265,
+      "score_sum": 163.26785714285714
+    },
+    "test-self-480-s127": {
+      "episodes": 288,
+      "valid": 278,
+      "score_sum": 150.375
+    },
+    "test-self-480-s31": {
+      "episodes": 288,
+      "valid": 280,
+      "score_sum": 148.64285714285714
+    },
+    "test-self-480-s73": {
+      "episodes": 288,
+      "valid": 280,
+      "score_sum": 157.82142857142856
+    },
+    "test-sft-15-s127": {
+      "episodes": 288,
+      "valid": 266,
+      "score_sum": 243.17857142857142
+    },
+    "test-sft-15-s31": {
+      "episodes": 288,
+      "valid": 271,
+      "score_sum": 243.83928571428572
+    },
+    "test-sft-15-s73": {
+      "episodes": 288,
+      "valid": 277,
+      "score_sum": 250.73214285714286
+    },
+    "test-sft-480-s127": {
+      "episodes": 288,
+      "valid": 282,
+      "score_sum": 264.2142857142857
+    },
+    "test-sft-480-s31": {
+      "episodes": 288,
+      "valid": 270,
+      "score_sum": 248.44642857142856
+    },
+    "test-sft-480-s73": {
+      "episodes": 288,
+      "valid": 279,
+      "score_sum": 257.4107142857143
+    },
+    "test-sft-60-s127": {
+      "episodes": 288,
+      "valid": 242,
+      "score_sum": 216.44642857142856
+    },
+    "test-sft-60-s31": {
+      "episodes": 288,
+      "valid": 280,
+      "score_sum": 253.10714285714286
+    },
+    "test-sft-60-s73": {
+      "episodes": 288,
+      "valid": 278,
+      "score_sum": 249.66071428571428
+    },
+    "test-shuffled-480-s127": {
+      "episodes": 288,
+      "valid": 231,
+      "score_sum": 215.32142857142858
+    },
+    "test-shuffled-480-s31": {
+      "episodes": 288,
+      "valid": 251,
+      "score_sum": 238.39285714285714
+    },
+    "test-shuffled-480-s73": {
+      "episodes": 288,
+      "valid": 250,
+      "score_sum": 238.69642857142858
+    }
+  },
+  "estimated_token_usd": 17.422538850000002,
+  "limits": "Regex rules and linguistic-feature reductions checked; this is not human validation of tense tagging, plot adherence, literary quality, or latent preferences."
+}

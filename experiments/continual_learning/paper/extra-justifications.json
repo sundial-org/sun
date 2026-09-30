@@ -1,0 +1,62 @@
+{
+  "C18": {
+    "status": "measured contribution and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary and contrasts",
+      "evidence/evaluations.jsonl.gz"
+    ],
+    "justification": "The endpoint SFT-minus-playbook gap is .17433449074074076, rounded to 17.4 percentage points. The 15- and 60-opportunity adapters fail the descriptive mean validity threshold, while the endpoint passes on average with one seed below threshold. Reporting task validity separately is a design and interpretation choice supported by these observed differences.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "F01": {
+    "status": "design diagram and caption",
+    "sources": [
+      "evidence/frozen-code/run.py",
+      "evidence/reviews.jsonl.gz",
+      "evidence/prompts.json",
+      "render_workflow.py",
+      "evidence/workflow.pdf"
+    ],
+    "justification": "The diagram describes the primary comparison: 14, 55 and 460 usable public-valid pairs from 15, 60 and 480 opportunities; context through inferred instructions, weights through corrected-turn LoRA; SFT-only trajectory prefixes; 144 fresh prompts with two samples per policy and three method seeds. Private rubric labels are absent from both learners. The final vector graphic and its caption are inspected together.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "F02": {
+    "status": "data figure and caption",
+    "sources": [
+      "evidence/analysis.json",
+      "evidence/budget-visual-data.json",
+      "render_results.py",
+      "evidence/budget-comparison.pdf"
+    ],
+    "justification": "Both panels plot all three tested budgets from saved evaluation summaries. Learned-method means average three equally sized seed policies; raw retrieval has one policy. Faint points display seed variability, not statistical intervals. The right panel starts at 80 percent, explicitly disclosed. The horizontal coordinates are categorical, so connecting lines do not estimate a continuous learning curve. Final plotted values are checked against the analysis and the rendered graphic.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "T01": {
+    "status": "endpoint data table and caption",
+    "sources": [
+      "evidence/analysis.json",
+      "evidence/visual-data.json",
+      "evidence/endpoint-table.tex",
+      "render_results.py"
+    ],
+    "justification": "The nine endpoint rows are generated from the full saved summaries, rounded to one decimal percentage point. Playbook, SFT and SFT-control rows pool three seed policies of 288 episodes each; base, retrieval and the two privileged rubric references each use 288 episodes. US and U include all episodes; S conditional on U pools only valid episodes; all-rule success requires validity. The privileged references are separated and the compact version is explicitly exploratory. Every table cell is checked against its unrounded source value.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "T02": {
+    "status": "instruction-probe data table and caption",
+    "sources": [
+      "evidence/analysis.json: retention",
+      "evidence/retention.jsonl.gz",
+      "evidence/retention-table.tex",
+      "evidence/retention-visual-data.json",
+      "evidence/rescore-retention.json"
+    ],
+    "justification": "Each of seven policies answers exactly the same 128 frozen public prompts once, giving 896 responses. The base row has one policy; endpoint SFT and active-playbook rows each pool three seed policies. Official strict prompt accuracy averages all-instructions-pass indicators, while instruction accuracy pools the individual constraint booleans. Values are rounded to one decimal percentage point and checked against unrounded summaries and the full official rescore. The selected examples contain 206 individual instructions per policy, or 618 for each pooled three-seed row.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  }
+}

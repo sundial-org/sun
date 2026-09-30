@@ -1,0 +1,128 @@
+{
+  "C60": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "The frozen analysis gives SFT .8912863756613758 and playbook .7169518849206349. The paired mean gap is .17433449074074076; prompt interval [.15352130869708996,.19473379629629628], place interval [.15207454943783066,.19574652777777773]. Percentages and points are rounded to one decimal. The unadapted base US is .5200892857142857, rounded to52.0%.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C61": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Validity is831/864 SFT,817/864 book,282/288 base. SFT is1.7361 points below base, passing the descriptive3-point threshold. Its paired difference from book is.016203703703703703, interval[-.004629629629629629,.037037037037037035], including zero. Passing this point-estimate safeguard is not a noninferiority finding.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C62": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Seeds31,73,127 have US .8626612103174602,.8937872023809523,.9174107142857143 and270,279,282 valid episodes. Seed31 validity93.75% is below base97.9167%-3%. The bootstrap averages the three seeds inside each prompt rather than resampling a seed population.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C63": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Frozen hard3 means are .7935956790123456 and .5416666666666666; all-rule success .46064814814814814 and .05555555555555555. Both zero invalid episodes. Improvement on hard3 supports a gain beyond easy lexical prohibitions, while .46065<.5 directly bounds mastery.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C64": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "Conditional rule pass rates use831 valid SFT and817 valid book episodes. Opening rates are .5138387484957883/.17135862913096694, capitalization .9675090252707581/1.0. The sentence does not infer unconditional superiority from conditional rates.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C65": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: primary, methods and evaluations",
+      "evidence/evaluations.jsonl.gz: completed test episodes"
+    ],
+    "justification": "15/60 US gaps are .1848131613756614/.18619791666666666; SFT valid counts814/864 and800/864, both below base-.03. The first observed positive gap at15 is not evidence for the behavior of unmeasured budgets or a monotonic crossover.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C66": {
+    "status": "measured result and bounded interpretation",
+    "sources": [
+      "evidence/playbooks.json: n480-s31, n480-s73, n480-s127",
+      "evidence/frozen-code/run.py: compile_playbook"
+    ],
+    "justification": "Final token counts are84,147,63. Read all three final playbooks: they mention present tense, lowercase names, and anchors, with various concise-prose/dialogue/premise instructions, but none gives the twelve-word opener limit. The inference is about this compiler output, not a universal context limitation.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C67": {
+    "status": "measured exploratory result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: followups.combined",
+      "evidence/evaluations.jsonl.gz: combined and endpoint SFT policies"
+    ],
+    "justification": "Combined US is .8811383928571429 and U is 811/864 = .9386574074074074. The paired US difference is -.0101479828042328, percentile interval [-.02643435846560846,.005994233630952382]. Validity difference is -.023148148148148147, interval [-.04050925925925926,-.0057870370370370385]. These were independently calculated from all 864 saved combined episodes and the paired SFT episodes. The score interval includes zero; the validity interval is negative. These exploratory intervals are not adjusted for multiple comparisons. Combined all-rule success is 465/864 = .5381944444444444, versus 398/864 = .46064814814814814 for SFT. This is a descriptive secondary-metric increase, not an adjusted hypothesis test.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C68": {
+    "status": "measured exploratory result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: followups.self",
+      "evidence/evaluations.jsonl.gz: self and endpoint SFT policies",
+      "evidence/training.json"
+    ],
+    "justification": "Unedited-target US is .5287491732804233, versus .8912863756613758 for corrected targets. The paired difference is -.36253720238095233, interval [-.37991898148148145,-.3449487433862434]. Both conditions use the same 460 selected source rows, rank, learning rate, three epochs and 87-step schedule, but target content and resulting token counts differ. This supports the importance of corrected targets for this recipe, not an isolated semantic mechanism or a general claim about all self-training.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C69": {
+    "status": "measured exploratory result and bounded interpretation",
+    "sources": [
+      "evidence/analysis.json: followups.shuffled",
+      "evidence/evaluations.jsonl.gz: shuffled and endpoint SFT policies",
+      "evidence/shuffle-maps.json"
+    ],
+    "justification": "Shuffled US is .8014012896825398, U is 732/864 = .8472222222222222, conditional S is .9459162763466042, and all-rule success is 453/864 = .5243055555555556. The US difference from SFT is -.08988508597883597 with interval [-.11861462466931218,-.06262349123677248]. SFT conditional S is .926680419460203 and all-rule success is .46064814814814814. Conditional comparisons select different valid subsets; the claim is descriptive and does not infer a causal style advantage. Neither private rubric checks nor public validity checks evaluate premise adherence.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C71": {
+    "status": "measured exploratory instruction-probe result and scope",
+    "sources": [
+      "evidence/analysis.json: retention",
+      "evidence/retention.jsonl.gz",
+      "evidence/rescore-retention.json",
+      "evidence/retention-plan.json"
+    ],
+    "justification": "Strict prompt counts are base 106/128, SFT 320/384, and active playbook 304/384. Averaging the three seed responses within each example and bootstrapping 128 paired examples for 10000 draws gives SFT-minus-base .005208333333333328 with interval [-.036458333333333336,.046875], and playbook-minus-base -.036458333333333336 with interval [-.08072916666666667,.0078124999999999905]. Both include zero. No noninferiority margin or power guarantee is inferred, and public benchmark performance with an active policy does not establish knowledge erasure. Official strict checks were independently rerun for all 896 responses.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "C70": {
+    "status": "measured exploratory presentation result and scope",
+    "sources": [
+      "evidence/analysis.json: test-explicit-rules and test-compact-rubric",
+      "evidence/evaluations.jsonl.gz",
+      "evidence/compact-rubric-plan.json",
+      "evidence/exploratory-code/COMPACT_RUBRIC.md"
+    ],
+    "justification": "Verbatim US is .6236359126984127 and U is 274/288; zero of those 274 valid stories pass the tense check. Compact US is .7323288690476191 and U is 245/288; tense pass is 179/245 = .7306122448979592. Its 43 invalid episodes include 36 below the 120-word minimum. Invalid-feature counts overlap and are not exclusive causal assignments. This was one fixed exploratory rendering, designed after observing the verbatim result, with reused test prompts and matched seeds. It changes several prompt properties together, is privileged rather than inferred, and supplies no optimized contextual upper bound.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  }
+}

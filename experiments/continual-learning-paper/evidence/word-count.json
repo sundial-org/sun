@@ -1,0 +1,9 @@
+{
+  "count": 2042,
+  "target": [
+    2000,
+    2500
+  ],
+  "method": "Claim prose and caption plus table values; hyphenated words count once, math expressions once; excludes title, headings, bibliography and notes.",
+  "within_target": true
+}

@@ -1,0 +1,5 @@
+{
+  "dataset_sha": "a32882a30f5842480b23048990cf08f258ec6901bfbc777b2f7ec4a5191923da",
+  "state_path": "tinker://58805bc3-d8a8-518e-8e5b-104fef560292:train:1/weights/sft-clean-73-step-75",
+  "step": 75
+}

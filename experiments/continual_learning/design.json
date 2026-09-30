@@ -1,0 +1,1 @@
+{"development_prompts":24,"test_prompts":144,"samples_per_prompt":2,"candidate_test_sizes":[96,144,192],"planning_effect":0.05,"planning_power_target":0.8}

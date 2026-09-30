@@ -1,0 +1,78 @@
+{
+  "input_tokens": 384,
+  "key": "98ff6f5bbb39ac2301e4a90cfca900a964fb0d2690717c293095b0b1f9121d26",
+  "messages": [
+    {
+      "content": "Process every order under this complete policy. These rules override any conflicting example.\n1. A recalled order is always HOLD, with zero allocated units and zero fee.\n2. Otherwise allocate min(quantity, stock). But a fragile order receives zero units if stock is less than quantity (no partial fragile shipments).\n3. Zero allocated units means BACKORDER and zero fee.\n4. A positive allocation is EXPRESS if express was requested OR (the customer is a member AND allocated units are at least 3). Otherwise it is STANDARD.\n5. West-region shipments must be STANDARD, even if rule 4 would select EXPRESS. This never overrides HOLD or BACKORDER.\n6. Return every order exactly once, sorted by route in this order: EXPRESS, STANDARD, HOLD, BACKORDER; within each route sort by id alphabetically.\n7. Return only a JSON object with the key orders. Each orders entry has exactly id, units, route.\nExample corrections can contain errors; the written policy is authoritative.\nBefore returning the JSON, check each order in this sequence: recall override; fragile/full-stock requirement; allocated units; zero-unit backorder; express/member eligibility; west shipping override. Then sort all entries. Preserve every input id.",
+      "role": "system"
+    },
+    {
+      "content": "[{\"fragile\":true,\"id\":\"YDJA\",\"member\":false,\"quantity\":2,\"recalled\":false,\"region\":\"central\",\"requested\":\"express\",\"sku\":\"D\",\"stock\":4},{\"fragile\":false,\"id\":\"BHLF\",\"member\":false,\"quantity\":5,\"recalled\":false,\"region\":\"central\",\"requested\":\"standard\",\"sku\":\"B\",\"stock\":12},{\"fragile\":false,\"id\":\"JZPN\",\"member\":false,\"quantity\":8,\"recalled\":true,\"region\":\"east\",\"requested\":\"express\",\"sku\":\"D\",\"stock\":8}]",
+      "role": "user"
+    }
+  ],
+  "output_tokens": 47,
+  "params": {
+    "max_tokens": 1024,
+    "seed": 93029,
+    "stop": [
+      151645
+    ],
+    "temperature": 0.0,
+    "top_k": -1,
+    "top_p": 1
+  },
+  "policy": "sft-systematic-73",
+  "seconds": 1.5038936249984545,
+  "stop_reason": "stop",
+  "text": "{\"id\":\"YDJA\",\"route\":\"EXPRESS\",\"units\":2},{\"id\":\"BHLF\",\"route\":\"STANDARD\",\"units\":5},{\"id\":\"JZPN\",\"route\":\"HOLD\",\"units\":0}]",
+  "tokens": [
+    4913,
+    307,
+    3252,
+    56,
+    35,
+    44180,
+    2198,
+    8966,
+    3252,
+    32337,
+    7817,
+    2198,
+    25643,
+    788,
+    17,
+    36828,
+    307,
+    3252,
+    33,
+    13485,
+    37,
+    2198,
+    8966,
+    3252,
+    784,
+    38635,
+    2198,
+    25643,
+    788,
+    20,
+    36828,
+    307,
+    3252,
+    41,
+    57,
+    17896,
+    2198,
+    8966,
+    3252,
+    39,
+    7863,
+    2198,
+    25643,
+    788,
+    15,
+    25439,
+    151645
+  ]
+}

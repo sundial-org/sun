@@ -1,0 +1,17 @@
+{
+  "phase": "retention",
+  "script_sha256": "305dcdbbf6628e6757b3e1d5078a785487b3c0a2475e3ceb095635b77099befe",
+  "sources": {
+    "retention/base.json": "63bd33a0e1af7a6d40f7f8b106fa97cac03c674382d90048989db8fcfc09a692",
+    "retention/playbook-480-s127.json": "910a09151ad5b6d607dccf638e509c063937325ecbdaeb547ab9b533df63f97f",
+    "retention/playbook-480-s31.json": "916debb00db9b106f329eae6e86bfaa9661323fc32e53f4eae231276bc0cd016",
+    "retention/playbook-480-s73.json": "391bca05c98b00ed17ce5655c01f384608dcadf8c0ae243098d81e9d6dcfe32b",
+    "retention/sft-480-s127.json": "b6fa28dd6fc07b264c8e4464c3625c7117d157254c33fe423530daaa003c0073",
+    "retention/sft-480-s31.json": "16fbd18816029d957b383ed1c50a8753ab680c68771edc3baf130dc45d115ee2",
+    "retention/sft-480-s73.json": "860d7c30fd31eb854e21a022e77c79c24aed433992188fd8b0b0f51ddbb22f77"
+  },
+  "checked": 896,
+  "mismatches": [],
+  "official_commit": "e6890f85757dd84e27ca6df2dd30651dafad28e0",
+  "status": "passed"
+}

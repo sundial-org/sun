@@ -1,0 +1,11 @@
+{
+  "reviewed_tasks": 50,
+  "method": "Inspected all 50 focus records and corrupted alternatives, plus five complete inputs/outputs, alongside exhaustive oracle and metamorphic checks",
+  "findings": [
+    "Recall correctly overrides region and shipping rules",
+    "Corrupted answers preserve other order decisions and consistently update totals",
+    "Exact sample totals and route ordering checked on five complete examples",
+    "No personal data or external material"
+  ],
+  "scope": "Not a human annotation or external expert review"
+}

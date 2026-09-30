@@ -1,0 +1,602 @@
+{
+  "C01": {
+    "status": "design",
+    "sources": [
+      "P opening question and Both experiments"
+    ],
+    "justification": "Defines the research question in the v3 proposal. No performance assertion.",
+    "text_sha256": "fccdba4cd5f2cd3c5a1d3d917620ea4f7c8ef8e688c55ffe236a89895e8d7eb2"
+  },
+  "C02": {
+    "status": "measured",
+    "sources": [
+      "L What the curve actually measures",
+      "W curve and diagnostics"
+    ],
+    "justification": "Lean coverage and shortcut checks reproduce; writing conditional style and validity are separately recomputed. Both model identities are documented in LR and WP. This describes two pilots, not the revised design.",
+    "text_sha256": "d87c9e68f9aab75cd125da37e49e665f447e21fd83e3f4fbed272751600c9595"
+  },
+  "C03": {
+    "status": "measured",
+    "sources": [
+      "V writing_curve budget=480",
+      "V controls.shared_weights_vs_context"
+    ],
+    "justification": "Paired per-prompt means and 10,000 resamples reproduce -0.0121993 [-0.0404270,0.0150674] and 0.1365637 [0.1137769,0.1604973]. Multiply by 100 and round to one decimal. Shared-archive evaluation uses held-out prompts, not the edited training drafts.",
+    "text_sha256": "977b9635efc46fa902631f584ab50942e185e11ff9ad6d0794ccc02665ce6063"
+  },
+  "C04": {
+    "status": "inference",
+    "sources": [
+      "C28-C42",
+      "C60"
+    ],
+    "justification": "Positive matched-archive controls establish adaptation on this archive. The live endpoint crosses zero; no playbook curve or general retention scores exist. The inference explicitly excludes lasting crossover and general retention.",
+    "text_sha256": "7b0bd607cd0584a4c62e2b0daba212fb415cf7389e5635f1d2d0894eccd1c94e"
+  },
+  "C05": {
+    "status": "scope",
+    "sources": [
+      "P",
+      "C43-C58",
+      "LR Methods revision"
+    ],
+    "justification": "A specified future protocol is provided. The current branch contains proposal/evidence rather than an executed revised harness; its stated gates and controls are not completed results.",
+    "text_sha256": "7fb31f8f9d35f28b9e40618b9aabec5327d27fc31a9827fcc3cac8c0b15357a1"
+  },
+  "C06": {
+    "status": "literature",
+    "sources": [
+      "G abstract and sections 1-3"
+    ],
+    "justification": "The primary paper describes inferred latent preferences from revisions and retrieval of preferences from similar contexts. This supports the possibility of conveying absent preferences, not universal success.",
+    "text_sha256": "d81493c82a5c8763ece79dd88352cc189a5ada29d51098d50e3a074249c30fa4"
+  },
+  "C07": {
+    "status": "design",
+    "sources": [
+      "P arms"
+    ],
+    "justification": "The three storage representations are choices under study. Raw review retrieval, playbook, and adapter training appear in v3.",
+    "text_sha256": "224b12feaa1ad4b23be02b5aa61cb92606a42660c9b776a9e571862d178286a3"
+  },
+  "C08": {
+    "status": "design",
+    "sources": [
+      "P Primary gap",
+      "P Scores"
+    ],
+    "justification": "Hypothesis, not finding. The planned contrast is SFT minus playbook and writing has a 3 percentage point validity guard. There may be no qualifying budget.",
+    "text_sha256": "07a9effc72fa04065d088f55a9d30848ffb00783a5c408d5fb67a41ccf98fbb6"
+  },
+  "C09": {
+    "status": "inference",
+    "sources": [
+      "L coverage",
+      "W curve budget=480"
+    ],
+    "justification": "Missing Lean event categories coexist with near-perfect aggregate score; writing conditional style is higher for weights while validity is lower. These directly instantiate the two cautions.",
+    "text_sha256": "ea41428835544de045c1b0c0b3915969de51fe252e0bfd6c501a7a59a1738e15"
+  },
+  "C10": {
+    "status": "design",
+    "sources": [
+      "WP live arms",
+      "LR primary comparison",
+      "P Pools"
+    ],
+    "justification": "Writing primary pilot used distinct evolving arm pools, with a separate shared-pool endpoint control. Lean already used the no-feedback shared pool. v3 makes common evidence the primary design for both.",
+    "text_sha256": "31677b3f4f3ec37e5ff1e5c21f5df4d9013fe128c17dc68668aa884162e40d40"
+  },
+  "C11": {
+    "status": "scope",
+    "sources": [
+      "C28-C62",
+      "P"
+    ],
+    "justification": "The draft's contribution is audit plus protocol. No playbook scores or sequential retention experiment is reported. Cumulative retraining is distinguished from sequential continual learning.",
+    "text_sha256": "a86d4f6205a762ef5d2f4208448b0dcb0bcbd601ce37718fb49018e1cc57ced9"
+  },
+  "C12": {
+    "status": "literature",
+    "sources": [
+      "B section 3.3 and Figure 3"
+    ],
+    "justification": "Bertsch et al. explicitly report task/data dependence and cases where LoRA never overtakes ICL. No quantitative result or universal threshold is transferred to this study.",
+    "text_sha256": "fa757938790dfbc1584832c6011a92e816e835de24d9760f73ea2de9b6c796de"
+  },
+  "C13": {
+    "status": "design",
+    "sources": [
+      "P Pools, Scores, Stats",
+      "B section 3.3"
+    ],
+    "justification": "Our proposed extension concerns reviewed trajectories, fixed shared review evidence, and validity. The sentence makes no priority claim over all literature.",
+    "text_sha256": "45a294b293edc730dbd83df6c591bf4df68e9b9240e4a865ec600ba8a045771d"
+  },
+  "C14": {
+    "status": "literature",
+    "sources": [
+      "G abstract and section 3",
+      "A abstract"
+    ],
+    "justification": "G describes inferred-preference retrieval. A describes contexts as playbooks with incremental updates. No external gain is borrowed as an expected result here.",
+    "text_sha256": "1870fae83547ca60eb6c89728ddae833fca31fd34dddf82cd22a3cd891b02976"
+  },
+  "C15": {
+    "status": "inference",
+    "sources": [
+      "C14",
+      "WP difference 4",
+      "P playbook"
+    ],
+    "justification": "A learned summary can represent inferred rules, whereas raw examples alone are not an explicit rule summary. Stronger refers to representational scope, not a measured performance advantage; the final clause makes that limitation explicit.",
+    "text_sha256": "361724c1efae8c649a869d20deb9bdcc43d7764fd7bf349cad30723f9a055a13"
+  },
+  "C16": {
+    "status": "literature",
+    "sources": [
+      "H abstract",
+      "D abstract"
+    ],
+    "justification": "H defines frozen pretrained weights and trainable low-rank matrices. D defines demonstration-conditioned self-teaching on policy. This does not assert that our proposed playbook variant exactly replicates D.",
+    "text_sha256": "725868a6b533f3fec876d459113dbe607c0cb1f37fcca4d9d0efbb025dca023e"
+  },
+  "C17": {
+    "status": "design",
+    "sources": [
+      "P Arms",
+      "P Forgetting"
+    ],
+    "justification": "SFT and distillation are separate proposed arms; public validity, IFEval and KL are intended retention diagnostics. No retention result is attributed to a small adapter.",
+    "text_sha256": "34e4b4521d0d898877979827efd3a8c62560da96baf4b3acae7bad27fcc84bb9"
+  },
+  "C18": {
+    "status": "literature",
+    "sources": [
+      "K abstract",
+      "M recommendations 2-4"
+    ],
+    "justification": "Critic paper explicitly acknowledges hallucinated bugs. Miller recommends clustering dependent questions and paired differences. Calibration and grouping are our design response, not a result established by those papers on our data.",
+    "text_sha256": "0480ae1490c57d4024426bf3d428af22bee6e53095ac7c2b019d53a5d922f7a8"
+  },
+  "C19": {
+    "status": "measured",
+    "sources": [
+      "LR opening setup and Completed run",
+      "WP",
+      "LT training",
+      "WT rank and names"
+    ],
+    "justification": "Both source protocols specify Qwen3-8B, no feedback, context and cumulative fresh-base LoRA. Lean training records give rank 16; writing manifests do too. Both have 4 x 120 sessions per arm. Shared-pool versus live-pool distinction is explicit in C10.",
+    "text_sha256": "63036781baadc3117cdce86606ba27f88463633ee88404f873f03d2c24c4422b"
+  },
+  "C20": {
+    "status": "measured",
+    "sources": [
+      "WP workers and difference 4"
+    ],
+    "justification": "Ten workers share one policy, so they are concurrency rather than independent trained replicates. The committed protocol describes 8000-token normalized-overlap retrieval with recency ties. This is not the proposed BM25 retriever.",
+    "text_sha256": "8b07096b77c535006a7e52eee4ae6bc08cc2d39c15278a2d0cb8750090372023"
+  },
+  "C21": {
+    "status": "measured",
+    "sources": [
+      "WP Writer, Editor A/B, Agent tools, private rules",
+      "WS RULES"
+    ],
+    "justification": "Pinned protocol identifies Inkling and public tools, 120-350 words, required anchors and eight rules. Prompts preserve two required words. Counts refer to the planted rubric, not all aspects of style.",
+    "text_sha256": "43c8833dd294e954442ca4cd0fbc0d64ec455df856a7e88c470c9bbd518b6080"
+  },
+  "C22": {
+    "status": "measured",
+    "sources": [
+      "WS score",
+      "WP invalid evaluations",
+      "WA prompt_means",
+      "W diagnostics"
+    ],
+    "justification": "Scorer uses regex/token tests and a pinned spaCy tagger. Stored U and rule arrays reproduce U*S. Public format conditions were recalculated on drafts; the private NLP judgments were not newly human-validated or retagged. WS returns a None dialogue-tag flag if no tags are found; non-None flags define each story denominator before averaging.",
+    "text_sha256": "0623ab5ad3eb3068b8df5f3a4fec68886842f267a2a791e8e98edd8e6e327b83"
+  },
+  "C23": {
+    "status": "measured",
+    "sources": [
+      "WP training replay",
+      "WAM renderer amendment",
+      "P Recipe and Writing Row"
+    ],
+    "justification": "Pilot protocol trains assistant messages after replay. Renderer amendment splits actions because transcript prefixes differ. v3 restricts loss to corrected turn. The draft explicitly distinguishes implemented pilot behavior from planned correction.",
+    "text_sha256": "bb672febaf1c46de4775ec469636eb151dc0f4afd87361377a50315779c22c63"
+  },
+  "C24": {
+    "status": "measured",
+    "sources": [
+      "WP split and held-out settings",
+      "WPR",
+      "WI"
+    ],
+    "justification": "Prompt data has 480 train, 24 dev, 96 held-out, of which 48 have unseen genres. Every stored evaluation has four samples for each held-out ID. Integrity source reports separation; intended split phrasing does not claim absence of all semantic contamination.",
+    "text_sha256": "87054b14e87be064e41e22e13e0e755e5442e3d02a8d021f03cec774e7919301"
+  },
+  "C25": {
+    "status": "measured",
+    "sources": [
+      "WA interval, difference and analyze",
+      "WT",
+      "V writing_curve"
+    ],
+    "justification": "The implementation uses 10000 draws and seed 1701 on paired prompt means. Three final seeds are pooled within prompt; early points use one. No resampling of training archives or simultaneous budget adjustment occurs.",
+    "text_sha256": "52ae66c2b4d67485283805b863630caa9cb79a7cf0aad7dc2c1e1362015841ab"
+  },
+  "C26": {
+    "status": "measured",
+    "sources": [
+      "L setup and score definition",
+      "LS score",
+      "V lean_reports",
+      "LE"
+    ],
+    "justification": "120 traces, 40 unique lemma IDs and 20 families are independently counted. Each stored stochastic report set has 5 samples; greedies are separate. LS computes precision times recall and never grades prose.",
+    "text_sha256": "975ca0d6e0229c58e4c4d045e94b92361d13c0be6536153ff47cf2bd76b44741"
+  },
+  "C27": {
+    "status": "measured",
+    "sources": [
+      "LS facts",
+      "L truth table"
+    ],
+    "justification": "facts returns E4 immediately for no compile or failed/timeout compile. E5 checks own sorry warning; E6 checks a dependency with sorryAx. These definitions are specific to the frozen rubric.",
+    "text_sha256": "b8672359c5dedf42a2e043e46e861154ae6920cd005e038d17c1028a1112d6e1"
+  },
+  "C28": {
+    "status": "measured",
+    "sources": [
+      "V lean_truth_patterns",
+      "LE traces",
+      "LS facts"
+    ],
+    "justification": "Compiler-receipt truth rederivation yields E4=113, E5=6, E5+E6=1. Those exhaustive patterns exclude proved/partial and E1/E2/E3. No fresh Lean compiler execution was performed in this paper audit.",
+    "text_sha256": "e11d9aa199d9980560cda6d6133f6bc552f1886c9b69075cc588e0b6de171c7a"
+  },
+  "C29": {
+    "status": "measured",
+    "sources": [
+      "V",
+      "LE evaluations",
+      "L What the curve actually measures"
+    ],
+    "justification": "Constant E4 gives 113/120. At each of four LoRA checkpoints, all 600 stored stochastic headers equal the post hoc two-branch rule; 595 scores are 1 and 5 are 0.5, hence 597.5/600=0.9958333. The rule was chosen after observing the data.",
+    "text_sha256": "887f7bc7a1fc9524f39521a7677562d9a518976d9a4fc5ec225a883e952d65af"
+  },
+  "C30": {
+    "status": "measured",
+    "sources": [
+      "LE k0-base, k4-context, k1/k2/k3/k4-weights",
+      "V"
+    ],
+    "justification": "On the unique truth set with E6, the verifier checks five exact base and final-context reports. Every LoRA report equals E5 alone. Thus aggregate improvement conceals worse dependency coverage on that one example.",
+    "text_sha256": "da9558c8063b37537085f538e635b0d2531d77a13076e4938132a740368eec91"
+  },
+  "C31": {
+    "status": "inference",
+    "sources": [
+      "C28-C30",
+      "L interpretation"
+    ],
+    "justification": "Matching observable headers cannot identify internal computation. Five samples are repeats of the same trace. Missing outcomes and the sole dependency case preclude the intended broad crossover conclusion.",
+    "text_sha256": "7c945def1fb99d38abe5cb6871c61cd63b2885ed6ab3aff944b02dcbef614da7"
+  },
+  "C32": {
+    "status": "measured",
+    "sources": [
+      "W curve x=15",
+      "V writing_curve"
+    ],
+    "justification": "Stored valid-story rule means are 0.9044343 and 0.7423047; U*S means are 0.7701823 and 0.6997768. The audit recomputes both denominators from records. 15 is accepted edits, not 15 review opportunities.",
+    "text_sha256": "29a59d1023c1747196ce773c3cd98ada35740f904a93a868ad8db1fa8be0232a"
+  },
+  "C33": {
+    "status": "measured",
+    "sources": [
+      "WP early checkpoints",
+      "WT",
+      "V writing_curve",
+      "T01"
+    ],
+    "justification": "Rows are 15,30,60,116,226,338,451 and match training manifests. Protocol distinguishes early accepted targets from later review opportunities. No unobserved points or interpolated crossover are shown.",
+    "text_sha256": "8530536125504f0a2d1db04c4ee6d199ebdd1c909f258641194b40b5d56c1bd1"
+  },
+  "T01": {
+    "status": "measured",
+    "sources": [
+      "V writing_curve",
+      "W base",
+      "WT",
+      "WP"
+    ],
+    "justification": "Every numeric table cell is generated by verify_evidence.py after per-sample and manifest checks. Base mean=0.5713355655. Context and weights use separate arm pools; early offline checkpoints use immutable first-round snapshots of those separate pools. Seeds=3 only at 480. Rounding can make the displayed gap differ from subtracting rounded displayed means.",
+    "text_sha256": "54110dac00e6c8e81ca9ecdd36241fdcec7cfb6064724275eae019176489b558"
+  },
+  "C34": {
+    "status": "measured",
+    "sources": [
+      "V writing_curve budgets=30,480"
+    ],
+    "justification": "480 means round to 84.9 and 86.1, with gap -1.2 [-4.0,1.5]. The 30-edit gap is -0.8836 pp, interval [-5.5200,3.5435]; both include zero. Inconclusive does not establish equality.",
+    "text_sha256": "466a29bf6c05def0414346db87e806b701a55104581284dad0b28bcf9099dc07"
+  },
+  "C35": {
+    "status": "measured",
+    "sources": [
+      "W curve x=480",
+      "W diagnostics",
+      "V"
+    ],
+    "justification": "Endpoint valid-only style=0.9584384 vs 0.8909800, U=0.8854167 vs 0.9661458. Diagnostics contain short-story and missing-anchor failures in weights sets. Categories can overlap, and the paper makes no causal explanation of those failures.",
+    "text_sha256": "ac263ba6dbf4e45f1d52ea44da63fd9ae162877b35c81b99f81d3cc7b15e4310"
+  },
+  "C36": {
+    "status": "inference",
+    "sources": [
+      "C25",
+      "C34-C35"
+    ],
+    "justification": "The primary live U*S interval includes zero despite higher conditional style. Early pointwise intervals and an inconclusive endpoint cannot certify a sustained simultaneous crossover.",
+    "text_sha256": "e52e62c7e9c1ef72b6e5bb12d315c4d1a246088979fd9be4936e8991bbb466c5"
+  },
+  "C37": {
+    "status": "measured",
+    "sources": [
+      "WT lora-A/lora-B/self checkpoints",
+      "W shared_archive",
+      "V controls.shared_weights_vs_context",
+      "WI"
+    ],
+    "justification": "All three seeds in each control have 460 rows; integrity reports matched control originals. Per-prompt scores reproduce 91.8186% and 78.1622%, gap 13.6564 pp [11.3777,16.0497]. These are a separate endpoint control, not the seven-budget shared curve proposed next. A and B are style guides given to the same Inkling editor, not different editor models.",
+    "text_sha256": "3525489c2fa883e61a65f1d5b17f5ebb5347c0ee3365189d62833a5f135eb89d"
+  },
+  "C38": {
+    "status": "measured",
+    "sources": [
+      "WS RULES entries 5:8",
+      "WA prompt_means flipped",
+      "V controls A_specificity and B_specificity"
+    ],
+    "justification": "The scorer selects the last three opposed rules, averages applicable flags, then multiplies by U. Recomputed A and B differences and intervals round as written. The first five rules are not all opposites, so the draft limits specificity to three opposed rules.",
+    "text_sha256": "5eabeb47e11c67bbe8c15bb9dd0624df325e051f1cabdf9bc95f8919cfd48b2b"
+  },
+  "C39": {
+    "status": "measured",
+    "sources": [
+      "V controls.edited_vs_self",
+      "WT",
+      "WI"
+    ],
+    "justification": "Guide-A U*S gap is 0.3348989 [0.3176921,0.3517795]. Matched original drafts and edited targets support that edits carry useful information in this archive; this does not isolate every feature of training or prove general human preference learning.",
+    "text_sha256": "0429cc074a9dd981edf8cc6a5e7eeb51a4ab7e0b0637c7b0f4331f6738b80167"
+  },
+  "C40": {
+    "status": "scope",
+    "sources": [
+      "WP private planted rules and difference 4",
+      "WR limitations",
+      "C37-C39"
+    ],
+    "justification": "Only raw-example context and mechanical rules were evaluated. No playbook or blind prose evaluation appears in completed results. Shared archive has an endpoint, not a budget curve, so no shared-archive threshold follows.",
+    "text_sha256": "03b6cbab9d0e5e95ca95b5b168f44c0c6d4a2b5b1525a534881c542d3e170847"
+  },
+  "C41": {
+    "status": "measured",
+    "sources": [
+      "V selection",
+      "SE",
+      "WA selection_probabilities and best_of_n"
+    ],
+    "justification": "Independent combinatorial subset weighting reproduces gains 0.0356937 [0.0278815,0.0437853] and 0.1034670 [0.0980060,0.1090564]. Eligible drafts are valid and deduplicated; reference is uniform on the same pools.",
+    "text_sha256": "e2700b9bf5a89b5a9dc6ee6efc0e80a6081e19496c8dbb64ff4437bfa2d50208"
+  },
+  "C42": {
+    "status": "measured",
+    "sources": [
+      "WP Best-of-n and Kept",
+      "WA best_of_n",
+      "SE"
+    ],
+    "justification": "96 eligible prompt pools, exact without-replacement subset averaging, uniform ties and original draft S are implemented. A pure insertion does not remove original tokens, so survival can remain unchanged. Completed protocol explicitly excludes policy-gradient RL. Protocol starts with 16 samples per prompt; 1536 total samples across 96 prompts is recorded.",
+    "text_sha256": "0270959dd562014860543a4961b7693099aa95cfc744e7eee182dca299dcfe5a"
+  },
+  "C43": {
+    "status": "design",
+    "sources": [
+      "P Pools"
+    ],
+    "justification": "All budget values and primary shared no-feedback pool are in v3. Four rounds of 120 sessions remain secondary. This is future tense, not a claim that revised pools already exist.",
+    "text_sha256": "8c7ded5474566cb26d3364fe4203cad0ad3a941cc6df513ee8fe8be171ac01cc"
+  },
+  "C44": {
+    "status": "design",
+    "sources": [
+      "P Arms"
+    ],
+    "justification": "All six arms and budgets are specified in the proposal. BM25 and playbook were not the writing pilot's retrieval implementation. The paper introduces no measured result for these arms.",
+    "text_sha256": "22a47d61f0eb0f91f1be4db0a583f9ff90d9c848cb652a0102d0a4fedff1c90e"
+  },
+  "C45": {
+    "status": "design",
+    "sources": [
+      "P playbook and distill"
+    ],
+    "justification": "v3 forbids secret rules to the playbook author and uses a playbook-conditioned teacher without playbook for student, on pool prompts. This is a design constraint requiring implementation checks before running.",
+    "text_sha256": "3b97768ef44b341cfde2f1379a7ff49fbe382c0fd318a7aaa5a0f6e829a456f0"
+  },
+  "C46": {
+    "status": "design",
+    "sources": [
+      "P Primary gap and SFT arm",
+      "C19"
+    ],
+    "justification": "SFT minus playbook is the proposed contrast. Retraining from base on accumulated data is a joint-training reference by definition. Calling it an upper bound in v3 overstates what is guaranteed; this draft explicitly corrects that label.",
+    "text_sha256": "7d52121408a853ebd1efec4c8c1ef5adb24560c3475f253d7a554551cf3c4320"
+  },
+  "C47": {
+    "status": "design",
+    "sources": [
+      "P Controls"
+    ],
+    "justification": "Controls are specified, not performed by this revised design. Step matching targets optimization exposure, sequential updates target retention across updates, and self/shuffled targets test informational content. Outcomes remain unknown.",
+    "text_sha256": "3818805f1cbf43079288ef9178f30a11a3747c611f31e99a2178af4f4403096f"
+  },
+  "C48": {
+    "status": "design",
+    "sources": [
+      "P Policy"
+    ],
+    "justification": "Settings are directly inherited protocol choices. No live model-availability, API defaults, model pricing or provider-support claim is asserted, so historical evidence-ledger availability statements need not be trusted.",
+    "text_sha256": "957296a8f9bcad6673b4179dfed33ffe144b4c699f5dbc76efdc0b83145f52aa"
+  },
+  "C49": {
+    "status": "design",
+    "sources": [
+      "P Recipe"
+    ],
+    "justification": "All numbers and constraints match v3. At least 3 epochs and 30 steps implies satisfying both minima. Three seeds and learning-rate selection on dev are commitments, not documented results of the revised protocol.",
+    "text_sha256": "c2b05867e3d88d0c38434158ef9e48fcc497571e302e7fada63b0a30571a7da8"
+  },
+  "C50": {
+    "status": "design",
+    "sources": [
+      "P Exp 1 Gates"
+    ],
+    "justification": "Numerical gates match v3 and are explicitly author-chosen acceptance thresholds. No claim that they have passed. Score definition, sample denominators and uncertainty must be fixed in executable protocol before execution.",
+    "text_sha256": "15ca56093a9e1815ba7953930369b022abe9cd168e75f2ae24f3ccf1b3715ec7"
+  },
+  "C51": {
+    "status": "design",
+    "sources": [
+      "P Exp 1 Gates",
+      "L Corrections and next experiment"
+    ],
+    "justification": "60 groups, 20% unprovable and 20 positive/negative examples per rare event come from the proposal. Keeping challenge cases separate from natural distribution follows the audit recommendation. These are target sample requirements, not achieved counts.",
+    "text_sha256": "bb0f13c4b7020b81ce49ccf6379c620b36baa08d580a8846b7899b6d66d0e6a1"
+  },
+  "C52": {
+    "status": "design",
+    "sources": [
+      "P Exp 1 Score and Adapter",
+      "LS score"
+    ],
+    "justification": "v3 changes primary metric to exact header match and gates adapter to report turn. Whole-episode proof success is spillover. Header matching cannot establish prose quality; this is a stated measurement boundary.",
+    "text_sha256": "f31c6a53254aeaca254473052e2106369b3fe7bc4be4f4df1164781cd7b89e8b"
+  },
+  "C53": {
+    "status": "design",
+    "sources": [
+      "P Exp 2 Editor A and Row"
+    ],
+    "justification": "All thresholds and invalid-target filtering match v3. Which rules, recall annotation procedure and clean-sentence denominator need executable preflight specification; the sentence does not assert completed calibration.",
+    "text_sha256": "f6abf3eb21e12d1e29fe7688dee24d28aab5af913c965c9237cc00702729855f"
+  },
+  "C54": {
+    "status": "design",
+    "sources": [
+      "P Reviewer",
+      "P Exp 2 Scores",
+      "draft clarification"
+    ],
+    "justification": "Frozen cross-family reviewer, 30 human cases and 3 pp validity guard are v3 choices. Explicit retention of U*S alongside conditional S is a draft clarification motivated by C35, not a hidden change to pilot results.",
+    "text_sha256": "39a412f2abcdc635ab99f5796c99e3b604717bdc701f08d45492567b3bc8e996"
+  },
+  "C55": {
+    "status": "design",
+    "sources": [
+      "P Stats",
+      "M recommendations 2-4"
+    ],
+    "justification": "v3 gives one primary endpoint and clustered paired bootstrap. The draft explicitly chooses the writing prompt and Lean dependency group and separates seed variation; this is prospective analysis, not a statement about the pilots' intervals covering all uncertainty.",
+    "text_sha256": "2deda0846529613d829ac492a815c746478d4e65dee3c22b9cb7afc8aa0f2c44"
+  },
+  "C56": {
+    "status": "design",
+    "sources": [
+      "P Stats and Scores",
+      "draft clarification"
+    ],
+    "justification": "Operationalizes x0 on measured checkpoints through the endpoint and adds the writing safeguard. No interpolation or never-ever conclusion is allowed. The exact simultaneous-band procedure must be frozen under C57 before use.",
+    "text_sha256": "e4982260780cd5d2d43a4f1f0726f34476ba30bfbeb0c55b83510c30d45fe0c1"
+  },
+  "C57": {
+    "status": "scope",
+    "sources": [
+      "P Stats and gates",
+      "LR methods revision",
+      "current branch scope"
+    ],
+    "justification": "No revised power simulation, implementation of simultaneous bands, or sealed v3 dataset is supplied in this branch. The draft lists these as prerequisites, not verified deliverables or pending paid runs started here.",
+    "text_sha256": "33d36b36e82ae046237580647e72016e48b90f63c2d8b5cfa4545d130eb43d78"
+  },
+  "C58": {
+    "status": "design",
+    "sources": [
+      "P Forgetting",
+      "P Editor B",
+      "P Kept as a reward"
+    ],
+    "justification": "All are proposed diagnostics/secondary analyses. The manuscript does not claim IFEval or KL was measured or that the pilot trained with the Kept reward. Any optional RL experiment needs a frozen protocol before execution.",
+    "text_sha256": "cb3eec747a1a0c1deac7e3730e055e474df848d51c62bc707a8cbc07c1c2491c"
+  },
+  "C59": {
+    "status": "inference",
+    "sources": [
+      "C28-C36"
+    ],
+    "justification": "Direct synthesis of observed missing event coverage and writing validity loss. It does not infer an unobserved causal mechanism or make a population-general effectiveness claim.",
+    "text_sha256": "3a577cfd3c4773beac4fff812aa590de8545d62764cf3dcf9013cb38e427fcf2"
+  },
+  "C60": {
+    "status": "scope",
+    "sources": [
+      "LR pending human smoke test",
+      "WR incomplete evaluations",
+      "LT human_smoke_test",
+      "W"
+    ],
+    "justification": "The saved Lean analysis reports zero human-reviewed cases. Writing README reports incomplete human smoke test and blind prose-quality evaluation. No general retention metrics are in either completed result record. These facts restrict claims, not prove an absence of all competence.",
+    "text_sha256": "42972ba58e618e55147f1534b5802eb0cd2f3ee51108a88fd27fb1786555e4a9"
+  },
+  "C61": {
+    "status": "inference",
+    "sources": [
+      "C28-C40",
+      "P Arms and Gates"
+    ],
+    "justification": "Motivation for a future comparison and for withholding claims. Shared-archive effect is positive for raw-example context, but playbook performance is unknown. Lean coverage failure directly motivates gating.",
+    "text_sha256": "5f74f4174daab4d9a5cef9b543ed981054b50a6b1dfc61f0cc556af27255117f"
+  },
+  "C62": {
+    "status": "inference",
+    "sources": [
+      "C37-C40",
+      "C43-C60"
+    ],
+    "justification": "Positive specificity and edited-versus-self controls support behavior change on the archive. There are no learned-playbook or guarded shared-curve outcomes. Hence the main threshold question remains open.",
+    "text_sha256": "85aaa5ae0e86dc155badda3acc3c93fcc0a46e5215e14496b7f86f5bddea37b3"
+  },
+  "C63": {
+    "status": "measured",
+    "sources": [
+      "WP training recipe",
+      "WT all manifests"
+    ],
+    "justification": "Frozen writing protocol and saved training manifests give learning_rate=0.0004, batch=4 for early datasets and 16 otherwise, epochs at least 3 and steps at least 30. This is the completed writing recipe, distinct from planned dev selection.",
+    "text_sha256": "b03b100ee9d4999140101d7621132a8430358b4523eb033ea4cc47e88b8403ed"
+  },
+  "C64": {
+    "status": "measured",
+    "sources": [
+      "WS RULES A entries 0:8"
+    ],
+    "justification": "The eight planted A rules prohibit two words and two punctuation types, require at least 90% present finite narration verbs, cap the opening at 12 words, restrict dialogue tags to say, and restrict capitalization outside sentence or quotation starts. The prose summarizes these categories; exact rules remain in WS.",
+    "text_sha256": "deed7edeb5a65bb193aa43b09d59d87e20e500139d44d76c9b857b452eb09009"
+  }
+}

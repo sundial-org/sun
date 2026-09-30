@@ -1,0 +1,73 @@
+{"event":"ready","reserved_usd":0,"time":"2026-09-29T19:17:12.037624+00:00"}
+Traceback (most recent call last):
+  File "/Users/bmo/sun-sundial-desktop/sun/experiments/rubric_boundary/run.py", line 278, in <module>
+    getattr(study,args.command)()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/bmo/sun-sundial-desktop/sun/experiments/rubric_boundary/run.py", line 183, in dev
+    results=[self.evaluate('base',kind,31,style,'dev') for style in STYLES for kind in KINDS]
+             ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/bmo/sun-sundial-desktop/sun/experiments/rubric_boundary/run.py", line 172, in evaluate
+    for r in executor.map(one,rows):
+             ~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/bmo/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/lib/python3.13/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/bmo/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/lib/python3.13/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ~~~~~~~~~~^^^^^^^^^
+  File "/Users/bmo/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/lib/python3.13/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/bmo/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/bmo/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/Users/bmo/sun-sundial-desktop/sun/experiments/rubric_boundary/run.py", line 168, in one
+    r=self.sample(messages(row,style,pool),policy)
+  File "/Users/bmo/sun-sundial-desktop/sun/experiments/rubric_boundary/run.py", line 141, in sample
+    params=self.tinker.types.SamplingParams(max_tokens=MAX_OUTPUT,temperature=0,seed=93029,stop=self.renderer.get_stop_sequences())
+                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker_cookbook/renderers/qwen3.py", line 313, in get_stop_sequences
+    return [self._end_message_token]
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker_cookbook/renderers/qwen3.py", line 303, in _end_message_token
+    tokens = self.tokenizer.encode("<|im_end|>", add_special_tokens=False)
+  File "/Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/transformers/tokenization_utils_base.py", line 2264, in encode
+    encoded_inputs = self._encode_plus(
+        text,
+    ...<8 lines>...
+        **kwargs,
+    )
+  File "/Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/transformers/tokenization_utils_tokenizers.py", line 956, in _encode_plus
+    self._tokenizer.encode_special_tokens = split_special_tokens
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Already borrowed
+{"event":"ready","reserved_usd":0.007171455,"time":"2026-09-29T19:18:15.225372+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-clean-31-concise","time":"2026-09-29T19:18:23.451485+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-clean-31-concise","time":"2026-09-29T19:18:28.538643+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.5,"item_accuracy":0.15,"name":"dev-base-clean-31-concise","proxy_exact":0.0,"recall_correct":0.44,"time":"2026-09-29T19:18:28.540185+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-scattered-31-concise","time":"2026-09-29T19:18:28.567359+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-scattered-31-concise","time":"2026-09-29T19:18:28.571889+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.5,"item_accuracy":0.15,"name":"dev-base-scattered-31-concise","proxy_exact":0.0,"recall_correct":0.44,"time":"2026-09-29T19:18:28.573925+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-systematic-31-concise","time":"2026-09-29T19:18:28.600449+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-systematic-31-concise","time":"2026-09-29T19:18:28.602597+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.5,"item_accuracy":0.15,"name":"dev-base-systematic-31-concise","proxy_exact":0.0,"recall_correct":0.44,"time":"2026-09-29T19:18:28.604276+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-clean-31-checklist","time":"2026-09-29T19:18:36.130749+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-clean-31-checklist","time":"2026-09-29T19:18:41.141068+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.9,"item_accuracy":0.24333333333333332,"name":"dev-base-clean-31-checklist","proxy_exact":0.0,"recall_correct":0.6,"time":"2026-09-29T19:18:41.142194+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-scattered-31-checklist","time":"2026-09-29T19:18:41.171238+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-scattered-31-checklist","time":"2026-09-29T19:18:41.174498+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.9,"item_accuracy":0.24333333333333332,"name":"dev-base-scattered-31-checklist","proxy_exact":0.0,"recall_correct":0.6,"time":"2026-09-29T19:18:41.175729+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-systematic-31-checklist","time":"2026-09-29T19:18:41.205199+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-systematic-31-checklist","time":"2026-09-29T19:18:41.210627+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.9,"item_accuracy":0.24333333333333332,"name":"dev-base-systematic-31-checklist","proxy_exact":0.0,"recall_correct":0.6,"time":"2026-09-29T19:18:41.214533+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-clean-31-retrieval","time":"2026-09-29T19:18:47.711507+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-clean-31-retrieval","time":"2026-09-29T19:18:53.381876+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.9,"item_accuracy":0.2333333333333333,"name":"dev-base-clean-31-retrieval","proxy_exact":0.0,"recall_correct":0.8,"time":"2026-09-29T19:18:53.383422+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-scattered-31-retrieval","time":"2026-09-29T19:18:58.653280+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-scattered-31-retrieval","time":"2026-09-29T19:19:03.614420+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.92,"item_accuracy":0.25,"name":"dev-base-scattered-31-retrieval","proxy_exact":0.0,"recall_correct":0.84,"time":"2026-09-29T19:19:03.616544+00:00"}
+{"completed":25,"event":"eval_progress","name":"dev-base-systematic-31-retrieval","time":"2026-09-29T19:19:07.402589+00:00","total":50}
+{"completed":50,"event":"eval_progress","name":"dev-base-systematic-31-retrieval","time":"2026-09-29T19:19:11.207570+00:00","total":50}
+{"event":"evaluated","exact":0.0,"format":0.88,"item_accuracy":0.22333333333333333,"name":"dev-base-systematic-31-retrieval","proxy_exact":0.0,"recall_correct":0.76,"time":"2026-09-29T19:19:11.208998+00:00"}
+{"event":"dev_selection","scores":{"checklist":0.0,"concise":0.0,"retrieval":0.0},"selected":"concise","time":"2026-09-29T19:19:11.211976+00:00"}

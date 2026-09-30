@@ -1,0 +1,70 @@
+{"event":"ready","reserved_usd":6.866399084999999,"time":"2026-09-29T20:12:51.322733+00:00"}
+{"event":"control_evaluated","exact":0.98,"name":"reasoning-base-clean-31","recall":1.0,"time":"2026-09-29T20:13:23.339477+00:00","tokens":1648.8}
+{"event":"control_evaluated","exact":0.72,"name":"reasoning-sft-clean-31-clean-31","recall":0.9,"time":"2026-09-29T20:14:04.357100+00:00","tokens":736.82}
+{"event":"control_evaluated","exact":0.98,"name":"reasoning-base-clean-73","recall":1.0,"time":"2026-09-29T20:14:04.440455+00:00","tokens":1648.8}
+{"event":"control_evaluated","exact":0.86,"name":"reasoning-sft-clean-73-clean-73","recall":1.0,"time":"2026-09-29T20:14:16.848014+00:00","tokens":659.38}
+{"event":"control_evaluated","exact":0.98,"name":"reasoning-base-clean-127","recall":1.0,"time":"2026-09-29T20:14:16.944353+00:00","tokens":1648.8}
+{"event":"control_evaluated","exact":0.66,"name":"reasoning-sft-clean-127-clean-127","recall":0.98,"time":"2026-09-29T20:14:25.927084+00:00","tokens":326.16}
+{"event":"control_evaluated","exact":0.96,"name":"reasoning-base-scattered-31","recall":1.0,"time":"2026-09-29T20:14:56.894347+00:00","tokens":1649.6}
+{"event":"control_evaluated","exact":0.0,"name":"reasoning-sft-scattered-31-scattered-31","recall":0.0,"time":"2026-09-29T20:15:02.123442+00:00","tokens":50.36}
+{"event":"control_evaluated","exact":0.98,"name":"reasoning-base-scattered-73","recall":0.98,"time":"2026-09-29T20:15:32.301205+00:00","tokens":1647.0}
+{"event":"control_evaluated","exact":0.2,"name":"reasoning-sft-scattered-73-scattered-73","recall":0.36,"time":"2026-09-29T20:15:40.325105+00:00","tokens":62.2}
+{"event":"control_evaluated","exact":1.0,"name":"reasoning-base-scattered-127","recall":1.0,"time":"2026-09-29T20:16:00.443097+00:00","tokens":1596.42}
+{"event":"control_evaluated","exact":0.68,"name":"reasoning-sft-scattered-127-scattered-127","recall":0.94,"time":"2026-09-29T20:16:35.910003+00:00","tokens":545.3}
+{"event":"control_evaluated","exact":1.0,"name":"reasoning-base-systematic-31","recall":1.0,"time":"2026-09-29T20:16:53.955193+00:00","tokens":1560.02}
+{"event":"control_evaluated","exact":0.06,"name":"reasoning-sft-systematic-31-systematic-31","recall":0.12,"time":"2026-09-29T20:17:36.142744+00:00","tokens":135.38}
+{"event":"control_evaluated","exact":1.0,"name":"reasoning-base-systematic-73","recall":1.0,"time":"2026-09-29T20:17:36.223390+00:00","tokens":1560.02}
+{"event":"control_evaluated","exact":0.54,"name":"reasoning-sft-systematic-73-systematic-73","recall":0.8,"time":"2026-09-29T20:17:40.339731+00:00","tokens":48.36}
+{"event":"control_evaluated","exact":1.0,"name":"reasoning-base-systematic-127","recall":1.0,"time":"2026-09-29T20:17:40.425221+00:00","tokens":1560.02}
+{"event":"control_evaluated","exact":0.48,"name":"reasoning-sft-systematic-127-systematic-127","recall":0.78,"time":"2026-09-29T20:17:45.511534+00:00","tokens":48.64}
+{"event":"ready","reserved_usd":8.450111985,"time":"2026-09-29T20:17:46.893893+00:00"}
+{"event":"control_evaluated","exact":0.04,"name":"region-base","recall":0.56,"time":"2026-09-29T20:17:52.186496+00:00","tokens":92.9}
+{"event":"control_evaluated","exact":0.76,"name":"region-sft-clean-31","recall":0.94,"time":"2026-09-29T20:18:00.053603+00:00","tokens":87.68}
+{"event":"control_evaluated","exact":0.74,"name":"region-sft-clean-73","recall":0.98,"time":"2026-09-29T20:18:03.125934+00:00","tokens":48.66}
+{"event":"control_evaluated","exact":0.5,"name":"region-sft-clean-127","recall":0.98,"time":"2026-09-29T20:18:06.271596+00:00","tokens":48.34}
+{"event":"control_evaluated","exact":0.34,"name":"region-sft-scattered-31","recall":0.56,"time":"2026-09-29T20:18:09.601500+00:00","tokens":48.66}
+{"event":"control_evaluated","exact":0.5,"name":"region-sft-scattered-73","recall":0.7,"time":"2026-09-29T20:18:13.918174+00:00","tokens":48.66}
+{"event":"control_evaluated","exact":0.42,"name":"region-sft-scattered-127","recall":0.66,"time":"2026-09-29T20:18:18.942673+00:00","tokens":48.66}
+{"event":"control_evaluated","exact":0.66,"name":"region-sft-systematic-31","recall":0.98,"time":"2026-09-29T20:18:22.551176+00:00","tokens":48.66}
+{"event":"control_evaluated","exact":0.0,"name":"region-sft-systematic-73","recall":0.0,"time":"2026-09-29T20:18:26.662580+00:00","tokens":45.66}
+{"event":"control_evaluated","exact":0.6,"name":"region-sft-systematic-127","recall":0.98,"time":"2026-09-29T20:18:41.722147+00:00","tokens":68.2}
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/bmo/sun-sundial-desktop/.tinker-venv/lib/python3.13/site-packages/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>

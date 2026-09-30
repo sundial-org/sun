@@ -1,0 +1,15 @@
+{
+  "batch": 16,
+  "dataset_sha": "5c3156507652a19d1d40565f83e5670cc96fc4365a163fa63058db80b7db82e5",
+  "epochs": 3,
+  "kind": "systematic",
+  "loss": "mean per example, final assistant only",
+  "lr": 0.00047,
+  "model": "Qwen/Qwen3-8B",
+  "name": "sft-systematic-31",
+  "rank": 16,
+  "seed": 31,
+  "steps": 75,
+  "training_style": "checklist",
+  "training_tokens": 515736
+}

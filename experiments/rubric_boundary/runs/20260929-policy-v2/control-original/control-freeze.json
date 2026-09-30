@@ -1,0 +1,8 @@
+{
+  "files": {
+    "CONTROL_PROTOCOL.md": "54684fe2acd6b3c509f4b878425f0406813a5666e15d4cb2604e904ad7eb4944",
+    "controls.py": "3957b9bcc4738ac45481bc5e07d8550bbf1c0069ff8c354ec0b20a16fb5ceb58",
+    "runs/20260929-policy-v2/control-inputs.json": "0e8e538e2b88db064c1528192fa38b8de818694c35ca41a8f96e4c8b38f51aaa"
+  },
+  "time": "2026-09-29T19:28:08.494962+00:00"
+}

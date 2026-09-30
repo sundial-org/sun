@@ -1,0 +1,102 @@
+{
+  "conditions": [
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.5,
+        "item_accuracy": 0.15,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.44
+      },
+      "name": "dev-base-clean-31-concise"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.5,
+        "item_accuracy": 0.15,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.44
+      },
+      "name": "dev-base-scattered-31-concise"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.5,
+        "item_accuracy": 0.15,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.44
+      },
+      "name": "dev-base-systematic-31-concise"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.9,
+        "item_accuracy": 0.24333333333333332,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.6
+      },
+      "name": "dev-base-clean-31-checklist"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.9,
+        "item_accuracy": 0.24333333333333332,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.6
+      },
+      "name": "dev-base-scattered-31-checklist"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.9,
+        "item_accuracy": 0.24333333333333332,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.6
+      },
+      "name": "dev-base-systematic-31-checklist"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.9,
+        "item_accuracy": 0.2333333333333333,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.8
+      },
+      "name": "dev-base-clean-31-retrieval"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.92,
+        "item_accuracy": 0.25,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.84
+      },
+      "name": "dev-base-scattered-31-retrieval"
+    },
+    {
+      "metrics": {
+        "exact": 0.0,
+        "format": 0.88,
+        "item_accuracy": 0.22333333333333333,
+        "proxy_exact": 0.0,
+        "recall_correct": 0.76
+      },
+      "name": "dev-base-systematic-31-retrieval"
+    }
+  ],
+  "rule": "highest mean exact; tie fewer examples then shorter prompt",
+  "scores": {
+    "checklist": 0.0,
+    "concise": 0.0,
+    "retrieval": 0.0
+  },
+  "selected": "concise",
+  "selected_dev_exact": 0.0
+}

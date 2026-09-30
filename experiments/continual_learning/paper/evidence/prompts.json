@@ -1,0 +1,2354 @@
+[
+  {
+    "anchors": [
+      "linen",
+      "medal"
+    ],
+    "genre": "literary realism",
+    "id": "dev-0000",
+    "place": "a brass foundry",
+    "premise": "Working near a brass foundry, a mosaic restorer wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.",
+    "sha256": "72cc5056c2d9a93b9bb211129afb6425e3f210c088598f2632e0a29c866c0747",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a brass foundry, a mosaic restorer wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.\nRequired words: linen, medal\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "lemon",
+      "parsley"
+    ],
+    "genre": "mystery",
+    "id": "dev-0001",
+    "place": "a brass foundry",
+    "premise": "Working near a brass foundry, a rope maker wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.",
+    "sha256": "dc5ad8ae74197e9a535c80612994b98e229ace377ec76e7057da1dce6974bc5f",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a brass foundry, a rope maker wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.\nRequired words: lemon, parsley\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "resin",
+      "marble"
+    ],
+    "genre": "fantasy",
+    "id": "dev-0002",
+    "place": "a brass foundry",
+    "premise": "Working near a brass foundry, a bridge painter wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.",
+    "sha256": "e5f7d0e4a61bd4cecac03b9c870a3c933a63a0c34ecfd7936f80307997577f22",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a brass foundry, a bridge painter wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.\nRequired words: resin, marble\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "flute",
+      "hinge"
+    ],
+    "genre": "science fiction",
+    "id": "dev-0003",
+    "place": "a brass foundry",
+    "premise": "Working near a brass foundry, a piano tuner wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.",
+    "sha256": "a26145dafb371548da6aaacd50aee4199dc1a8ca17b7ab8f38e9465a4b58b836",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a brass foundry, a piano tuner wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.\nRequired words: flute, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "flute",
+      "rake"
+    ],
+    "genre": "adventure",
+    "id": "dev-0004",
+    "place": "a brass foundry",
+    "premise": "Working near a brass foundry, a bicycle courier wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.",
+    "sha256": "3e457aaf71a2ac13f39e54b64f79bb7ac9a1c195606832da454ecc747c6530be",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a brass foundry, a bicycle courier wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.\nRequired words: flute, rake\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "slate",
+      "plum"
+    ],
+    "genre": "comedy",
+    "id": "dev-0005",
+    "place": "a brass foundry",
+    "premise": "Working near a brass foundry, a ceramic artist wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.",
+    "sha256": "9b3c40250796bcf05a455664c3e5bbccad5a14d67c3622b26fc69d587de0249a",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a brass foundry, a ceramic artist wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.\nRequired words: slate, plum\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "silk",
+      "russet"
+    ],
+    "genre": "literary realism",
+    "id": "dev-0006",
+    "place": "a windmill repair yard",
+    "premise": "Working near a windmill repair yard, a mosaic restorer wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.",
+    "sha256": "b7d913841d182b988efc4c6a8e1e6dc9b5037498c26f1f2c36e2f9ed9db186d7",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a windmill repair yard, a mosaic restorer wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.\nRequired words: silk, russet\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "parsley",
+      "hinge"
+    ],
+    "genre": "mystery",
+    "id": "dev-0007",
+    "place": "a windmill repair yard",
+    "premise": "Working near a windmill repair yard, a rope maker wants to record a sound before it vanishes. The complication: two identical parcels arrive.",
+    "sha256": "a9c64d7a656c24f75dd3c53d008acdb80f0a28e99ec812c936aec7e194b22871",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a windmill repair yard, a rope maker wants to record a sound before it vanishes. The complication: two identical parcels arrive.\nRequired words: parsley, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "elm",
+      "axle"
+    ],
+    "genre": "fantasy",
+    "id": "dev-0008",
+    "place": "a windmill repair yard",
+    "premise": "Working near a windmill repair yard, a bridge painter wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.",
+    "sha256": "54dd7612c76d50d935068639778626ec9ec964f231853c0409a6872322533658",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a windmill repair yard, a bridge painter wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.\nRequired words: elm, axle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "russet",
+      "moth"
+    ],
+    "genre": "science fiction",
+    "id": "dev-0009",
+    "place": "a windmill repair yard",
+    "premise": "Working near a windmill repair yard, a piano tuner wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.",
+    "sha256": "ff96371daef184a03b02eea19eb00e37400b2294d31f653fd0cd4d77e5a1ce6f",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a windmill repair yard, a piano tuner wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.\nRequired words: russet, moth\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "medal",
+      "parsley"
+    ],
+    "genre": "adventure",
+    "id": "dev-0010",
+    "place": "a windmill repair yard",
+    "premise": "Working near a windmill repair yard, a bicycle courier wants to record a sound before it vanishes. The complication: two identical parcels arrive.",
+    "sha256": "e7b07ff2b0403b869ce759381b42f9349ee726a956208fe526f8869176f2111e",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a windmill repair yard, a bicycle courier wants to record a sound before it vanishes. The complication: two identical parcels arrive.\nRequired words: medal, parsley\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bamboo",
+      "nutmeg"
+    ],
+    "genre": "comedy",
+    "id": "dev-0011",
+    "place": "a windmill repair yard",
+    "premise": "Working near a windmill repair yard, a ceramic artist wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.",
+    "sha256": "b3b64557fff614d1908b0d12579f84caa97fbe17ef74a3c0e635ceb9cd02c194",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a windmill repair yard, a ceramic artist wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.\nRequired words: bamboo, nutmeg\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "plum",
+      "hinge"
+    ],
+    "genre": "literary realism",
+    "id": "dev-0012",
+    "place": "a tidal power plant",
+    "premise": "Working near a tidal power plant, a mosaic restorer wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.",
+    "sha256": "16dfcdfb818f48859f1c8fa694cbc186d788cc46e140ceb612de55e7e9dca274",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a tidal power plant, a mosaic restorer wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.\nRequired words: plum, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "honey",
+      "nutmeg"
+    ],
+    "genre": "mystery",
+    "id": "dev-0013",
+    "place": "a tidal power plant",
+    "premise": "Working near a tidal power plant, a rope maker wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.",
+    "sha256": "c374cbf5a4a35bcd3e04fe861f3ab8a89c3f48fa3b16600c7e54a693cf7ce464",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a tidal power plant, a rope maker wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.\nRequired words: honey, nutmeg\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "birch",
+      "spool"
+    ],
+    "genre": "fantasy",
+    "id": "dev-0014",
+    "place": "a tidal power plant",
+    "premise": "Working near a tidal power plant, a bridge painter wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.",
+    "sha256": "c8ca5b8b1400915d82e0abae6491fe5e541b8bd9b51c4732e071183acb03c32d",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a tidal power plant, a bridge painter wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.\nRequired words: birch, spool\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "spruce",
+      "fern"
+    ],
+    "genre": "science fiction",
+    "id": "dev-0015",
+    "place": "a tidal power plant",
+    "premise": "Working near a tidal power plant, a piano tuner wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.",
+    "sha256": "ef54257e6485b4d2b6febc4384097b385356d2307f797c2b5dcc280e79c1662d",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a tidal power plant, a piano tuner wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.\nRequired words: spruce, fern\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "olive",
+      "daisy"
+    ],
+    "genre": "adventure",
+    "id": "dev-0016",
+    "place": "a tidal power plant",
+    "premise": "Working near a tidal power plant, a bicycle courier wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.",
+    "sha256": "02560b4629133952d25356f8b33b52e1a9f78d958e120541b9efbce845672577",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a tidal power plant, a bicycle courier wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.\nRequired words: olive, daisy\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "birch",
+      "russet"
+    ],
+    "genre": "comedy",
+    "id": "dev-0017",
+    "place": "a tidal power plant",
+    "premise": "Working near a tidal power plant, a ceramic artist wants to record a sound before it vanishes. The complication: two identical parcels arrive.",
+    "sha256": "674caa7313b9f0812e94a50fd8f565a931ae81375b1fe4370450ead348a9447f",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a tidal power plant, a ceramic artist wants to record a sound before it vanishes. The complication: two identical parcels arrive.\nRequired words: birch, russet\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "thimble",
+      "plum"
+    ],
+    "genre": "literary realism",
+    "id": "dev-0018",
+    "place": "a puppet workshop",
+    "premise": "Working near a puppet workshop, a mosaic restorer wants to record a sound before it vanishes. The complication: two identical parcels arrive.",
+    "sha256": "a56f20bcebe98ca081652c4f628d2a972e86a9481d5c67a60de603fd322d911d",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a puppet workshop, a mosaic restorer wants to record a sound before it vanishes. The complication: two identical parcels arrive.\nRequired words: thimble, plum\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bamboo",
+      "spool"
+    ],
+    "genre": "mystery",
+    "id": "dev-0019",
+    "place": "a puppet workshop",
+    "premise": "Working near a puppet workshop, a rope maker wants to record a sound before it vanishes. The complication: two identical parcels arrive.",
+    "sha256": "71cc494436a4b51b0c09e0daa9c8a6e80966ba46daec85c3a9bf86d070e42a10",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a puppet workshop, a rope maker wants to record a sound before it vanishes. The complication: two identical parcels arrive.\nRequired words: bamboo, spool\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jade",
+      "cricket"
+    ],
+    "genre": "fantasy",
+    "id": "dev-0020",
+    "place": "a puppet workshop",
+    "premise": "Working near a puppet workshop, a bridge painter wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.",
+    "sha256": "a51015eaf011372db6d82ba83bfa0efdbb935fb44f11778672f9af663b65b895",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a puppet workshop, a bridge painter wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.\nRequired words: jade, cricket\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "silk",
+      "tulip"
+    ],
+    "genre": "science fiction",
+    "id": "dev-0021",
+    "place": "a puppet workshop",
+    "premise": "Working near a puppet workshop, a piano tuner wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.",
+    "sha256": "9ff2784f2a65fbc32e909c0a0ff8a35e06bc64f2ecc7dcd2109e79af62b2e436",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a puppet workshop, a piano tuner wants to record a sound before it vanishes. The complication: the instructions are written on edible paper.\nRequired words: silk, tulip\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bead",
+      "nutmeg"
+    ],
+    "genre": "adventure",
+    "id": "dev-0022",
+    "place": "a puppet workshop",
+    "premise": "Working near a puppet workshop, a bicycle courier wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.",
+    "sha256": "ae77d2cab9c953ce328d3c311a557e9c2fb7ee6306191097a3af1f0b8205dc13",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a puppet workshop, a bicycle courier wants to trade an unwanted prize for a useful tool. The complication: the instructions are written on edible paper.\nRequired words: bead, nutmeg\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "oyster",
+      "honey"
+    ],
+    "genre": "comedy",
+    "id": "dev-0023",
+    "place": "a puppet workshop",
+    "premise": "Working near a puppet workshop, a ceramic artist wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.",
+    "sha256": "2e9cf3a60463ce15769545bef62ff7b71b57a6df145f2fc49cd8db9215d07e63",
+    "split": "dev",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a puppet workshop, a ceramic artist wants to trade an unwanted prize for a useful tool. The complication: two identical parcels arrive.\nRequired words: oyster, honey\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "medal",
+      "axle"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0024",
+    "place": "a silkworm nursery",
+    "premise": "Working near a silkworm nursery, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: the only witness is reluctant to speak.",
+    "sha256": "4395f79583dca7c28288a929c9dcfcd9efc611ad15a0617f1415bcca195f78fd",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a silkworm nursery, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: the only witness is reluctant to speak.\nRequired words: medal, axle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "beetle",
+      "cricket"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0025",
+    "place": "a silkworm nursery",
+    "premise": "Working near a silkworm nursery, a rope maker wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.",
+    "sha256": "64fa3a9fb1c6a1d02b7343120923c090f52fa722b5fa449214e4cc8f037f03d5",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a silkworm nursery, a rope maker wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.\nRequired words: beetle, cricket\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "plum",
+      "chalk"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0026",
+    "place": "a silkworm nursery",
+    "premise": "Working near a silkworm nursery, a bridge painter wants to rescue a keepsake from a sealed room. The complication: a temporary repair becomes permanent.",
+    "sha256": "5fa04dd1153fc7c55ef03e481f384f9566521e8c9944acf8d4c2ad3d01b78fac",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a silkworm nursery, a bridge painter wants to rescue a keepsake from a sealed room. The complication: a temporary repair becomes permanent.\nRequired words: plum, chalk\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "resin",
+      "jade"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0027",
+    "place": "a silkworm nursery",
+    "premise": "Working near a silkworm nursery, a piano tuner wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "bc8b8ebb17bfe6a0187a0c0a54cb5900e85b14a000822a8c02dc8c8bf23e39bc",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a silkworm nursery, a piano tuner wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: resin, jade\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "parsley",
+      "thyme"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0028",
+    "place": "a silkworm nursery",
+    "premise": "Working near a silkworm nursery, a bicycle courier wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.",
+    "sha256": "9eff526e999e3abdf27c8c5217a1054133b2d0a7405a04c9d30baff39daecdd1",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a silkworm nursery, a bicycle courier wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.\nRequired words: parsley, thyme\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "plum",
+      "quartz"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0029",
+    "place": "a silkworm nursery",
+    "premise": "Working near a silkworm nursery, a ceramic artist wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "896d81a5fc45234b184192a00d39a7abedd6d77cc2277a71f3a1d089ea822439",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a silkworm nursery, a ceramic artist wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: plum, quartz\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "rake",
+      "clay"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0030",
+    "place": "a canyon cable car",
+    "premise": "Working near a canyon cable car, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.",
+    "sha256": "52130d455f66216ae73607617a9f888a63f3332464ef2202484ed0a463c2861f",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a canyon cable car, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.\nRequired words: rake, clay\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "russet",
+      "tin"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0031",
+    "place": "a canyon cable car",
+    "premise": "Working near a canyon cable car, a rope maker wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.",
+    "sha256": "0a00851dc0906b2d57f5d35a8abb23cca5922efebd191392011fc18647066ecc",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a canyon cable car, a rope maker wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.\nRequired words: russet, tin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "birch",
+      "fern"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0032",
+    "place": "a canyon cable car",
+    "premise": "Working near a canyon cable car, a bridge painter wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.",
+    "sha256": "6f8dda47017b6d22e7f88704bbfb18cbec94ed44581c2be840cc921aacaac2b8",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a canyon cable car, a bridge painter wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.\nRequired words: birch, fern\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "mug",
+      "medal"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0033",
+    "place": "a canyon cable car",
+    "premise": "Working near a canyon cable car, a piano tuner wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.",
+    "sha256": "0317cd536223fff2d8983ace8f010615779b38b13b1a8f48564608e650341b12",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a canyon cable car, a piano tuner wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.\nRequired words: mug, medal\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clay",
+      "russet"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0034",
+    "place": "a canyon cable car",
+    "premise": "Working near a canyon cable car, a bicycle courier wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.",
+    "sha256": "5c66aac3978ff03d028876200db6cbcd82f5afe76b0bf2f1861194824950e971",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a canyon cable car, a bicycle courier wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.\nRequired words: clay, russet\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "gauge",
+      "bamboo"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0035",
+    "place": "a canyon cable car",
+    "premise": "Working near a canyon cable car, a ceramic artist wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.",
+    "sha256": "042c57dfd2eb608ead825acf44067a60b74275e7b8c20a58b5cde64674f2de04",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a canyon cable car, a ceramic artist wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.\nRequired words: gauge, bamboo\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "russet",
+      "cork"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0036",
+    "place": "a coral restoration raft",
+    "premise": "Working near a coral restoration raft, a mosaic restorer wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.",
+    "sha256": "accafc1d481fded727c068627fc3147ef9a549a6596934de5d880016c9bb880e",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a coral restoration raft, a mosaic restorer wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.\nRequired words: russet, cork\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "resin",
+      "silk"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0037",
+    "place": "a coral restoration raft",
+    "premise": "Working near a coral restoration raft, a rope maker wants to find a practical use for a broken machine. The complication: a curious bird steals the evidence.",
+    "sha256": "79e2eb8632d1b4c5c50631d8d0420e1ce79240f93bfb643b67a0d9d38d1d7f4a",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a coral restoration raft, a rope maker wants to find a practical use for a broken machine. The complication: a curious bird steals the evidence.\nRequired words: resin, silk\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "mug",
+      "gauge"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0038",
+    "place": "a coral restoration raft",
+    "premise": "Working near a coral restoration raft, a bridge painter wants to find a practical use for a broken machine. The complication: a curious bird steals the evidence.",
+    "sha256": "3bcb61e3ffc3016535cdb0a3b4ba080913e3d53e0aa82ae87e61ae69b834afdd",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a coral restoration raft, a bridge painter wants to find a practical use for a broken machine. The complication: a curious bird steals the evidence.\nRequired words: mug, gauge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "drum",
+      "mug"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0039",
+    "place": "a coral restoration raft",
+    "premise": "Working near a coral restoration raft, a piano tuner wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "dcba8465123896395f398acfa1ff6ebdf3279b8f5c1ba74a9ebd45d5eecf28b7",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a coral restoration raft, a piano tuner wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: drum, mug\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "slate",
+      "daisy"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0040",
+    "place": "a coral restoration raft",
+    "premise": "Working near a coral restoration raft, a bicycle courier wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.",
+    "sha256": "6999d8c08cb61616a069d17a1dd7f445ef3258c2e8adca4e39d1a38e527e9f9d",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a coral restoration raft, a bicycle courier wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.\nRequired words: slate, daisy\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clay",
+      "bamboo"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0041",
+    "place": "a coral restoration raft",
+    "premise": "Working near a coral restoration raft, a ceramic artist wants to explain a message left in wet clay. The complication: a temporary repair becomes permanent.",
+    "sha256": "42e4fac67b802e5bbfb7db69244b1ded127b7dd73fc4e8d995b329143c8fb671",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a coral restoration raft, a ceramic artist wants to explain a message left in wet clay. The complication: a temporary repair becomes permanent.\nRequired words: clay, bamboo\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bamboo",
+      "jade"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0042",
+    "place": "a derelict planetarium",
+    "premise": "Working near a derelict planetarium, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.",
+    "sha256": "940191627c19b271e0dd42190a50fc262e31825e91f59cedfe2644de2b758d33",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a derelict planetarium, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.\nRequired words: bamboo, jade\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "quartz",
+      "birch"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0043",
+    "place": "a derelict planetarium",
+    "premise": "Working near a derelict planetarium, a rope maker wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.",
+    "sha256": "6e486340caeeeba56d0c71a7dca484c19cc4405259f10c9d987629e0fa2d6de9",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a derelict planetarium, a rope maker wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.\nRequired words: quartz, birch\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "tulip",
+      "russet"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0044",
+    "place": "a derelict planetarium",
+    "premise": "Working near a derelict planetarium, a bridge painter wants to arrange a surprise for an old rival. The complication: a curious bird steals the evidence.",
+    "sha256": "7969a631b66dcc5e0745730ef0314ec782bb6038402f78313315b201e4843377",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a derelict planetarium, a bridge painter wants to arrange a surprise for an old rival. The complication: a curious bird steals the evidence.\nRequired words: tulip, russet\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jasper",
+      "clasp"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0045",
+    "place": "a derelict planetarium",
+    "premise": "Working near a derelict planetarium, a piano tuner wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.",
+    "sha256": "2de6abfe51846b11fc28013ac866e7a44d3a0e822381aab0b12e819959ff0e01",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a derelict planetarium, a piano tuner wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.\nRequired words: jasper, clasp\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "hinge",
+      "gauge"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0046",
+    "place": "a derelict planetarium",
+    "premise": "Working near a derelict planetarium, a bicycle courier wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.",
+    "sha256": "8010f00150108e7491cb0ebea7ddac7b21ccbe53f504d889fc839550a694a535",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a derelict planetarium, a bicycle courier wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.\nRequired words: hinge, gauge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "silk",
+      "clay"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0047",
+    "place": "a derelict planetarium",
+    "premise": "Working near a derelict planetarium, a ceramic artist wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.",
+    "sha256": "e2eacf103675bd612cfa52b3da803b4625cc5c80eb5ab6caa8cb20ac6bec06ed",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a derelict planetarium, a ceramic artist wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.\nRequired words: silk, clay\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cactus",
+      "axle"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0048",
+    "place": "a noodle factory",
+    "premise": "Working near a noodle factory, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: the only witness is reluctant to speak.",
+    "sha256": "b4b31adbdf37bf05e6cb276d93d1d067f3ba7c335093c9295637002eb9815598",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a noodle factory, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: the only witness is reluctant to speak.\nRequired words: cactus, axle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cricket",
+      "apron"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0049",
+    "place": "a noodle factory",
+    "premise": "Working near a noodle factory, a rope maker wants to explain a message left in wet clay. The complication: a temporary repair becomes permanent.",
+    "sha256": "24f0d01c55c5e2ca461549df362e134a1574b158c5cee3fc988eb734920134ff",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a noodle factory, a rope maker wants to explain a message left in wet clay. The complication: a temporary repair becomes permanent.\nRequired words: cricket, apron\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cricket",
+      "axle"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0050",
+    "place": "a noodle factory",
+    "premise": "Working near a noodle factory, a bridge painter wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.",
+    "sha256": "27ae76af15d326d7994908043adc3cdf918fbed0b29b87e5c4b0cdbba9ca60e2",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a noodle factory, a bridge painter wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.\nRequired words: cricket, axle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "mug",
+      "bead"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0051",
+    "place": "a noodle factory",
+    "premise": "Working near a noodle factory, a piano tuner wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.",
+    "sha256": "3a0e7d68a7015f304e25b8a9ab341340dc20916622788a88ef59cb6155037858",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a noodle factory, a piano tuner wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.\nRequired words: mug, bead\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bead",
+      "clasp"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0052",
+    "place": "a noodle factory",
+    "premise": "Working near a noodle factory, a bicycle courier wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.",
+    "sha256": "f2d137419b5fd58b1160d7aa97981bcd121b720aeed61c8939797567cff5bb00",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a noodle factory, a bicycle courier wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.\nRequired words: bead, clasp\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "tulip",
+      "opal"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0053",
+    "place": "a noodle factory",
+    "premise": "Working near a noodle factory, a ceramic artist wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.",
+    "sha256": "4eb7f965ddc007df7459c24573c5b507e145391fe0b2d84d03c9037182f82684",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a noodle factory, a ceramic artist wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.\nRequired words: tulip, opal\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bead",
+      "plum"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0054",
+    "place": "a hillside pottery kiln",
+    "premise": "Working near a hillside pottery kiln, a mosaic restorer wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.",
+    "sha256": "ba54cf082a71d0e5805534b738290b66a66b6e25c976086c2e939d8ee3c51bf9",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a hillside pottery kiln, a mosaic restorer wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.\nRequired words: bead, plum\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jade",
+      "nutmeg"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0055",
+    "place": "a hillside pottery kiln",
+    "premise": "Working near a hillside pottery kiln, a rope maker wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.",
+    "sha256": "7df7f4cd15ab7970edf3e25ab64a523fa1a87b7e95c7103e277c280ac1841b69",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a hillside pottery kiln, a rope maker wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.\nRequired words: jade, nutmeg\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "millet",
+      "cactus"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0056",
+    "place": "a hillside pottery kiln",
+    "premise": "Working near a hillside pottery kiln, a bridge painter wants to find a practical use for a broken machine. The complication: a temporary repair becomes permanent.",
+    "sha256": "ff2dfbab6fbf56ab3ad2a74b5e6cb9c2cad63ec312ba122040c6af4e8b3102b7",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a hillside pottery kiln, a bridge painter wants to find a practical use for a broken machine. The complication: a temporary repair becomes permanent.\nRequired words: millet, cactus\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "parsley",
+      "olive"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0057",
+    "place": "a hillside pottery kiln",
+    "premise": "Working near a hillside pottery kiln, a piano tuner wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "6ffd4f3ac5fea3a8ffb9de08d7e0168d52ab3a39cd1bf65957710e8a09c09a5f",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a hillside pottery kiln, a piano tuner wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: parsley, olive\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "rake",
+      "marble"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0058",
+    "place": "a hillside pottery kiln",
+    "premise": "Working near a hillside pottery kiln, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: every visitor claims a different owner.",
+    "sha256": "92a405571fd9a12f79c88c7e46b1c0866888a825a2ab97e1fe6c62d0aff1a742",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a hillside pottery kiln, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: every visitor claims a different owner.\nRequired words: rake, marble\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jasper",
+      "russet"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0059",
+    "place": "a hillside pottery kiln",
+    "premise": "Working near a hillside pottery kiln, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.",
+    "sha256": "1910984f208d2a445282ae9a2ee76ae5daad6b2ba439453e7952f54b1cc8065b",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a hillside pottery kiln, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.\nRequired words: jasper, russet\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "honey",
+      "lemon"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0060",
+    "place": "a glacier survey camp",
+    "premise": "Working near a glacier survey camp, a mosaic restorer wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.",
+    "sha256": "020882100193342bd969ef67fd6ccc3a16cfc559547205ae37466542d308f8ab",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a glacier survey camp, a mosaic restorer wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.\nRequired words: honey, lemon\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "drum",
+      "clasp"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0061",
+    "place": "a glacier survey camp",
+    "premise": "Working near a glacier survey camp, a rope maker wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.",
+    "sha256": "e89032f7887cd8ab89dd8009bca3ae9f3e978419b3268d148384599ccec9654f",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a glacier survey camp, a rope maker wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.\nRequired words: drum, clasp\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "axle",
+      "frost"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0062",
+    "place": "a glacier survey camp",
+    "premise": "Working near a glacier survey camp, a bridge painter wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "3de9162dc98ab4286c521b8e7476687b1175523f1fc6856a89539b3e71b9be65",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a glacier survey camp, a bridge painter wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: axle, frost\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "daisy",
+      "clay"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0063",
+    "place": "a glacier survey camp",
+    "premise": "Working near a glacier survey camp, a piano tuner wants to explain a message left in wet clay. The complication: every visitor claims a different owner.",
+    "sha256": "95bb27481db3eca6503e83c0ffef587512823f30efd3d3ced9cbb7ef2e718e2d",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a glacier survey camp, a piano tuner wants to explain a message left in wet clay. The complication: every visitor claims a different owner.\nRequired words: daisy, clay\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "medal",
+      "clay"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0064",
+    "place": "a glacier survey camp",
+    "premise": "Working near a glacier survey camp, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.",
+    "sha256": "32659b77fee779821f0b19a8f8295f3b1a4546339490dbbf1082ca36f95b9f9d",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a glacier survey camp, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.\nRequired words: medal, clay\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "wax",
+      "gauge"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0065",
+    "place": "a glacier survey camp",
+    "premise": "Working near a glacier survey camp, a ceramic artist wants to arrange a surprise for an old rival. The complication: the smallest object carries the crucial clue.",
+    "sha256": "0b9a029d25624e99fb136df47e4f1bd478adecaaddad228726dc8002fdc3fdec",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a glacier survey camp, a ceramic artist wants to arrange a surprise for an old rival. The complication: the smallest object carries the crucial clue.\nRequired words: wax, gauge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "moth",
+      "slate"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0066",
+    "place": "a public seed vault",
+    "premise": "Working near a public seed vault, a mosaic restorer wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.",
+    "sha256": "5ebe90e1d0eff3d2e16c962180eff20e78bbd93a9bf74d4e43834fd958726455",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a public seed vault, a mosaic restorer wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.\nRequired words: moth, slate\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bead",
+      "rake"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0067",
+    "place": "a public seed vault",
+    "premise": "Working near a public seed vault, a rope maker wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.",
+    "sha256": "37d273c72f09537d25008169b44dcacd8f993fe010aadb289c333ce4fdea5cbd",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a public seed vault, a rope maker wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.\nRequired words: bead, rake\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "drum",
+      "quartz"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0068",
+    "place": "a public seed vault",
+    "premise": "Working near a public seed vault, a bridge painter wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.",
+    "sha256": "89e000809b318e40217a9dd14ac2aaf28e9b04e7ba97fb9b4438c0c8dbe2c4e0",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a public seed vault, a bridge painter wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.\nRequired words: drum, quartz\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "nutmeg",
+      "marble"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0069",
+    "place": "a public seed vault",
+    "premise": "Working near a public seed vault, a piano tuner wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.",
+    "sha256": "f360c9fa853e9f7fcd1c40efb007b70f22d98518643eb8f36e70860931a8e5d3",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a public seed vault, a piano tuner wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.\nRequired words: nutmeg, marble\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "basin",
+      "bead"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0070",
+    "place": "a public seed vault",
+    "premise": "Working near a public seed vault, a bicycle courier wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.",
+    "sha256": "ad43a04de676a2e806f22197efe629a0f21158319aba5753acfed65adbbaee48",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a public seed vault, a bicycle courier wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.\nRequired words: basin, bead\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "plum",
+      "tin"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0071",
+    "place": "a public seed vault",
+    "premise": "Working near a public seed vault, a ceramic artist wants to reunite two strangers who share a skill. The complication: every visitor claims a different owner.",
+    "sha256": "4683cc656e552125043a003ecadab2d182ca0eb9edf15312a2bae2a61c1abb22",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a public seed vault, a ceramic artist wants to reunite two strangers who share a skill. The complication: every visitor claims a different owner.\nRequired words: plum, tin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "spool",
+      "hinge"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0072",
+    "place": "a paper recycling depot",
+    "premise": "Working near a paper recycling depot, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.",
+    "sha256": "08a330ad7b0ea5d3c1f8a77cb46b21dd08837e22f233fa509e5fdf0689d79352",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a paper recycling depot, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.\nRequired words: spool, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cork",
+      "bead"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0073",
+    "place": "a paper recycling depot",
+    "premise": "Working near a paper recycling depot, a rope maker wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "153fd368604325410982181ef2431727e8c2609bc379a6bb3917c2c016f2613e",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a paper recycling depot, a rope maker wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: cork, bead\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "beetle",
+      "bead"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0074",
+    "place": "a paper recycling depot",
+    "premise": "Working near a paper recycling depot, a bridge painter wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.",
+    "sha256": "a104575ce4b86fcdd4d5fdbd4141c8ee1d6fd0ac57f9ed06846fd7e07057021d",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a paper recycling depot, a bridge painter wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.\nRequired words: beetle, bead\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "velvet",
+      "daisy"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0075",
+    "place": "a paper recycling depot",
+    "premise": "Working near a paper recycling depot, a piano tuner wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.",
+    "sha256": "b6c3788f3e82bc54c1461304af8fa5774be7bf9747a42e98644b2b41101429ec",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a paper recycling depot, a piano tuner wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.\nRequired words: velvet, daisy\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "linen",
+      "elm"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0076",
+    "place": "a paper recycling depot",
+    "premise": "Working near a paper recycling depot, a bicycle courier wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.",
+    "sha256": "f9e75a146a6ff10923eda5259260f38b0b0a69abbbf7243e5e0aae6735fa4eb2",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a paper recycling depot, a bicycle courier wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.\nRequired words: linen, elm\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "olive",
+      "fern"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0077",
+    "place": "a paper recycling depot",
+    "premise": "Working near a paper recycling depot, a ceramic artist wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "66de866f0389878e662e90c32a4ae0e5881ad6e1634e1bff7835334f04fa0ce3",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a paper recycling depot, a ceramic artist wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: olive, fern\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "silk",
+      "jasper"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0078",
+    "place": "a subterranean concert hall",
+    "premise": "Working near a subterranean concert hall, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.",
+    "sha256": "17960773321f3f91ea1e252fbc68ac6cc703ab07f0eca643dd7dd8a87098b1da",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a subterranean concert hall, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.\nRequired words: silk, jasper\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "slate",
+      "linen"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0079",
+    "place": "a subterranean concert hall",
+    "premise": "Working near a subterranean concert hall, a rope maker wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.",
+    "sha256": "e75737e95a8ede0d31e31b9e7a8b19194c49cf26fe0a84c23d88e586cf15e8d8",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a subterranean concert hall, a rope maker wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.\nRequired words: slate, linen\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "oyster",
+      "flute"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0080",
+    "place": "a subterranean concert hall",
+    "premise": "Working near a subterranean concert hall, a bridge painter wants to resolve a disagreement about a tiny drawing. The complication: every visitor claims a different owner.",
+    "sha256": "f3719977c2a76064372565c3816bfbed0a6d1f4d0be7026e8cd001bf8d5e1026",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a subterranean concert hall, a bridge painter wants to resolve a disagreement about a tiny drawing. The complication: every visitor claims a different owner.\nRequired words: oyster, flute\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "basin",
+      "saddle"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0081",
+    "place": "a subterranean concert hall",
+    "premise": "Working near a subterranean concert hall, a piano tuner wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "cf6555e5bb90895bfaabe67b5afeeb6a39d474da5a5851a775dd459ae0222aa4",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a subterranean concert hall, a piano tuner wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: basin, saddle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "gauge",
+      "elm"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0082",
+    "place": "a subterranean concert hall",
+    "premise": "Working near a subterranean concert hall, a bicycle courier wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.",
+    "sha256": "452fc6f02a2b17e4ed5210fd4fa8356778a3a35e0876eead6fcae70a39c8b3b3",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a subterranean concert hall, a bicycle courier wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.\nRequired words: gauge, elm\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jade",
+      "hinge"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0083",
+    "place": "a subterranean concert hall",
+    "premise": "Working near a subterranean concert hall, a ceramic artist wants to explain a message left in wet clay. The complication: every visitor claims a different owner.",
+    "sha256": "2f511d66aed12d3b9b501cc61282bfd4d3dee23a324dfa20b8122fefd6eb4fff",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a subterranean concert hall, a ceramic artist wants to explain a message left in wet clay. The complication: every visitor claims a different owner.\nRequired words: jade, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "gauge",
+      "saddle"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0084",
+    "place": "a bat sanctuary",
+    "premise": "Working near a bat sanctuary, a mosaic restorer wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.",
+    "sha256": "c07c69dc42f9f7befe42ab433df6ae9234a68a5b134b9f1f0827806d3d855a33",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a bat sanctuary, a mosaic restorer wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.\nRequired words: gauge, saddle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "flute",
+      "silk"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0085",
+    "place": "a bat sanctuary",
+    "premise": "Working near a bat sanctuary, a rope maker wants to explain a message left in wet clay. The complication: an unexpected festival blocks the exit.",
+    "sha256": "60feea8aadb0018baa03c00013629dbe5b64a0c387204b96870f5e6743d2d0d5",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a bat sanctuary, a rope maker wants to explain a message left in wet clay. The complication: an unexpected festival blocks the exit.\nRequired words: flute, silk\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "slate",
+      "russet"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0086",
+    "place": "a bat sanctuary",
+    "premise": "Working near a bat sanctuary, a bridge painter wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.",
+    "sha256": "11f0de228b92794b5edf358a967d2bfed07a7f4343f04217aef8a774361a9074",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a bat sanctuary, a bridge painter wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.\nRequired words: slate, russet\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "nutmeg",
+      "axle"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0087",
+    "place": "a bat sanctuary",
+    "premise": "Working near a bat sanctuary, a piano tuner wants to resolve a disagreement about a tiny drawing. The complication: every visitor claims a different owner.",
+    "sha256": "41d682da6c62761e312b1f78abac46b0f1cb6a244925155df80931821182b53f",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a bat sanctuary, a piano tuner wants to resolve a disagreement about a tiny drawing. The complication: every visitor claims a different owner.\nRequired words: nutmeg, axle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "oyster",
+      "slate"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0088",
+    "place": "a bat sanctuary",
+    "premise": "Working near a bat sanctuary, a bicycle courier wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.",
+    "sha256": "adb71bcb6bb5ddcd3cab116d12f3f3221b780306b2b115adb87e731191cec60b",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a bat sanctuary, a bicycle courier wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.\nRequired words: oyster, slate\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "opal",
+      "jasper"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0089",
+    "place": "a bat sanctuary",
+    "premise": "Working near a bat sanctuary, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.",
+    "sha256": "25f52921a4f5921e314138d667aa68feb57ee71892f12191c228ba59322f377d",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a bat sanctuary, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.\nRequired words: opal, jasper\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "birch",
+      "frost"
+    ],
+    "genre": "literary realism",
+    "id": "heldout-0090",
+    "place": "a solar furnace",
+    "premise": "Working near a solar furnace, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "c28d8e53b42935a04ce1aee92df3c97278afa3a70172834d46220b5cee0827b4",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: literary realism\nPremise: Working near a solar furnace, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: birch, frost\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clasp",
+      "marble"
+    ],
+    "genre": "mystery",
+    "id": "heldout-0091",
+    "place": "a solar furnace",
+    "premise": "Working near a solar furnace, a rope maker wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "c4dc7ffde6e55f949479e8c229a5a2df3fb3fda9d848690b5dcdf0bd3fa05b2b",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: mystery\nPremise: Working near a solar furnace, a rope maker wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: clasp, marble\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "beetle",
+      "slate"
+    ],
+    "genre": "fantasy",
+    "id": "heldout-0092",
+    "place": "a solar furnace",
+    "premise": "Working near a solar furnace, a bridge painter wants to arrange a surprise for an old rival. The complication: the smallest object carries the crucial clue.",
+    "sha256": "2c8a6f8b38bb30463c17236b64be2baa13bde402dd1cd25ce49b340376248c19",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: fantasy\nPremise: Working near a solar furnace, a bridge painter wants to arrange a surprise for an old rival. The complication: the smallest object carries the crucial clue.\nRequired words: beetle, slate\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clasp",
+      "hinge"
+    ],
+    "genre": "science fiction",
+    "id": "heldout-0093",
+    "place": "a solar furnace",
+    "premise": "Working near a solar furnace, a piano tuner wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.",
+    "sha256": "020d8757f0ffbac46b02eaf94adc8864c914f852d439b16ebefe62663832fe18",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: science fiction\nPremise: Working near a solar furnace, a piano tuner wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.\nRequired words: clasp, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "parsley",
+      "frost"
+    ],
+    "genre": "adventure",
+    "id": "heldout-0094",
+    "place": "a solar furnace",
+    "premise": "Working near a solar furnace, a bicycle courier wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.",
+    "sha256": "edd822ae1f186c946f88a1353b2d4b7e15e17e4f33dee20fe4497f59d64937ff",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: adventure\nPremise: Working near a solar furnace, a bicycle courier wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.\nRequired words: parsley, frost\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cork",
+      "bamboo"
+    ],
+    "genre": "comedy",
+    "id": "heldout-0095",
+    "place": "a solar furnace",
+    "premise": "Working near a solar furnace, a ceramic artist wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "6dfda1c20757caf1894f8efa0b76663ed5838519f659b5843baf999e928228f6",
+    "split": "heldout",
+    "stratum": "familiar",
+    "text": "Genre: comedy\nPremise: Working near a solar furnace, a ceramic artist wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: cork, bamboo\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "thimble",
+      "rake"
+    ],
+    "genre": "fable",
+    "id": "heldout-0096",
+    "place": "a lock gate control room",
+    "premise": "Working near a lock gate control room, a mosaic restorer wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.",
+    "sha256": "db341d648fb0d3ca05493d2f398e4e074b642120adb458b62d0f0665372f8798",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a lock gate control room, a mosaic restorer wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.\nRequired words: thimble, rake\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "spool",
+      "clay"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0097",
+    "place": "a lock gate control room",
+    "premise": "Working near a lock gate control room, a rope maker wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.",
+    "sha256": "1b89c3d9e06c65338beefb43bb64dc301d863c9fb6568f51a483efd76acd214d",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a lock gate control room, a rope maker wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.\nRequired words: spool, clay\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "hinge",
+      "drum"
+    ],
+    "genre": "fable",
+    "id": "heldout-0098",
+    "place": "a lock gate control room",
+    "premise": "Working near a lock gate control room, a bridge painter wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.",
+    "sha256": "17e51862e0fd7425c4ac3df06a5b29c6940f80ff67de5fdf3b7de3602f2c0850",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a lock gate control room, a bridge painter wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.\nRequired words: hinge, drum\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "spruce",
+      "marble"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0099",
+    "place": "a lock gate control room",
+    "premise": "Working near a lock gate control room, a piano tuner wants to rescue a keepsake from a sealed room. The complication: a temporary repair becomes permanent.",
+    "sha256": "c6f734efa168ce09c3287ccaf4e93768af4df698af4cb0769690cef5745aa89f",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a lock gate control room, a piano tuner wants to rescue a keepsake from a sealed room. The complication: a temporary repair becomes permanent.\nRequired words: spruce, marble\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "buckle",
+      "gauge"
+    ],
+    "genre": "fable",
+    "id": "heldout-0100",
+    "place": "a lock gate control room",
+    "premise": "Working near a lock gate control room, a bicycle courier wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "24c873b09429a6e21afebd1b2af1ea960cc0c35b8710d405d12237535ee386a6",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a lock gate control room, a bicycle courier wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: buckle, gauge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jade",
+      "daisy"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0101",
+    "place": "a lock gate control room",
+    "premise": "Working near a lock gate control room, a ceramic artist wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.",
+    "sha256": "ede1fca4facd767392b4d21eda32655688c49b4987ef993d67a9a6e0615e6fff",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a lock gate control room, a ceramic artist wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.\nRequired words: jade, daisy\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "hinge",
+      "oyster"
+    ],
+    "genre": "fable",
+    "id": "heldout-0102",
+    "place": "a cheese aging cellar",
+    "premise": "Working near a cheese aging cellar, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.",
+    "sha256": "22453d0cf8b42b8c532867705dc083fdcede7856a7cde2b58a950d9b1ea64931",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a cheese aging cellar, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: an unexpected festival blocks the exit.\nRequired words: hinge, oyster\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cork",
+      "resin"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0103",
+    "place": "a cheese aging cellar",
+    "premise": "Working near a cheese aging cellar, a rope maker wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.",
+    "sha256": "07dcfe1862a2684a0b0bbf2c7a83e612dce637d5e76126132cd6ef0f9cf080be",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a cheese aging cellar, a rope maker wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.\nRequired words: cork, resin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cork",
+      "spool"
+    ],
+    "genre": "fable",
+    "id": "heldout-0104",
+    "place": "a cheese aging cellar",
+    "premise": "Working near a cheese aging cellar, a bridge painter wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.",
+    "sha256": "f5c59f08d830626783299c76a958158670dc58d633e69b066e802825a3c58690",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a cheese aging cellar, a bridge painter wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.\nRequired words: cork, spool\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "basin",
+      "opal"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0105",
+    "place": "a cheese aging cellar",
+    "premise": "Working near a cheese aging cellar, a piano tuner wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.",
+    "sha256": "ebb315550dc45e1dfe9697bbf58fd54f21b33af143f05c05132dbe29d05647e1",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a cheese aging cellar, a piano tuner wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.\nRequired words: basin, opal\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "opal",
+      "honey"
+    ],
+    "genre": "fable",
+    "id": "heldout-0106",
+    "place": "a cheese aging cellar",
+    "premise": "Working near a cheese aging cellar, a bicycle courier wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.",
+    "sha256": "f1443d0180c81881272efff0f3f18c309078adc489d81dc54fe46c22933a9768",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a cheese aging cellar, a bicycle courier wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.\nRequired words: opal, honey\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "frost",
+      "moth"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0107",
+    "place": "a cheese aging cellar",
+    "premise": "Working near a cheese aging cellar, a ceramic artist wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.",
+    "sha256": "49844f1e8b65cca6464a44f25ddbd5db7d1e56f6eb7fafd58be03e98bb645c51",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a cheese aging cellar, a ceramic artist wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.\nRequired words: frost, moth\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "nutmeg",
+      "gauge"
+    ],
+    "genre": "fable",
+    "id": "heldout-0108",
+    "place": "a hot spring laundry",
+    "premise": "Working near a hot spring laundry, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "9d2fb251abae6bd8fcbb3a1d2de2fdcd196eed3eb259c2a9b86df7dd9a9dbce1",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a hot spring laundry, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: nutmeg, gauge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "russet",
+      "rake"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0109",
+    "place": "a hot spring laundry",
+    "premise": "Working near a hot spring laundry, a rope maker wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "c197ed5d4e87b07c17b73f9ad08bbeddc9c842175a610054917527066752492c",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a hot spring laundry, a rope maker wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: russet, rake\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "mug",
+      "wax"
+    ],
+    "genre": "fable",
+    "id": "heldout-0110",
+    "place": "a hot spring laundry",
+    "premise": "Working near a hot spring laundry, a bridge painter wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "2f75d25164a1177124c90594127758553d84c84c87e8c43ff2aaa413bcb31615",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a hot spring laundry, a bridge painter wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: mug, wax\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "basin",
+      "rake"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0111",
+    "place": "a hot spring laundry",
+    "premise": "Working near a hot spring laundry, a piano tuner wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.",
+    "sha256": "876b6f8ebefcd759b45eeaa9be0f529c952c5550610c0cc5d4d22b95c11df648",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a hot spring laundry, a piano tuner wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.\nRequired words: basin, rake\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "crane",
+      "buckle"
+    ],
+    "genre": "fable",
+    "id": "heldout-0112",
+    "place": "a hot spring laundry",
+    "premise": "Working near a hot spring laundry, a bicycle courier wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.",
+    "sha256": "508f29bacef2976063f80451974bf372f70d243e76b5ab7453780b03e7d094f3",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a hot spring laundry, a bicycle courier wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.\nRequired words: crane, buckle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "medal",
+      "crane"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0113",
+    "place": "a hot spring laundry",
+    "premise": "Working near a hot spring laundry, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a temporary repair becomes permanent.",
+    "sha256": "d02a62f437e301c4a74fb4f1d571403536be3f07758fcd55c90e62afe8aaeb6e",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a hot spring laundry, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a temporary repair becomes permanent.\nRequired words: medal, crane\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "silk",
+      "cork"
+    ],
+    "genre": "fable",
+    "id": "heldout-0114",
+    "place": "a tram restoration shed",
+    "premise": "Working near a tram restoration shed, a mosaic restorer wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.",
+    "sha256": "fd7d393fd8af02b0205662af93b058807393b9a813cc8e111c93ea36f86594e4",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a tram restoration shed, a mosaic restorer wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.\nRequired words: silk, cork\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cork",
+      "plum"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0115",
+    "place": "a tram restoration shed",
+    "premise": "Working near a tram restoration shed, a rope maker wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "d45e641619a23d1d8c1767997be70c45551142d87e2d4eaf5bffbc51f12b0b24",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a tram restoration shed, a rope maker wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: cork, plum\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "honey",
+      "bamboo"
+    ],
+    "genre": "fable",
+    "id": "heldout-0116",
+    "place": "a tram restoration shed",
+    "premise": "Working near a tram restoration shed, a bridge painter wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.",
+    "sha256": "b4e875130278bcbf713de966950168538e8d1c9ed1a21ff89ce88c8dea3bd076",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a tram restoration shed, a bridge painter wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.\nRequired words: honey, bamboo\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "frost",
+      "cactus"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0117",
+    "place": "a tram restoration shed",
+    "premise": "Working near a tram restoration shed, a piano tuner wants to reunite two strangers who share a skill. The complication: every visitor claims a different owner.",
+    "sha256": "304ddbc08c12fe1cb835626a0bfac1ac6a19d15e5f48a7f332509a6bb098ce26",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a tram restoration shed, a piano tuner wants to reunite two strangers who share a skill. The complication: every visitor claims a different owner.\nRequired words: frost, cactus\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "beetle",
+      "cactus"
+    ],
+    "genre": "fable",
+    "id": "heldout-0118",
+    "place": "a tram restoration shed",
+    "premise": "Working near a tram restoration shed, a bicycle courier wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.",
+    "sha256": "27151b78eaead29a0cbe75dcde4c4b2d18994c58e7281790d6814394c17050e7",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a tram restoration shed, a bicycle courier wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.\nRequired words: beetle, cactus\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "fern",
+      "hinge"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0119",
+    "place": "a tram restoration shed",
+    "premise": "Working near a tram restoration shed, a ceramic artist wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "0cec7c6d668c24aed6c6d56ba36a57500e75415a7ed863d71a31fad7b5de7a54",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a tram restoration shed, a ceramic artist wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: fern, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "silk",
+      "drum"
+    ],
+    "genre": "fable",
+    "id": "heldout-0120",
+    "place": "a violin varnish laboratory",
+    "premise": "Working near a violin varnish laboratory, a mosaic restorer wants to explain a message left in wet clay. The complication: every visitor claims a different owner.",
+    "sha256": "cd74cd1487f3ce9ff4816bca8457f3c041c0c7cfd358c48260ee43a4ab18f3bf",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a violin varnish laboratory, a mosaic restorer wants to explain a message left in wet clay. The complication: every visitor claims a different owner.\nRequired words: silk, drum\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "honey",
+      "tin"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0121",
+    "place": "a violin varnish laboratory",
+    "premise": "Working near a violin varnish laboratory, a rope maker wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.",
+    "sha256": "afa0d8a5a656cdae5c6bf5bfa05df5c6e0765e0291638c1c824f4e6d25229641",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a violin varnish laboratory, a rope maker wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.\nRequired words: honey, tin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "millet",
+      "lemon"
+    ],
+    "genre": "fable",
+    "id": "heldout-0122",
+    "place": "a violin varnish laboratory",
+    "premise": "Working near a violin varnish laboratory, a bridge painter wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.",
+    "sha256": "b40bb2232ce8bc4e490acda1bb1fbc52f49566ac0407ad882d9c2f3446fac0b0",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a violin varnish laboratory, a bridge painter wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.\nRequired words: millet, lemon\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jade",
+      "thyme"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0123",
+    "place": "a violin varnish laboratory",
+    "premise": "Working near a violin varnish laboratory, a piano tuner wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.",
+    "sha256": "8a03d7d64c53a0e19ea8dede7aedb4720e3c5eaf8551f8fdd931064eb52adb86",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a violin varnish laboratory, a piano tuner wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.\nRequired words: jade, thyme\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "jasper",
+      "axle"
+    ],
+    "genre": "fable",
+    "id": "heldout-0124",
+    "place": "a violin varnish laboratory",
+    "premise": "Working near a violin varnish laboratory, a bicycle courier wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.",
+    "sha256": "e8f44d2ef9b1a386435dd9d347410ec00b5d8a2b987636c62e23adb7d2ea8eab",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a violin varnish laboratory, a bicycle courier wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.\nRequired words: jasper, axle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "elm",
+      "silk"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0125",
+    "place": "a violin varnish laboratory",
+    "premise": "Working near a violin varnish laboratory, a ceramic artist wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.",
+    "sha256": "a0c7f5d30df1aaad1a90171e252ad2597acf18b335f95b7022cd4f208e1a647e",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a violin varnish laboratory, a ceramic artist wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.\nRequired words: elm, silk\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "thimble",
+      "oyster"
+    ],
+    "genre": "fable",
+    "id": "heldout-0126",
+    "place": "a rooftop snail farm",
+    "premise": "Working near a rooftop snail farm, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.",
+    "sha256": "77911a53215ef01963d4f4546baf577971626830db02010253df446836f457a2",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a rooftop snail farm, a mosaic restorer wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.\nRequired words: thimble, oyster\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "beetle",
+      "marble"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0127",
+    "place": "a rooftop snail farm",
+    "premise": "Working near a rooftop snail farm, a rope maker wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.",
+    "sha256": "dc007434087eeefd3210704305a9a3ede25e3390ef519d08d96771cc00b2005c",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a rooftop snail farm, a rope maker wants to find a practical use for a broken machine. The complication: an unexpected festival blocks the exit.\nRequired words: beetle, marble\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "gauge",
+      "slate"
+    ],
+    "genre": "fable",
+    "id": "heldout-0128",
+    "place": "a rooftop snail farm",
+    "premise": "Working near a rooftop snail farm, a bridge painter wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.",
+    "sha256": "415ab541614c2bf88d456967f3faaa28a2cbfc9a11a049949796fb96d4e9104d",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a rooftop snail farm, a bridge painter wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.\nRequired words: gauge, slate\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "hinge",
+      "opal"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0129",
+    "place": "a rooftop snail farm",
+    "premise": "Working near a rooftop snail farm, a piano tuner wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "524364f5ae4989439eb15a9b51db802c9baae01076e833180ce656c0b8fe6e8d",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a rooftop snail farm, a piano tuner wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: hinge, opal\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "apron",
+      "chalk"
+    ],
+    "genre": "fable",
+    "id": "heldout-0130",
+    "place": "a rooftop snail farm",
+    "premise": "Working near a rooftop snail farm, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: a temporary repair becomes permanent.",
+    "sha256": "3a9e8cfd42416b73cc81b80238d845896cba77b0ca9f1cc42f0fde5a249de154",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a rooftop snail farm, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: a temporary repair becomes permanent.\nRequired words: apron, chalk\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clay",
+      "clasp"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0131",
+    "place": "a rooftop snail farm",
+    "premise": "Working near a rooftop snail farm, a ceramic artist wants to explain a message left in wet clay. The complication: every visitor claims a different owner.",
+    "sha256": "96cd81b260825a3be1f64bdfac781da285b519276dcd89a7a9e3f48103ed471a",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a rooftop snail farm, a ceramic artist wants to explain a message left in wet clay. The complication: every visitor claims a different owner.\nRequired words: clay, clasp\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "bamboo",
+      "lemon"
+    ],
+    "genre": "fable",
+    "id": "heldout-0132",
+    "place": "a community weaving room",
+    "premise": "Working near a community weaving room, a mosaic restorer wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.",
+    "sha256": "23ee864b0f54baedf9065274beeaf10883a6f5e221b8d4bf3f891a112314008c",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a community weaving room, a mosaic restorer wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.\nRequired words: bamboo, lemon\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "nutmeg",
+      "cork"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0133",
+    "place": "a community weaving room",
+    "premise": "Working near a community weaving room, a rope maker wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.",
+    "sha256": "f0c2685b3f1d51e92cb5fc23d3528239f9240c9ca3fc8a25bf02d112fad03f36",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a community weaving room, a rope maker wants to explain a message left in wet clay. The complication: the only witness is reluctant to speak.\nRequired words: nutmeg, cork\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "resin",
+      "apron"
+    ],
+    "genre": "fable",
+    "id": "heldout-0134",
+    "place": "a community weaving room",
+    "premise": "Working near a community weaving room, a bridge painter wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "3008b3d9d1780635de33e6839a8026e23d89115fa564bd6f8d6fb30d5a49fadb",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a community weaving room, a bridge painter wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: resin, apron\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "quartz",
+      "olive"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0135",
+    "place": "a community weaving room",
+    "premise": "Working near a community weaving room, a piano tuner wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.",
+    "sha256": "f9d0b8cc9449b0113677d50811ff94450f0fcc2e05b9d62bf8903c3d8cba3ae7",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a community weaving room, a piano tuner wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.\nRequired words: quartz, olive\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cork",
+      "cricket"
+    ],
+    "genre": "fable",
+    "id": "heldout-0136",
+    "place": "a community weaving room",
+    "premise": "Working near a community weaving room, a bicycle courier wants to arrange a surprise for an old rival. The complication: the smallest object carries the crucial clue.",
+    "sha256": "72e65c94a9252014fd68375004c72a38ddf5e25016c07e6355cffcebb4ddf5f3",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a community weaving room, a bicycle courier wants to arrange a surprise for an old rival. The complication: the smallest object carries the crucial clue.\nRequired words: cork, cricket\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clay",
+      "tin"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0137",
+    "place": "a community weaving room",
+    "premise": "Working near a community weaving room, a ceramic artist wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.",
+    "sha256": "b19cd60eb23275e6dd54691da8d6b32539770c400912fafcd1b407f159611335",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a community weaving room, a ceramic artist wants to find a practical use for a broken machine. The complication: the only witness is reluctant to speak.\nRequired words: clay, tin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "nutmeg",
+      "basin"
+    ],
+    "genre": "fable",
+    "id": "heldout-0138",
+    "place": "a lava tube visitor center",
+    "premise": "Working near a lava tube visitor center, a mosaic restorer wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "fdfb311e81cbcc412fbc5ebd76f6d222951eea74d3bd5c8489a09235c40fad4b",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a lava tube visitor center, a mosaic restorer wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: nutmeg, basin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "buckle",
+      "elm"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0139",
+    "place": "a lava tube visitor center",
+    "premise": "Working near a lava tube visitor center, a rope maker wants to explain a message left in wet clay. The complication: an unexpected festival blocks the exit.",
+    "sha256": "45f3cccb7621bae155cf5ccd33bb99a8a361dfe25b8bc76ba15a2ecfea9b966f",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a lava tube visitor center, a rope maker wants to explain a message left in wet clay. The complication: an unexpected festival blocks the exit.\nRequired words: buckle, elm\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "thyme",
+      "russet"
+    ],
+    "genre": "fable",
+    "id": "heldout-0140",
+    "place": "a lava tube visitor center",
+    "premise": "Working near a lava tube visitor center, a bridge painter wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.",
+    "sha256": "60f60b485c63c693d8e61b9b05ca5c4701a4149247ef437059f2b8ab46982399",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a lava tube visitor center, a bridge painter wants to arrange a surprise for an old rival. The complication: an unexpected festival blocks the exit.\nRequired words: thyme, russet\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clay",
+      "saddle"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0141",
+    "place": "a lava tube visitor center",
+    "premise": "Working near a lava tube visitor center, a piano tuner wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.",
+    "sha256": "6c0fe8981e362894504d538778512a941a583b803d55b2ea41d7a32ce908fa7b",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a lava tube visitor center, a piano tuner wants to arrange a surprise for an old rival. The complication: every visitor claims a different owner.\nRequired words: clay, saddle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "saddle",
+      "cactus"
+    ],
+    "genre": "fable",
+    "id": "heldout-0142",
+    "place": "a lava tube visitor center",
+    "premise": "Working near a lava tube visitor center, a bicycle courier wants to find a practical use for a broken machine. The complication: a curious bird steals the evidence.",
+    "sha256": "6c054358cee2548d4b6cd203966bde37c4ca5ff62b90d724b0e60b5a68205631",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a lava tube visitor center, a bicycle courier wants to find a practical use for a broken machine. The complication: a curious bird steals the evidence.\nRequired words: saddle, cactus\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "cricket",
+      "saddle"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0143",
+    "place": "a lava tube visitor center",
+    "premise": "Working near a lava tube visitor center, a ceramic artist wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "e24541013e28e3d4366cdecae78057ce9aedf5893ace1bb0d1c7fb978e3beb22",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a lava tube visitor center, a ceramic artist wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: cricket, saddle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "mug",
+      "thyme"
+    ],
+    "genre": "fable",
+    "id": "heldout-0144",
+    "place": "a tugboat dry dock",
+    "premise": "Working near a tugboat dry dock, a mosaic restorer wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.",
+    "sha256": "072b6ec9df3155c750919fc5ba9ac8e6cb3f15b82f92440d5219bff5fdd552fe",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a tugboat dry dock, a mosaic restorer wants to reunite two strangers who share a skill. The complication: a curious bird steals the evidence.\nRequired words: mug, thyme\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "thyme",
+      "moth"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0145",
+    "place": "a tugboat dry dock",
+    "premise": "Working near a tugboat dry dock, a rope maker wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.",
+    "sha256": "07bf4582c364065070462e73f310cbfee599e189787dc326380053d02e6cc444",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a tugboat dry dock, a rope maker wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.\nRequired words: thyme, moth\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "russet",
+      "beetle"
+    ],
+    "genre": "fable",
+    "id": "heldout-0146",
+    "place": "a tugboat dry dock",
+    "premise": "Working near a tugboat dry dock, a bridge painter wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.",
+    "sha256": "f000e739dea964e088d8f21bb3374078f85eb0c52af1e3288009f7b056d228c5",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a tugboat dry dock, a bridge painter wants to reunite two strangers who share a skill. The complication: the only witness is reluctant to speak.\nRequired words: russet, beetle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "frost",
+      "honey"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0147",
+    "place": "a tugboat dry dock",
+    "premise": "Working near a tugboat dry dock, a piano tuner wants to reunite two strangers who share a skill. The complication: every visitor claims a different owner.",
+    "sha256": "1da19a3a6efb1f74a824ac2d5c66e8f738936d597dd45d3657b5205ca214fa69",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a tugboat dry dock, a piano tuner wants to reunite two strangers who share a skill. The complication: every visitor claims a different owner.\nRequired words: frost, honey\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "slate",
+      "cricket"
+    ],
+    "genre": "fable",
+    "id": "heldout-0148",
+    "place": "a tugboat dry dock",
+    "premise": "Working near a tugboat dry dock, a bicycle courier wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "dda4f9c960e53a1f4cbd7c1290e5d4f3dc0fbac2947cf2b597a5b0757aef2bd8",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a tugboat dry dock, a bicycle courier wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: slate, cricket\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "opal",
+      "saddle"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0149",
+    "place": "a tugboat dry dock",
+    "premise": "Working near a tugboat dry dock, a ceramic artist wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.",
+    "sha256": "cbc5df313a1fd4d86c0ab4684497be9de066d0302a3f33dce8566bb9a412fdf3",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a tugboat dry dock, a ceramic artist wants to rescue a keepsake from a sealed room. The complication: every visitor claims a different owner.\nRequired words: opal, saddle\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "spruce",
+      "oyster"
+    ],
+    "genre": "fable",
+    "id": "heldout-0150",
+    "place": "a stained glass studio",
+    "premise": "Working near a stained glass studio, a mosaic restorer wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "df510517473e457a2cddde85f078656223ba8876967719a4213da5d921ed21a6",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a stained glass studio, a mosaic restorer wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: spruce, oyster\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "tulip",
+      "marble"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0151",
+    "place": "a stained glass studio",
+    "premise": "Working near a stained glass studio, a rope maker wants to find a practical use for a broken machine. The complication: a temporary repair becomes permanent.",
+    "sha256": "0ef4b633f7029d76cba72dc0ad00fa3b08c36442ae2ea23ff8c0f1179a75c217",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a stained glass studio, a rope maker wants to find a practical use for a broken machine. The complication: a temporary repair becomes permanent.\nRequired words: tulip, marble\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "buckle",
+      "basin"
+    ],
+    "genre": "fable",
+    "id": "heldout-0152",
+    "place": "a stained glass studio",
+    "premise": "Working near a stained glass studio, a bridge painter wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "30d2d22abae5a10b1d696ba196164aa5e85d53d0256f29276046353a406a83a6",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a stained glass studio, a bridge painter wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: buckle, basin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "quartz",
+      "honey"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0153",
+    "place": "a stained glass studio",
+    "premise": "Working near a stained glass studio, a piano tuner wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.",
+    "sha256": "4df62dc414581e87174902074f4166f5b5f6396574b5210480caddf55074b22d",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a stained glass studio, a piano tuner wants to reunite two strangers who share a skill. The complication: a temporary repair becomes permanent.\nRequired words: quartz, honey\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "tulip",
+      "hinge"
+    ],
+    "genre": "fable",
+    "id": "heldout-0154",
+    "place": "a stained glass studio",
+    "premise": "Working near a stained glass studio, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: a temporary repair becomes permanent.",
+    "sha256": "6df28bca1c39191d44cc6ac37b30826c8800418ac9673765c7c7b6c8a26bf094",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a stained glass studio, a bicycle courier wants to resolve a disagreement about a tiny drawing. The complication: a temporary repair becomes permanent.\nRequired words: tulip, hinge\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "tulip",
+      "lemon"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0155",
+    "place": "a stained glass studio",
+    "premise": "Working near a stained glass studio, a ceramic artist wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.",
+    "sha256": "aac3ec9134b1646b9c08e6b842b3694a49f4035c0ed86f9a181540b0a989e267",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a stained glass studio, a ceramic artist wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.\nRequired words: tulip, lemon\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "tulip",
+      "fern"
+    ],
+    "genre": "fable",
+    "id": "heldout-0156",
+    "place": "a kelp drying barn",
+    "premise": "Working near a kelp drying barn, a mosaic restorer wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.",
+    "sha256": "e0576bf08b6fff758f2e927fb33a251750097f381b372ecb0292a08a5ad811ec",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a kelp drying barn, a mosaic restorer wants to reunite two strangers who share a skill. The complication: an unexpected festival blocks the exit.\nRequired words: tulip, fern\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "slate",
+      "cactus"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0157",
+    "place": "a kelp drying barn",
+    "premise": "Working near a kelp drying barn, a rope maker wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.",
+    "sha256": "2dd71b38c290ccb2f9680fd39d90d73707e83e442b10b41f807dbf0dd0022426",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a kelp drying barn, a rope maker wants to explain a message left in wet clay. The complication: the smallest object carries the crucial clue.\nRequired words: slate, cactus\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "hinge",
+      "basin"
+    ],
+    "genre": "fable",
+    "id": "heldout-0158",
+    "place": "a kelp drying barn",
+    "premise": "Working near a kelp drying barn, a bridge painter wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.",
+    "sha256": "27727c51c922e16bda3bad80fde4ea09e41a57be78291b9fb05f85227aee51b7",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a kelp drying barn, a bridge painter wants to arrange a surprise for an old rival. The complication: the only witness is reluctant to speak.\nRequired words: hinge, basin\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "linen",
+      "cactus"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0159",
+    "place": "a kelp drying barn",
+    "premise": "Working near a kelp drying barn, a piano tuner wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.",
+    "sha256": "cfa02cf12f88bd751436b75442305fa9600a26182077c6c6c29c72712242e901",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a kelp drying barn, a piano tuner wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.\nRequired words: linen, cactus\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clay",
+      "slate"
+    ],
+    "genre": "fable",
+    "id": "heldout-0160",
+    "place": "a kelp drying barn",
+    "premise": "Working near a kelp drying barn, a bicycle courier wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.",
+    "sha256": "b264dd7399cd116d72bbead5385e13f188757130bfd2f153a6e93910fc193fe3",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a kelp drying barn, a bicycle courier wants to find a practical use for a broken machine. The complication: the smallest object carries the crucial clue.\nRequired words: clay, slate\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "daisy",
+      "apron"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0161",
+    "place": "a kelp drying barn",
+    "premise": "Working near a kelp drying barn, a ceramic artist wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.",
+    "sha256": "9c6e536a034d8854eed9d50fd4d6d5611f00539929b45164e06784ca8aac37c7",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a kelp drying barn, a ceramic artist wants to rescue a keepsake from a sealed room. The complication: the only witness is reluctant to speak.\nRequired words: daisy, apron\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "basin",
+      "elm"
+    ],
+    "genre": "fable",
+    "id": "heldout-0162",
+    "place": "a desert ice house",
+    "premise": "Working near a desert ice house, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: a curious bird steals the evidence.",
+    "sha256": "39e2fd0859ff0c2e1217f50948a39838bd8444870c3550cb017155adc91f74ae",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a desert ice house, a mosaic restorer wants to rescue a keepsake from a sealed room. The complication: a curious bird steals the evidence.\nRequired words: basin, elm\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "quartz",
+      "daisy"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0163",
+    "place": "a desert ice house",
+    "premise": "Working near a desert ice house, a rope maker wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.",
+    "sha256": "a68b6e2ea809c57ff8365bcff8680b87fb8e65081e73bbbaabe7d5022abc308b",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a desert ice house, a rope maker wants to find a practical use for a broken machine. The complication: every visitor claims a different owner.\nRequired words: quartz, daisy\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "resin",
+      "thyme"
+    ],
+    "genre": "fable",
+    "id": "heldout-0164",
+    "place": "a desert ice house",
+    "premise": "Working near a desert ice house, a bridge painter wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.",
+    "sha256": "6e41301e292d2b134c632085d739d38a6fd81f85e6326d73a963b628eb06f3e9",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a desert ice house, a bridge painter wants to rescue a keepsake from a sealed room. The complication: an unexpected festival blocks the exit.\nRequired words: resin, thyme\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clasp",
+      "flute"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0165",
+    "place": "a desert ice house",
+    "premise": "Working near a desert ice house, a piano tuner wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.",
+    "sha256": "3482404fc87582d4d90c6c2f7d06868b20d9b3b9be843b71749d53fe307017bc",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a desert ice house, a piano tuner wants to arrange a surprise for an old rival. The complication: a temporary repair becomes permanent.\nRequired words: clasp, flute\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "clasp",
+      "tulip"
+    ],
+    "genre": "fable",
+    "id": "heldout-0166",
+    "place": "a desert ice house",
+    "premise": "Working near a desert ice house, a bicycle courier wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.",
+    "sha256": "d5faa2b304c54cd9710f1210d201c8e3b56af566382e76c095a9383e0c874ae2",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: fable\nPremise: Working near a desert ice house, a bicycle courier wants to reunite two strangers who share a skill. The complication: the smallest object carries the crucial clue.\nRequired words: clasp, tulip\nLength: 120-350 words."
+  },
+  {
+    "anchors": [
+      "chalk",
+      "lemon"
+    ],
+    "genre": "gothic",
+    "id": "heldout-0167",
+    "place": "a desert ice house",
+    "premise": "Working near a desert ice house, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.",
+    "sha256": "0d4fcdbe55942e796edd9ccbdf9a2d81f91ef3fd5ab1b0fef70ff15dc303edf4",
+    "split": "heldout",
+    "stratum": "unseen",
+    "text": "Genre: gothic\nPremise: Working near a desert ice house, a ceramic artist wants to resolve a disagreement about a tiny drawing. The complication: a curious bird steals the evidence.\nRequired words: chalk, lemon\nLength: 120-350 words."
+  }
+]

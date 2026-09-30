@@ -1,0 +1,481 @@
+{
+  "dev-sft-60-lr0.0007-attempt1": {
+    "interruption.json": {
+      "time": "2026-09-28T23:13:12.352847+00:00",
+      "name": "dev-sft-60-lr0.0007",
+      "status": "interrupted",
+      "completed_steps_logged": 29,
+      "planned_steps": 32,
+      "last_request_time": "2026-09-28T22:57:12.596420Z",
+      "model_id": "c70121f5-b750-57ae-a1d4-ee6d66f85a30:train:2",
+      "checkpoint": null,
+      "reason": "Original SDK session stalled; fresh SDK reads succeeded; main interrupted and process terminated before deliberate restart.",
+      "cost_accounting": "Charge full originally planned token cost as a conservative upper estimate for the incomplete attempt.",
+      "estimated_usd_upper_bound": 0.10865536
+    },
+    "started.json": {
+      "batch": 16,
+      "dataset_sha": "0d5e302175133eff04fc61b0b3096f42c2085646c971521694b983327b86aa9c",
+      "epochs": 8,
+      "learning_rate": 0.0007,
+      "loss_reduction": "mean_per_example",
+      "name": "dev-sft-60-lr0.0007",
+      "opportunities": 60,
+      "rank": 16,
+      "rows": 55,
+      "seed": 31,
+      "steps": 32,
+      "target": "edited",
+      "train_attn": true,
+      "train_mlp": true,
+      "train_unembed": true,
+      "training_tokens": 246944
+    },
+    "metrics": [
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770751.0,
+          "loss:sum": 23.208043575286865
+        },
+        "step": 1
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770753.0,
+          "loss:sum": 16.879438638687134
+        },
+        "step": 2
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770755.0,
+          "loss:sum": 17.715118050575256
+        },
+        "step": 3
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770757.0,
+          "loss:sum": 6.746028900146484
+        },
+        "step": 4
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770759.0,
+          "loss:sum": 13.439350724220276
+        },
+        "step": 5
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770761.0,
+          "loss:sum": 11.327708303928375
+        },
+        "step": 6
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770763.0,
+          "loss:sum": 10.941686689853668
+        },
+        "step": 7
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770765.0,
+          "loss:sum": 4.9153958559036255
+        },
+        "step": 8
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770768.0,
+          "loss:sum": 8.92245489358902
+        },
+        "step": 9
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770770.0,
+          "loss:sum": 7.449874013662338
+        },
+        "step": 10
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770772.0,
+          "loss:sum": 6.952702105045319
+        },
+        "step": 11
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770774.0,
+          "loss:sum": 2.5689327716827393
+        },
+        "step": 12
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770776.0,
+          "loss:sum": 4.417735159397125
+        },
+        "step": 13
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770778.0,
+          "loss:sum": 3.753529816865921
+        },
+        "step": 14
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770780.0,
+          "loss:sum": 3.5695967078208923
+        },
+        "step": 15
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770782.0,
+          "loss:sum": 2.2056998759508133
+        },
+        "step": 16
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770784.0,
+          "loss:sum": 2.337397664785385
+        },
+        "step": 17
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770786.0,
+          "loss:sum": 1.9034543186426163
+        },
+        "step": 18
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770788.0,
+          "loss:sum": 1.7181780934333801
+        },
+        "step": 19
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770790.0,
+          "loss:sum": 0.7573343962430954
+        },
+        "step": 20
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770792.0,
+          "loss:sum": 1.0920829474925995
+        },
+        "step": 21
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770794.0,
+          "loss:sum": 1.391335092484951
+        },
+        "step": 22
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770796.0,
+          "loss:sum": 0.9159259721636772
+        },
+        "step": 23
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770798.0,
+          "loss:sum": 0.33562937192618847
+        },
+        "step": 24
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770800.0,
+          "loss:sum": 0.8695297390222549
+        },
+        "step": 25
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770802.0,
+          "loss:sum": 0.6529395449906588
+        },
+        "step": 26
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770804.0,
+          "loss:sum": 0.5107805095613003
+        },
+        "step": 27
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770807.0,
+          "loss:sum": 0.24715003557503223
+        },
+        "step": 28
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6770809.0,
+          "loss:sum": 0.44704878330230713
+        },
+        "step": 29
+      }
+    ]
+  },
+  "sft-480-s127-attempt1": {
+    "model.json": {
+      "model_id": "2b673b96-c69f-54ce-8f55-86b38fb4c5c1:train:6",
+      "session_id": "2b673b96-c69f-54ce-8f55-86b38fb4c5c1"
+    },
+    "interruption.json": {
+      "time": "2026-09-29T02:32:27.148309+00:00",
+      "training": "sft-480-s127",
+      "attempt": 1,
+      "reason": "Local exec session no longer exists and original PID 50165 is absent; no final checkpoint. Cause of process exit not established.",
+      "logged_steps": 27,
+      "last_logged_step": 27,
+      "evaluation_generated": false,
+      "action": "Preserve interrupted attempt; restart same seed, data and frozen training configuration from base.",
+      "conservative_full_plan_usd": 0.34631388
+    },
+    "started.json": {
+      "adam": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "eps": 1e-12,
+        "grad_clip_norm": 0.0,
+        "learning_rate": 0.00047,
+        "weight_decay": 0.0
+      },
+      "batch": 16,
+      "dataset_sha": "352558cef47794995187e60ab6fb4680a869440efb13ba9d7c3d6f042776719a",
+      "epochs": 3,
+      "learning_rate": 0.00047,
+      "loss_reduction": "mean_per_example",
+      "name": "sft-480-s127",
+      "opportunities": 480,
+      "rank": 16,
+      "rows": 460,
+      "seed": 127,
+      "steps": 87,
+      "target": "edited",
+      "train_attn": true,
+      "train_mlp": true,
+      "train_unembed": true,
+      "training_tokens": 787077
+    },
+    "recovery.json": {
+      "dataset_sha": "352558cef47794995187e60ab6fb4680a869440efb13ba9d7c3d6f042776719a",
+      "learning_rate": 0.00047,
+      "seed": 127,
+      "state_path": "tinker://2b673b96-c69f-54ce-8f55-86b38fb4c5c1:train:6/weights/sft-480-s127-recovery-16",
+      "step": 16
+    },
+    "metrics": [
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772563.0,
+          "loss:sum": 23.281423568725586
+        },
+        "step": 1
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772566.0,
+          "loss:sum": 15.633350610733032
+        },
+        "step": 2
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772568.0,
+          "loss:sum": 15.15376627445221
+        },
+        "step": 3
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772569.0,
+          "loss:sum": 14.802983403205872
+        },
+        "step": 4
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772571.0,
+          "loss:sum": 14.082120656967163
+        },
+        "step": 5
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772573.0,
+          "loss:sum": 12.988121628761292
+        },
+        "step": 6
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772575.0,
+          "loss:sum": 12.628623604774475
+        },
+        "step": 7
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772577.0,
+          "loss:sum": 13.841397523880005
+        },
+        "step": 8
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772579.0,
+          "loss:sum": 12.246949672698975
+        },
+        "step": 9
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772581.0,
+          "loss:sum": 11.95479154586792
+        },
+        "step": 10
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772583.0,
+          "loss:sum": 11.283612132072449
+        },
+        "step": 11
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772585.0,
+          "loss:sum": 11.14451813697815
+        },
+        "step": 12
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772587.0,
+          "loss:sum": 13.284771084785461
+        },
+        "step": 13
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772589.0,
+          "loss:sum": 11.62571668624878
+        },
+        "step": 14
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772591.0,
+          "loss:sum": 12.26121473312378
+        },
+        "step": 15
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772593.0,
+          "loss:sum": 11.408788919448853
+        },
+        "step": 16
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772596.0,
+          "loss:sum": 12.843713641166687
+        },
+        "step": 17
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772598.0,
+          "loss:sum": 10.826390624046326
+        },
+        "step": 18
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772600.0,
+          "loss:sum": 12.484477162361145
+        },
+        "step": 19
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772602.0,
+          "loss:sum": 11.422797560691833
+        },
+        "step": 20
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772604.0,
+          "loss:sum": 11.313755631446838
+        },
+        "step": 21
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772606.0,
+          "loss:sum": 10.131344199180603
+        },
+        "step": 22
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772608.0,
+          "loss:sum": 11.14555048942566
+        },
+        "step": 23
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772610.0,
+          "loss:sum": 9.753605008125305
+        },
+        "step": 24
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772612.0,
+          "loss:sum": 10.908327281475067
+        },
+        "step": 25
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772614.0,
+          "loss:sum": 10.098857998847961
+        },
+        "step": 26
+      },
+      {
+        "metrics": {
+          "clock_cycle:unique": 6772616.0,
+          "loss:sum": 9.744506001472473
+        },
+        "step": 27
+      }
+    ]
+  }
+}

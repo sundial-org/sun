@@ -1,0 +1,4 @@
+__pycache__/
+runs/*/process.lock
+runs/*/archives/*.tar
+runs/*/archives/*.part

@@ -1,0 +1,27 @@
+{
+  "time": "2026-09-29T00:17:04.580559+00:00",
+  "reason": "Bounded schema/reference-only compiler repair before any learned-policy test generation",
+  "original_freeze_sha256": "f466383c146bd3701eef330f0edad82f07a97986b9c2ff4013cc5c377101e0f2",
+  "changed_sha": {
+    "run.py": "46507d8793df71a2be3bebfd1745ddc76236450e982ad762c105f45a7283fa43",
+    "compiler_validation.py": "32cee55226047e1037e47257af117cde47fae8d80db33c3a06af7a8ae175cc80",
+    "protocol-amendments.md": "79967a4d2b93f810c921cb57eeb3a835f142f7db9371e3519ccaa5f287ee5b99"
+  },
+  "completed_test_evaluations": [
+    "test-base",
+    "test-raw-15"
+  ],
+  "learned_test_responses": 0,
+  "settings_unchanged": [
+    "model recipes",
+    "review archive",
+    "prompts",
+    "writer sampling",
+    "scorer",
+    "analysis",
+    "budgets",
+    "seeds",
+    "primary endpoint",
+    "controls"
+  ]
+}

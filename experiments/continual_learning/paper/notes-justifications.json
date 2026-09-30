@@ -1,0 +1,119 @@
+{
+  "N01": {
+    "status": "model-paper choice and scoped comparison",
+    "sources": [
+      "https://arxiv.org/html/2405.00200v2",
+      "paper.tex: Introduction, Method, Experiments"
+    ],
+    "justification": "The cited paper compares in-context demonstrations and fine-tuning across data sizes. These notes explicitly describe an adaptation of its empirical structure, not reproduction of its tasks or findings. Our paper concerns synthetic editor corrections and tool-based writing.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N02": {
+    "status": "outline description",
+    "sources": [
+      "paper.tex: Abstract and Introduction"
+    ],
+    "justification": "The stated question, shared archive, two representations, and distinction between rubric score and public validity appear in the corresponding sections. The abstract gives the measured endpoint and its scope.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N03": {
+    "status": "outline and editorial choice",
+    "sources": [
+      "paper.tex: Related work",
+      "../RELATED_WORK.md"
+    ],
+    "justification": "The compact related-work section covers CIPHER, ACE, LoRA and OPPU before Method and Experiments. The broader literature map remains outside the paper. Its position is an editorial decision, not an empirical claim.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N04": {
+    "status": "outline and figure description",
+    "sources": [
+      "paper.tex: Method",
+      "evidence/workflow.pdf"
+    ],
+    "justification": "The method covers the task, rubric, common reviews, inferred instructions and adapters. The diagram branches from the same review pairs into context and weights and ends at fresh evaluation.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N05": {
+    "status": "outline and editorial rationale",
+    "sources": [
+      "paper.tex: Experiments",
+      "https://arxiv.org/html/2405.00200v2"
+    ],
+    "justification": "The experimental section specifies splits, development selection, controls and paired uncertainty. The composite endpoint and validity requirements motivate additional denominator explanations; this is an editorial rationale.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N06": {
+    "status": "results and visualization description",
+    "sources": [
+      "paper.tex: Results",
+      "evidence/budget-comparison.pdf",
+      "evidence/endpoint-table.tex",
+      "evidence/retention-table.tex"
+    ],
+    "justification": "The final results show the three budgets, primary contrast, uncertainty and seed variation. The figure has separate panels for US and validity. The table contains all endpoint controls; the prose includes the public instruction probe. A second table reports strict prompt and instruction accuracy on the independent public probe.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N07": {
+    "status": "diagnostic scope",
+    "sources": [
+      "paper.tex: Experiments and Results",
+      "evidence/frozen-code/followups.py",
+      "evidence/compact-rubric-plan.json"
+    ],
+    "justification": "The listed controls were actually run. They reuse the test prompts and are explanatory or exploratory comparisons, not fresh confirmatory tests of a mechanism selected from their results.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N08": {
+    "status": "discussion scope and editorial choice",
+    "sources": [
+      "paper.tex: Discussion",
+      "https://arxiv.org/html/2405.00200v2"
+    ],
+    "justification": "The discussion identifies the single synthetic setting, three seeds, absence of human quality ratings and fresh-base training. Attention, ordering and broad multi-model investigations are outside this study; no findings about those mechanisms are borrowed.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N09": {
+    "status": "artifact organization",
+    "sources": [
+      "paper.tex: References",
+      "CLAIMS.md",
+      "evidence/package.json"
+    ],
+    "justification": "The bibliography contains the cited primary sources. The separate evidence package and claim ledger contain records and checks, rather than adding them to the word-limited manuscript.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N10": {
+    "status": "revision history and scope",
+    "sources": [
+      "git commit db853b1323dd009cbcc190ff23329c3233390be6",
+      "../research_log.md",
+      "../PROTOCOL.md",
+      "paper.tex"
+    ],
+    "justification": "The repository proposal covered writing and Lean. The recorded research cycle narrows to writing, implements the planned shared archive and inferred playbook, freezes development selection, and separates the endpoint from diagnostics. The paper retains the failed development safeguard. No instructor or classmate feedback was provided in this task, and no response to such feedback is claimed. The original proposal required each rubric rule to pass at most 70% of base stories; the protocol records that several rules exceed this calibration goal and adds harder-rule/all-rule reporting before testing.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  },
+  "N11": {
+    "status": "delivery specification and status",
+    "sources": [
+      "https://web.stanford.edu/class/cs197/assignments/project.html#draft-paper",
+      "build.py",
+      "evidence/build-check.json",
+      "CLAIMS.md"
+    ],
+    "justification": "The user explicitly requested half length and a separate justification file. Build checks enforce 2000\u20132500 manuscript words and append one notes page. The notes supply a model-paper analysis, adapted outline and revisions. The task produced local review artifacts; no class, venue or Overleaf upload was performed.",
+    "reviewed": false,
+    "verification_status": "Pending final complete-artifact audit."
+  }
+}

@@ -1,0 +1,12 @@
+[project]
+name = "sun"
+version = "0.1.0"
+description = "Share your team's memory - you, your agents, and your teammate's agents."
+requires-python = ">=3.9"
+
+[project.scripts]
+sun = "sun:main"
+
+[build-system]
+requires = ["flit_core>=3.2,<4"]
+build-backend = "flit_core.buildapi"

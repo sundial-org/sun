@@ -7,7 +7,8 @@ Scans ~/.claude/projects for project dirs, resolves each to its real repo path (
 """
 import glob, json, os, subprocess, sys, time
 
-SUN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sun.py")
+SOURCE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ENV = {**os.environ, "PYTHONPATH": SOURCE}
 PROJECTS = os.environ.get("SUN_PROJECTS", os.path.expanduser("~/.claude/projects"))
 
 
@@ -48,12 +49,12 @@ def main():
     if input(f"run `sun init` in {repo}? [y/N] ").strip().lower() != "y":
         sys.exit("aborted")
     t0 = time.time()
-    subprocess.run([sys.executable, SUN, "init"], cwd=repo, check=True)
+    subprocess.run([sys.executable, "-m", "sun", "init"], cwd=repo, env=ENV, check=True)
     print(f"\ncold init took {time.time() - t0:.1f}s; rerunning (warm, idempotent)...")
     t0 = time.time()
-    subprocess.run([sys.executable, SUN, "import"], cwd=repo, check=True)
+    subprocess.run([sys.executable, "-m", "sun", "import"], cwd=repo, env=ENV, check=True)
     print(f"warm import took {time.time() - t0:.1f}s")
-    subprocess.run([sys.executable, SUN, "log", "-n", "12"], cwd=repo, check=True)
+    subprocess.run([sys.executable, "-m", "sun", "log", "-n", "12"], cwd=repo, env=ENV, check=True)
 
 
 if __name__ == "__main__":

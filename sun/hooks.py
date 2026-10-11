@@ -40,6 +40,9 @@ class ActiveCall(TypedDict, total=False):
     overlap: List[str]
     ambiguous_actor: bool
     actor: str
+    git: str
+    input: dict
+    tool: str
 
 
 READ_TOOLS = {"Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch", "view_image"}
@@ -165,7 +168,8 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
                            {"file": f, "patch": patches[f], "attribution": {"method": "observed"}}
                            for f in files])
         release()
-        return
+        start = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("start") or pre
+        return {"at": c, "since": pre, "turn": start, "in_turn": True, "files": a_files} if a_files else None
     actor, pre = st["actor"], git_store.history_head()
     turn = st.get("turn", 0)
     c = git_store.make_shadow_commit(git_store.snapshot_tree(files, after),

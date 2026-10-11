@@ -39,6 +39,12 @@ second `sun init`: checkout installs its agent hook configuration and creates pr
 bookkeeping. Active calls, turns, and temporary indexes are never copied from another
 worktree. Removing a worktree leaves its branch history intact. Checkout differences are
 recorded as observed state with unknown authorship, before later edits are attributed.
+When a pull matches the observed HEAD reflog transition, Sun labels it with the
+pull command and records the reflog's Git name and email. That identity is not
+proof of who operated the shell. The executor stays unknown unless an exclusive,
+paired agent shell call names the matching pull. Imported file authorship remains
+unknown. Missing or ambiguous reflog evidence keeps the generic observation label;
+existing history is not relabeled.
 
 Inheritance uses the creation source recorded in Git's branch reflog. An explicit commit
 SHA has no unique Sun branch; it starts an independent history at that Git tree. If creation

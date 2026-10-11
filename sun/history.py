@@ -63,7 +63,7 @@ def pull_action(before, after):
     current, previous = [row.split("\0", 3) for row in rows]
     if len(current) != 4 or current[0] != after or previous[0] != before: return
     if not current[3].startswith("pull ") and not current[3].startswith("pull:"): return
-    return {"command": "git " + current[3].split(":", 1)[0], "reflog": current[3],
+    return {"command": "git " + current[3].rsplit(": ", 1)[0].removesuffix(":"), "reflog": current[3],
             "name": current[1], "email": current[2], "before": before, "after": after,
             "executor": "unknown"}
 

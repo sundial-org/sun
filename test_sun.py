@@ -119,6 +119,64 @@ class SunTest(unittest.TestCase):
 
     # ------------------------------------------------------------------ init
 
+    def prepare_pull(self):
+        parent = self.git("rev-parse", "HEAD").strip()
+        write("README.md", "pulled contents\n")
+        commit = self.plumbing_commit(parent, ["README.md"])
+        self.git("checkout", "--", "README.md")
+        self.git("update-ref", "refs/test/incoming", commit)
+        return parent, commit
+
+    def test_pull_observation_records_reflog_identity(self):
+        parent, commit = self.prepare_pull()
+        self.git("pull", ".", "refs/test/incoming", "--ff-only")
+        run("sync")
+        event = history.events()[-1]
+        self.assertEqual(event["type"], "observe")
+        self.assertEqual(event["actor"], "unknown")
+        action = event["git_action"]
+        self.assertEqual((action["before"], action["after"]), (parent, commit))
+        self.assertEqual((action["name"], action["email"]), ("emma", "emma@test"))
+        self.assertEqual(action["executor"], "unknown")
+        self.assertIn("git pull . refs/test/incoming", self.head_subject())
+        self.assertIn("Git identity  emma <emma@test>",
+                      "\n".join(output.operation_lines(output.viz_operation(event))))
+        write("later.txt", "local edit\n")
+        run("sync")
+        self.assertNotIn("git_action", history.events()[-1])
+
+    def test_pull_agent_executor_requires_matching_call(self):
+        for command, overlap, executor in [("git pull . refs/test/incoming --ff-only", False, AGENT),
+                                           ("git status", False, "unknown"),
+                                           ("git pull . refs/test/incoming --ff-only", True, "unknown")]:
+            with self.subTest(command=command, overlap=overlap):
+                self.prepare_pull()
+                hook("PreToolUse", tool_name="Bash", tool_input={"command": command})
+                if overlap:
+                    hook("PreToolUse", "other", tool_name="Bash", tool_input={"command": "git status"})
+                self.git("pull", ".", "refs/test/incoming", "--ff-only")
+                hook("PostToolUse", tool_name="Bash", tool_input={"command": command})
+                event = history.events()[-1]
+                self.assertEqual(event["actor"], "unknown")
+                self.assertEqual(event["git_action"]["executor"], executor)
+                if overlap:
+                    hook("PostToolUse", "other", tool_name="Bash", tool_input={"command": "git status"})
+                # Advance contents so the next pull changes the tree too.
+                write("README.md", "reset for next pull\n")
+                self.git("add", "README.md")
+                self.git("commit", "-qm", "local baseline")
+                run("sync")
+
+    def test_pull_reflog_must_match_observed_transition(self):
+        parent, commit = self.prepare_pull()
+        self.git("pull", ".", "refs/test/incoming", "--ff-only")
+        self.assertIsNone(history.pull_action(commit, commit))
+        self.assertIsNone(history.pull_action("0" * 40, commit))
+        with mock.patch.object(git_store, "git", return_value=""):
+            self.assertIsNone(history.pull_action(parent, commit))
+        self.git("commit", "--allow-empty", "-qm", "after pull")
+        self.assertIsNone(history.pull_action(parent, self.git("rev-parse", "HEAD").strip()))
+
     def test_init_creates_state_and_hooks(self):
         self.assertTrue(os.path.isdir(".git/sun"))
         self.assertEqual(self.head_subject(), "sun: initial state")

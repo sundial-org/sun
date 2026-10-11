@@ -51,6 +51,26 @@ class Event(TypedDict, total=False):
     pr: int
     branch: str
     sequence: int
+    git_action: Dict[str, Any]  # Reflog identity is separate from edit authorship.
+
+
+def pull_action(before, after):
+    """Only identify an immediately matching reflog transition; otherwise leave it unknown."""
+    if not before or before == after: return
+    rows = git_store.git("reflog", "show", "-2", "--format=%H%x00%gn%x00%ge%x00%gs",
+                         "HEAD", check=False).splitlines()
+    if len(rows) != 2: return
+    current, previous = [row.split("\0", 3) for row in rows]
+    if len(current) != 4 or current[0] != after or previous[0] != before: return
+    if not current[3].startswith("pull ") and not current[3].startswith("pull:"): return
+    return {"command": "git " + current[3].rsplit(": ", 1)[0].removesuffix(":"), "reflog": current[3],
+            "name": current[1], "email": current[2], "before": before, "after": after,
+            "executor": "unknown"}
+
+
+def observed_subject(action):
+    return (f"sun: observed changes after {action['command']} (Git identity: {action['name']})"
+            if action else "sun: observed repository state")
 
 
 def ensure_branch():
@@ -77,7 +97,13 @@ def ensure_branch():
     # A changed checkout is evidence of a new state, not evidence that this user authored it.
     observe = previous.get("observe", False) or bool(tip and not previous) or bool(previous and (
         previous.get("ref") != ref or previous.get("git") != normal))
-    git_store.save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
+    action = previous.get("git_action") if previous.get("observe") else None
+    if previous.get("ref") != ref:
+        action = None
+    elif previous.get("git") != normal:
+        action = pull_action(previous.get("git"), normal)
+    git_store.save_state("branch.json", {"ref": ref, "git": normal, "observe": observe,
+                                         "git_action": action})
 
 
 def events(include_unreachable=False, scope=None) -> List[Event]:
@@ -138,12 +164,14 @@ def sync(exclude=(), method="sync"):  # record unclaimed file changes, without t
             git_store.save_state("branch.json", {**branch, "observe": False})
         return None
     pre, actor = git_store.history_head(), "unknown" if method in ("uncertain", "observed") else git_store.local()
-    c = git_store.commit_files(files, "sun: observed repository state" if method == "observed"
+    action = branch.get("git_action") if method == "observed" else None
+    c = git_store.commit_files(files, observed_subject(action) if method == "observed"
                      else edits_msg(actor, files), actor)
     p = git_store.patches(pre, c, files)
     ev = record(type="observe" if method == "observed" else "edit", actor=actor, commit=c, patch_id=git_store.patch_id(c),
                   edits=[{"file": f, "patch": p[f],
-                          "attribution": {"method": method}} for f in files])
+                          "attribution": {"method": method}} for f in files],
+                **({"git_action": action} if action else {}))
     if not active and branch.get("observe"):
         git_store.save_state("branch.json", {**branch, "observe": False})
     return ev

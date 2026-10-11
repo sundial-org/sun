@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import shlex
 import sys
 import uuid
 from typing import Dict, List, TypedDict
@@ -39,6 +40,9 @@ class ActiveCall(TypedDict, total=False):
     overlap: List[str]
     ambiguous_actor: bool
     actor: str
+    git: str
+    input: dict
+    tool: str
 
 
 READ_TOOLS = {"Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch", "view_image"}
@@ -141,6 +145,31 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
         p = git_store.patches(tip, c, baseline)
         history.record(type="observe", actor="unknown", commit=c, edits=[
             {"file": f, "patch": p[f], "attribution": {"method": "observed"}} for f in baseline])
+    action = history.pull_action(st.get("git"), git_store.ref_oid("HEAD"))
+    if action:
+        # A paired, exclusive shell call must name the exact pull. Wrappers and
+        # compound commands remain unknown rather than guessing their executor.
+        original = st.get("input") or {}
+        command = (original.get("command") or original.get("cmd") or "") if isinstance(original, dict) else ""
+        try:
+            matches = shlex.split(command) == shlex.split(action["command"])
+        except ValueError:
+            matches = False
+        if (matches and st.get("tool") in ("Bash", "exec_command") and st.get("all_files")
+                and len(active) == 1 and not st.get("overlap") and not st.get("ambiguous_actor")
+                and payload.get("hook_event_name") == "PostToolUse"):
+            action["executor"] = st["actor"]
+        pre = git_store.history_head()
+        c = git_store.make_shadow_commit(git_store.snapshot_tree(files, after),
+                                        history.observed_subject(action), "unknown", [pre])
+        patches = git_store.patches(pre, c, files)
+        history.record(id=st["id"], type="observe", actor="unknown", commit=c,
+                       git_action=action, tool_calls=[call], edits=[
+                           {"file": f, "patch": patches[f], "attribution": {"method": "observed"}}
+                           for f in files])
+        release()
+        start = git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("start") or pre
+        return {"at": c, "since": pre, "turn": start, "in_turn": True, "files": a_files} if a_files else None
     actor, pre = st["actor"], git_store.history_head()
     turn = st.get("turn", 0)
     c = git_store.make_shadow_commit(git_store.snapshot_tree(files, after),
@@ -334,6 +363,7 @@ def handle_hook(a, payload):
                        "ambiguous_actor": ambiguous_actor,
                        "id": uuid.uuid4().hex,
                        "actor": git_store.agent(sid, harness),
+                       "git": git_store.ref_oid("HEAD"), "input": inp, "tool": tool,
                        "branch": git_store.shadow_ref(), "pre": git_store.history_head(), "before": git_store.snapshot_tree(),
                        "turn": git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("n", 0)}
         git_store.git("update-ref", "refs/sun/pending/" + active[key]["id"], active[key]["before"])

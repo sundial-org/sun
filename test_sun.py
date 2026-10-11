@@ -146,16 +146,21 @@ class SunTest(unittest.TestCase):
         self.assertNotIn("git_action", history.events()[-1])
 
     def test_pull_agent_executor_requires_matching_call(self):
-        for command, executor in [("git pull . refs/test/incoming --ff-only", AGENT),
-                                  ("git status", "unknown")]:
-            with self.subTest(command=command):
+        for command, overlap, executor in [("git pull . refs/test/incoming --ff-only", False, AGENT),
+                                           ("git status", False, "unknown"),
+                                           ("git pull . refs/test/incoming --ff-only", True, "unknown")]:
+            with self.subTest(command=command, overlap=overlap):
                 self.prepare_pull()
                 hook("PreToolUse", tool_name="Bash", tool_input={"command": command})
+                if overlap:
+                    hook("PreToolUse", "other", tool_name="Bash", tool_input={"command": "git status"})
                 self.git("pull", ".", "refs/test/incoming", "--ff-only")
                 hook("PostToolUse", tool_name="Bash", tool_input={"command": command})
                 event = history.events()[-1]
                 self.assertEqual(event["actor"], "unknown")
                 self.assertEqual(event["git_action"]["executor"], executor)
+                if overlap:
+                    hook("PostToolUse", "other", tool_name="Bash", tool_input={"command": "git status"})
                 # Advance contents so the next pull changes the tree too.
                 write("README.md", "reset for next pull\n")
                 self.git("add", "README.md")

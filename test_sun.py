@@ -761,7 +761,7 @@ class SunTest(unittest.TestCase):
         hook("SubagentStop", "parent-session", harness="codex", agent_id="child-1",
              agent_transcript_path=tp)
         ref = "refs/sun/sessions/emma/parent-session"
-        self.assertIn("subagents/child-1/transcript.jsonl",
+        self.assertIn("subagents/child-1/turn-0001.jsonl",
                       self.git("ls-tree", "-r", "--name-only", ref))
         run("sessions", "export")
         base = os.path.join(".git/sun/sessions", sessions.enc(git_store.root()))
@@ -1289,7 +1289,7 @@ class SunTest(unittest.TestCase):
         self.assertEqual(commit["git_author"]["name"], AGENT)
         self.assertEqual(commit["attribution"]["actors"][0], {
             "id": AGENT, "user": "emma", "kind": "agent", "harness": "claude",
-            "session": "session12345"})
+            "session": "session12345", "agent": None, "parent": None})
         operation = commit["operations"][0]
         self.assertEqual(operation["actor"], AGENT)
         self.assertEqual(operation["session_id"], "session12345")

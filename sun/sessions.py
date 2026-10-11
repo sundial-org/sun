@@ -86,13 +86,32 @@ def codex_meta(path):
     return {}
 
 
+# Claude stores <session>.jsonl, and its subagents' transcripts under <session>/subagents/, as
+# agent-<id>.jsonl (Agent tool) or workflows/<run>/agent-<id>.jsonl beside the run's journal.
+def subagent_transcript(session_path, sub):
+    if not session_path.endswith(".jsonl"): return None
+    hits = glob.glob(os.path.join(glob.escape(session_path[:-6]), "subagents", "**",
+                                  f"agent-{glob.escape(sub)}.jsonl"), recursive=True)
+    return os.path.abspath(hits[0]) if hits else None
+
+
+def subagent_meta(path):  # the harness's sidecar: agent type, workflow label and phase
+    try: meta = json.loads(git_store.read_text(path[:-6] + ".meta.json"))
+    except (OSError, ValueError): return {}
+    if not isinstance(meta, dict): return {}
+    fields = (("type", "agentType"), ("label", "description"), ("phase", "workflowPhase"),
+              ("tool_use_id", "toolUseId"))
+    return {k: meta[m] for k, m in fields if isinstance(meta.get(m), str)}
+
+
 def transcript_sources(harness="claude"):
     if harness == "claude":
         for d in project_dirs():
             for path in glob.glob(os.path.join(d, "**", "*.jsonl"), recursive=True):
                 rp = os.path.relpath(path, d).split(os.sep)
-                sid, sub = (rp[0], rp[-1][:-6]) if len(rp) > 1 else (rp[0][:-6], None)
-                yield path, sid, sub
+                if len(rp) == 1: yield path, rp[0][:-6], None
+                elif rp[-1].startswith("agent-"):  # not a workflow journal
+                    yield path, rp[0], rp[-1][6:-6]  # keyed by the agent_id hooks report
         return
     roots = repo_locations()
     for path in glob.glob(os.path.join(codex_sessions(), "**", "*.jsonl"), recursive=True):
@@ -171,7 +190,10 @@ def session_data():
         for path, sid, sub in transcript_sources(harness):
             entry = local_paths.setdefault(git_store.session_key(sid, harness),
                          {"id": sid, "harness": harness, "path": None, "subagents": {}})
-            if sub: entry["subagents"][sub] = os.path.abspath(path)
+            if sub:
+                entry.setdefault("subagents", {})[sub] = os.path.abspath(path)
+                meta = subagent_meta(path)
+                if meta: entry.setdefault("agents", {}).setdefault(sub, {}).update(meta)
             else: entry["path"] = os.path.abspath(path)
     # Older installs already recorded native paths in their turn state.
     for key, turn in git_store.state("turns.json", {}).items():
@@ -179,7 +201,7 @@ def session_data():
         if turn.get("transcript") and key not in local_paths:
             local_paths[key] = {"id": sid, "harness": harness,
                                "path": os.path.abspath(turn["transcript"]), "subagents": {}}
-    idx = [{**entry, "user": owner, "origin": "local", "ref": None}
+    idx = [{"subagents": {}, "agents": {}, **entry, "user": owner, "origin": "local", "ref": None}
            for entry in local_paths.values()]
     for entry in idx:
         if entry["path"] and not os.path.isfile(entry["path"]): entry["path"] = None
@@ -195,7 +217,7 @@ def session_data():
             matches = [entry for entry in idx if entry["id"] == sid]
             if not matches:
                 matches = [{"id": sid, "harness": None, "user": u, "origin": "local",
-                            "path": None, "subagents": {}}]
+                            "path": None, "subagents": {}, "agents": {}}]
                 idx.extend(matches)
             for entry in matches: entry["ref"] = ref
             continue
@@ -206,12 +228,14 @@ def session_data():
         subs = {}
         for sub in sorted({n.split("/")[1] for n in git_store.git("ls-tree", "-r", "--name-only", ref)
                            .splitlines() if n.startswith("subagents/")}):
+            if sub == "journal": continue  # a workflow's ledger, stored by earlier imports
+            name = sub[6:] if sub.startswith("agent-") else sub  # earlier imports kept the prefix
             subdir = os.path.join(dest, sid, "subagents")
             os.makedirs(subdir, exist_ok=True)
-            subs[sub] = os.path.join(subdir, sub + ".jsonl")
-            git_store.write_text(subs[sub], session_text(ref, sub))
+            subs[name] = os.path.join(subdir, name + ".jsonl")
+            git_store.write_text(subs[name], session_text(ref, sub))
         idx.append({"id": sid, "user": u, "harness": None, "path": fp,
-                    "subagents": subs, "origin": "team", "ref": ref})
+                    "subagents": subs, "agents": {}, "origin": "team", "ref": ref})
     return idx
 
 
@@ -312,9 +336,12 @@ def operation_transcript(ev, tid):
     sid = ev.get("session_id")
     if info["user"] == git_store.user():
         entry = git_store.state("session-paths.json", {}).get(git_store.session_key(sid, info["harness"]), {})
-        paths = [entry.get("path")] + list(entry.get("subagents", {}).values())
+        subs, sub = entry.get("subagents", {}), info.get("agent")
+        own = sub and (subs.get(sub) or subagent_transcript(entry.get("path") or "", sub))
+        paths = [own] + [entry.get("path")] + list(subs.values())  # a subagent's own calls first
         if not any(paths):
-            paths = [p for p, s, _ in transcript_sources(info["harness"]) if s == sid]
+            found = [(p, a) for p, s, a in transcript_sources(info["harness"]) if s == sid]
+            paths = [p for p, a in found if sub and a == sub] + [p for p, _ in found]
         for path in paths:
             if path and os.path.isfile(path):
                 for chunk in scan_transcript(path, info["harness"]):

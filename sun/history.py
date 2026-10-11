@@ -167,10 +167,9 @@ def squash_turn(sid, harness="claude"):
     if any(p and not git_store.quiet("git", "merge-base", "--is-ancestor", c, p).returncode
            for p in published for c in rng): return
     ops = [e for e in events() if e.get("commit") in rng]
-    mine = [e for e in ops if e["actor"] == actor]
-    allowed = {actor, git_store.local()}
-    raw = [e for e in ops if e.get("type") == "edit" and e["actor"] in allowed
-           and not e.get("snapshot")]
+    mine = [e for e in ops if git_store.in_session(e["actor"], sid, harness)]  # subagents' calls too
+    raw = [e for e in ops if e.get("type") == "edit" and not e.get("snapshot") and (
+           git_store.in_session(e["actor"], sid, harness) or e["actor"] == git_store.local())]
     if not rng or not mine or len(raw) != len(ops) or set(rng) - {e["commit"] for e in raw}:
         return
     # Rewriting the turn removes these commits from the main shadow lineage. Keep every
@@ -239,6 +238,7 @@ def cmd_sync(a):
         for claim in git_store.state("active.json", {}).values():
             if claim.get("id"): git_store.git("update-ref", "-d", "refs/sun/pending/" + claim["id"])
         git_store.save_state("active.json", {})
+        git_store.save_state("subagents.json", {})  # stopped agents' subagents are not running
     ev = sync(method="uncertain" if a.recover else "sync")
     print(f"sun: recorded edits as op {ev['id']}" if ev else "sun: nothing to sync")
 

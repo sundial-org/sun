@@ -237,7 +237,7 @@ def main(argv=None):
             raise SystemExit(integration.run_git(argv[1:]))
         if argv[0] == "shell-init":
             return integration.shell_init()
-        if argv[1:] not in (["prepare"], ["finish"]):
+        if argv[1:] not in (["prepare"], ["finish"], ["finish-push"]):
             sys.exit("sun: invalid Git integration phase")
         raise SystemExit(integration.integrate(argv[1]))
     ap = argparse.ArgumentParser(

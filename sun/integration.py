@@ -1,6 +1,7 @@
 """Optional shell integration around the real Git executable."""
 
 import contextlib
+import json
 import os
 import re
 import shlex
@@ -32,7 +33,7 @@ def run_git(args):
     prefix, command, rest = git_command(args)
     env = os.environ.copy()
     dry = any(a in ("--dry-run", "-n") for a in rest)
-    if dry:
+    if dry or command == "push":
         env["SUN_SKIP_PUSH"] = "1"
     enabled = command in ("push", "pull") and not dry
     # A Git shell alias runs at the repository root and inherits -C, -c and
@@ -44,7 +45,16 @@ def run_git(args):
         ready = subprocess.run([*helper, "prepare"], env=env).returncode == 0
     else:
         ready = False
-    result = subprocess.run(["git", *args], env=env)
+    if ready and command == "push":
+        # Porcelain identifies the actual remote and every source/destination,
+        # including up-to-date Git branches with newly recorded Sun operations.
+        result = subprocess.run(["git", *prefix, "push", "--porcelain", *rest],
+                                env=env, stdout=subprocess.PIPE, text=True)
+        print(result.stdout, end="", flush=True)
+        if result.returncode == 0:
+            subprocess.run([*helper, "finish-push"], env=env, input=result.stdout, text=True)
+    else:
+        result = subprocess.run(["git", *args], env=env)
     if ready and command == "pull" and result.returncode == 0:
         subprocess.run([*helper, "finish"], env=env)
     return result.returncode
@@ -68,11 +78,47 @@ def integrate(phase):
                     with git_store.lock():
                         cli.configure_sharing(git_store.cfg_share_sessions())
                 return 0
-            reconcile_pull()
+            if phase == "finish-push":
+                publish_push(sys.stdin.read())
+            else:
+                reconcile_pull()
         return 0
     except (SystemExit, Exception) as exc:
         print(f"sun: automatic Git integration failed: {exc}; Git's result is unchanged", file=sys.stderr)
         return 1
+
+
+def remote_for_url(url, push=False):
+    normalize = lambda value: value.rstrip("/").removesuffix(".git")
+    for remote in git_store.git("remote").splitlines():
+        args = ["remote", "get-url", *(["--push"] if push else []), remote]
+        if normalize(git_store.git(*args).strip()) == normalize(url):
+            return remote
+    return None
+
+
+def publish_push(output):
+    from argparse import Namespace
+
+    remote = None
+    for line in output.splitlines():
+        if line.startswith("To "):
+            remote = remote_for_url(line[3:], push=True)
+            if not remote:
+                print("sun: push destination has no configured remote; Sun history was not published", file=sys.stderr)
+            continue
+        row = line.split("\t")
+        if not remote or len(row) < 3 or row[0] not in (" ", "=", "*", "+"):
+            continue
+        source, target = row[1].split(":", 1)
+        if not source.startswith("refs/heads/") or not target.startswith("refs/heads/"):
+            continue
+        branch = source.removeprefix("refs/heads/")
+        if not git_store.ref_oid("refs/sun/heads/" + branch):
+            continue
+        with git_store.lock():
+            history.cmd_push(Namespace(remote=remote, branch=branch,
+                                       target_branch=target.removeprefix("refs/heads/")))
 
 
 def reconcile_pull():
@@ -81,19 +127,16 @@ def reconcile_pull():
     rows = [line.split("\t", 2) for line in git_store.read_text(path).splitlines()]
     fetched = [row for row in rows if len(row) == 3 and row[1] == ""]
     sources = []
-    normalize = lambda url: url.rstrip("/").removesuffix(".git")
-    for oid, _, description in fetched:
+    for _, _, description in fetched:
         match = re.fullmatch(r"branch '(.*)' of (.*)", description)
         if not match:
             print("sun: pulled source has no named branch; Sun history was not joined", file=sys.stderr)
             continue
         branch, url = match.groups()
-        remotes = [remote for remote in git_store.git("remote").splitlines()
-                   if normalize(git_store.git("remote", "get-url", remote).strip()) == normalize(url)]
-        if not remotes:
+        remote = remote_for_url(url)
+        if not remote:
             print("sun: pulled source has no configured remote; Sun history was not joined", file=sys.stderr)
             continue
-        remote = remotes[0]  # aliases for the same URL fetch the same source history
         git_store.git("fetch", "--no-write-fetch-head", "-q", remote,
                       *git_store.refspecs(git_store.cfg_share_sessions(), remote))
         tip = git_store.ref_oid(f"refs/sun/remotes/{remote}/{branch}")

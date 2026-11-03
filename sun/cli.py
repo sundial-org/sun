@@ -80,16 +80,16 @@ def remove_hooks(harness):  # a restrictive re-init un-installs the excluded har
 
 
 def configure_sharing(share_sessions=False):
-    if "origin" in git_store.git("remote", check=False).split():
+    for remote in git_store.git("remote", check=False).splitlines():
         for old in ("+refs/sun/*:refs/sun/*", "+refs/sun/sessions/*:refs/sun/sessions/*",
                     "+refs/sun/heads/*:refs/sun/heads/*", "+refs/sun/log/*:refs/sun/log/*",
                     "+refs/sun/ops/*:refs/sun/ops/*",
                     "refs/sun/checkpoints/*:refs/sun/checkpoints/*",
                     "refs/sun/session-checkpoints/*:refs/sun/session-checkpoints/*"):
-            git_store.git("config", "--fixed-value", "--unset-all", "remote.origin.fetch", old, check=False)
-        current = git_store.git("config", "--get-all", "remote.origin.fetch", check=False).splitlines()
-        for spec in git_store.refspecs(share_sessions):
-            if spec not in current: git_store.git("config", "--add", "remote.origin.fetch", spec)
+            git_store.git("config", "--fixed-value", "--unset-all", f"remote.{remote}.fetch", old, check=False)
+        current = git_store.git("config", "--get-all", f"remote.{remote}.fetch", check=False).splitlines()
+        for spec in git_store.refspecs(share_sessions, remote):
+            if spec not in current: git_store.git("config", "--add", f"remote.{remote}.fetch", spec)
     # Remove only exact Sun-owned hooks from the earlier design; preserve custom hooks.
     managed = {
         "pre-push": ('#!/bin/sh\n# sun: mirror shared refs\nexec sun push "$1"\n',
@@ -230,12 +230,24 @@ def cmd_update(a):  # uv re-resolves the git source to the latest commit
 
 def main(argv=None):
     git_store._u.clear()
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] in (["git"], ["shell-init"], ["git-integrate"]):
+        from . import integration
+        if argv[0] == "git":
+            raise SystemExit(integration.run_git(argv[1:]))
+        if argv[0] == "shell-init":
+            return integration.shell_init()
+        if argv[1:] not in (["prepare"], ["finish"]):
+            sys.exit("sun: invalid Git integration phase")
+        raise SystemExit(integration.integrate(argv[1]))
     ap = argparse.ArgumentParser(
         prog="sun", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Start with `sun init`, then use `sun viz` to explore recorded work.")
     sub = ap.add_subparsers(dest="cmd", required=True, title="commands", metavar="COMMAND")
     ps = {c: sub.add_parser(c, help=h) for c, h in [
         ("init", "initialize Sun and install agent hooks"),
+        ("shell-init", "print shell integration for automatic setup, push and pull"),
+        ("git", "run Git with automatic Sun integration"),
         ("sync", "record file changes since the last Sun snapshot"),
         ("log", "list Sun commits with attributed actors and turns"),
         ("show", "show a Sun commit and its recorded operations"),

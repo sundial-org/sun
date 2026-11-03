@@ -1,7 +1,6 @@
 """Optional shell integration around the real Git executable."""
 
 import contextlib
-import json
 import os
 import re
 import shlex
@@ -118,6 +117,7 @@ def publish_push(output):
             continue
         with git_store.lock():
             history.cmd_push(Namespace(remote=remote, branch=branch,
+                                       fetch_remote=git_store.git("remote", "get-url", "--push", remote).strip(),
                                        target_branch=target.removeprefix("refs/heads/")))
 
 

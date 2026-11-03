@@ -240,7 +240,8 @@ def cmd_push(a):
     target = getattr(a, "target_branch", None) or branch
     if not git_store.ref_oid(ref): sys.exit("sun: branch has no recorded Sun history")
     # Fetch ancestry, not mutable session refs: publication must not overwrite our local transcripts.
-    git_store.git("fetch", "-q", a.remote, *git_store.refspecs(False, a.remote))
+    git_store.git("fetch", "-q", getattr(a, "fetch_remote", None) or a.remote,
+                  *git_store.refspecs(False, a.remote))
     tip = join_history(git_store.ref_oid(f"refs/sun/remotes/{a.remote}/{target}"), ref)
     selected = events(scope=[tip])
     snapshots = {e.get("snapshot", e["commit"]) for e in selected}

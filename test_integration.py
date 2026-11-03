@@ -136,7 +136,7 @@ class IntegrationTest(unittest.TestCase):
             run("sync")
             remote = self.sun_head()
             self.wrapped(self.dir, "push")
-            self.wrapped(clone, "pull", "--rebase", "origin", branch)
+            self.wrapped(clone, "pull", "--rebase", "-n", "origin", branch)
             tip = self.git("-C", clone, "rev-parse", "refs/sun/heads/" + branch).strip()
             self.git("-C", clone, "merge-base", "--is-ancestor", remote, tip)
             self.assertEqual(self.git("-C", clone, "rev-parse", tip + "^{tree}"),

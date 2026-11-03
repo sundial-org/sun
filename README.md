@@ -14,6 +14,29 @@ uv tool install git+https://github.com/sundial-org/sun
 cd your-repo && sun init   # sets up every harness it detects (Claude Code, Codex)
 ```
 
+For automatic setup and sharing through normal Git commands, add this to your
+`~/.zshrc` or `~/.bashrc`, then open a new shell:
+
+```sh
+eval "$(sun shell-init)"
+```
+
+This shell function runs `sun git` around Git. The first `git push` or `git pull`
+in a working repository initializes Sun without prompts, with raw transcript sharing off.
+Successful pushes publish recorded Sun history for each pushed branch, including when Git
+says the branch is already up to date. Successful pulls record the resulting local files
+and join the pulled branch's Sun ancestry, so remote operations appear in `sun log` and
+`sun viz` immediately. This also works when only Sun history has changed.
+Git still merges files and resolves conflicts; joining Sun history keeps the local snapshot
+and does not apply edits found only in remote Sun snapshots. A failed pull does not join histories.
+
+The integration supports configured remotes, Git's `-C`/`-c` options, and named branch
+destinations. Push output uses Git's porcelain format to identify those destinations.
+Dry runs skip Sun setup and publication. Sun failures warn without changing Git's exit status.
+Git aliases, GUI clients, and programs invoking the Git executable directly bypass this shell
+function; use `sun git push` / `sun git pull` explicitly there, or the existing repository hooks.
+Remove the shell initialization line and run `unset -f git` to disable the wrapper.
+
 `sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
 subagents are included. Raw transcripts remain in their existing local directories by default.
 Existing commits stay untracked because sun did not observe them: work done before `sun init` is
@@ -68,7 +91,8 @@ Git commits. The default is origin/current branch. It does not run sync, require
 or push a normal Git branch. Use `git push` separately for normal Git history. Uncommitted edits
 that Sun has recorded are publishable; edits not yet recorded are not included.
 
-Fetching does not join histories. When publishing, Sun combines the selected branch's local
+Fetching alone does not join histories. The optional shell integration joins the pulled
+history after a successful `git pull`. When publishing, Sun combines the selected branch's local
 and fetched Sun ancestry, preserving original operation IDs and keeping the local snapshot.
 This is a history join, not a file merge: it neither applies remote files nor resolves conflicts.
 Resolve file conflicts through normal Git once, then run `sun sync` to observe the result.
@@ -125,6 +149,8 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun undo --dry-run` | check whether the latest reversal can apply without changing anything |
 | `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
 | `sun push [remote] [branch]` | publish the selected Sun history, separately from normal Git |
+| `sun shell-init` | print the optional shell function for automatic Git integration |
+| `sun git ...` | run Git with automatic Sun setup, publication, and pull reconciliation |
 | `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |
 | `sun check --run [RULE ...]` | run the rules that name a command, model, or agent, and record their verdicts |
 | `sun coverage [-n COUNT] [--json]` | see which commits were checked against each rule, and by whom |

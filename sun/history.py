@@ -238,10 +238,10 @@ def cmd_push(a):
         sys.exit("sun: push requires a local branch name, not a revision or refspec")
     ref = "refs/sun/heads/" + branch
     target = getattr(a, "target_branch", None) or branch
+    transport = getattr(a, "transport", None) or a.remote
     if not git_store.ref_oid(ref): sys.exit("sun: branch has no recorded Sun history")
     # Fetch ancestry, not mutable session refs: publication must not overwrite our local transcripts.
-    git_store.git("fetch", "-q", getattr(a, "fetch_remote", None) or a.remote,
-                  *git_store.refspecs(False, a.remote))
+    git_store.git("fetch", "-q", transport, *git_store.refspecs(False, a.remote))
     tip = join_history(git_store.ref_oid(f"refs/sun/remotes/{a.remote}/{target}"), ref)
     selected = events(scope=[tip])
     snapshots = {e.get("snapshot", e["commit"]) for e in selected}
@@ -256,12 +256,12 @@ def cmd_push(a):
     # Protect operations even when an interrupted push has an unknown outcome.
     git_store.git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), tip)
     if git_store.refs("refs/sun/checks/"):  # separately, and fail-soft: checks never block history
-        result = git_store.quiet("git", "push", "--no-verify", "--", a.remote, "refs/sun/checks/*:refs/sun/checks/*")
+        result = git_store.quiet("git", "push", "--no-verify", "--", transport, "refs/sun/checks/*:refs/sun/checks/*")
         if result.returncode:
             print(f"sun: warning: check upload to {a.remote} failed; checks remain local. "
                   "Continuing with history push; retry `sun push` after fixing the error.", file=sys.stderr)
             if result.stderr.strip(): print(result.stderr.strip(), file=sys.stderr)
-    git_store.git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
+    git_store.git("push", "--atomic", "--no-verify", "--", transport, *specs)
 
 
 def cmd_sync(a):

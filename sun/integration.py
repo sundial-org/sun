@@ -90,8 +90,8 @@ def integrate(phase):
 def remote_for_url(url, push=False):
     normalize = lambda value: value.rstrip("/").removesuffix(".git")
     for remote in git_store.git("remote").splitlines():
-        args = ["remote", "get-url", *(["--push"] if push else []), remote]
-        if normalize(git_store.git(*args).strip()) == normalize(url):
+        args = ["remote", "get-url", "--all", *(["--push"] if push else []), remote]
+        if normalize(url) in [normalize(value) for value in git_store.git(*args).splitlines()]:
             return remote
     return None
 
@@ -102,7 +102,8 @@ def publish_push(output):
     remote = None
     for line in output.splitlines():
         if line.startswith("To "):
-            remote = remote_for_url(line[3:], push=True)
+            destination = line[3:]
+            remote = remote_for_url(destination, push=True)
             if not remote:
                 print("sun: push destination has no configured remote; Sun history was not published", file=sys.stderr)
             continue
@@ -110,15 +111,19 @@ def publish_push(output):
         if not remote or len(row) < 3 or row[0] not in (" ", "=", "*", "+"):
             continue
         source, target = row[1].split(":", 1)
+        if source == "HEAD":
+            source = git_store.git("symbolic-ref", "-q", "HEAD", check=False).strip()
         if not source.startswith("refs/heads/") or not target.startswith("refs/heads/"):
             continue
         branch = source.removeprefix("refs/heads/")
         if not git_store.ref_oid("refs/sun/heads/" + branch):
             continue
-        with git_store.lock():
-            history.cmd_push(Namespace(remote=remote, branch=branch,
-                                       fetch_remote=git_store.git("remote", "get-url", "--push", remote).strip(),
-                                       target_branch=target.removeprefix("refs/heads/")))
+        try:
+            with git_store.lock():
+                history.cmd_push(Namespace(remote=remote, branch=branch, transport=destination,
+                                           target_branch=target.removeprefix("refs/heads/")))
+        except (SystemExit, Exception) as exc:
+            print(f"sun: history for {branch} was not published: {exc}", file=sys.stderr)
 
 
 def reconcile_pull():

@@ -31,7 +31,7 @@ def git_command(args):
 def run_git(args):
     prefix, command, rest = git_command(args)
     env = os.environ.copy()
-    dry = any(a in ("--dry-run", "-n") for a in rest)
+    dry = "--dry-run" in rest or command == "push" and "-n" in rest
     if dry or command == "push":
         env["SUN_SKIP_PUSH"] = "1"
     enabled = command in ("push", "pull") and not dry

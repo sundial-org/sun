@@ -8,7 +8,6 @@ import unittest
 
 import test_sun as fixtures
 from test_sun import run, write, read
-from sun import git_store, history
 
 
 class IntegrationTest(unittest.TestCase):
@@ -21,6 +20,8 @@ class IntegrationTest(unittest.TestCase):
         if check:
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertNotIn("automatic Git integration failed", result.stderr)
+            self.assertNotIn("was not published", result.stderr)
+            self.assertNotIn("Sun history was not joined", result.stderr)
         return result
 
     def remote(self, directory):
@@ -112,9 +113,50 @@ class IntegrationTest(unittest.TestCase):
             self.git("-C", clone, "commit", "--allow-empty", "-qm", "initial")
             self.git("-C", clone, "remote", "add", "origin", bare)
             branch = self.git("-C", clone, "branch", "--show-current").strip()
+            self.wrapped(clone, "push", "--dry-run", "origin", branch)
+            self.assertFalse(os.path.exists(os.path.join(clone, ".git", "sun", "config.json")))
             self.wrapped(clone, "-c", "user.name=wrapper user", "push", "-u", "origin", branch)
             self.assertTrue(os.path.exists(os.path.join(clone, ".git", "sun", "config.json")))
             self.assertTrue(self.git("--git-dir", bare, "rev-parse", "refs/sun/heads/" + branch))
+
+    def test_rebase_pull_joins_history_and_keeps_git_result(self):
+        with tempfile.TemporaryDirectory() as temp:
+            bare, branch = self.remote(temp)
+            clone = os.path.join(temp, "clone")
+            self.git("clone", "-q", "-b", branch, bare, clone)
+            self.wrapped(clone, "pull", "--ff-only")
+            write(os.path.join(clone, "local.txt"), "local committed\n")
+            self.git("-C", clone, "add", "local.txt")
+            self.git("-C", clone, "commit", "-qm", "local change")
+            subprocess.run([sys.executable, "-m", "sun", "sync"], cwd=clone,
+                           capture_output=True, check=True)
+            write("remote.txt", "remote committed\n")
+            self.git("add", "remote.txt")
+            self.git("commit", "-qm", "remote change")
+            run("sync")
+            remote = self.sun_head()
+            self.wrapped(self.dir, "push")
+            self.wrapped(clone, "pull", "--rebase", "origin", branch)
+            tip = self.git("-C", clone, "rev-parse", "refs/sun/heads/" + branch).strip()
+            self.git("-C", clone, "merge-base", "--is-ancestor", remote, tip)
+            self.assertEqual(self.git("-C", clone, "rev-parse", tip + "^{tree}"),
+                             self.git("-C", clone, "rev-parse", "HEAD^{tree}"))
+            self.assertEqual(read(os.path.join(clone, "local.txt")), "local committed\n")
+            self.assertEqual(read(os.path.join(clone, "remote.txt")), "remote committed\n")
+
+    def test_push_uses_push_url_and_head_destination(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fetch_remote, branch = self.remote(temp)
+            push_remote = os.path.join(temp, "push.git")
+            self.git("clone", "--bare", "-q", fetch_remote, push_remote)
+            self.git("remote", "set-url", "--push", "origin", push_remote)
+            write("README.md", "publish to push URL\n")
+            run("sync")
+            tip = self.sun_head()
+            self.wrapped(self.dir, "push", "origin", "HEAD:destination")
+            self.assertEqual(self.git("--git-dir", push_remote, "rev-parse", "refs/sun/heads/destination").strip(), tip)
+            self.assertEqual(self.git("--git-dir", fetch_remote, "for-each-ref", "--format=%(refname)",
+                                      "refs/sun/heads/destination"), "")
 
 
 if __name__ == "__main__":

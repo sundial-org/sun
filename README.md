@@ -23,6 +23,8 @@ eval "$(sun shell-init)"
 
 This shell function runs `sun git` around Git. The first `git push` or `git pull`
 in a working repository initializes Sun without prompts, with raw transcript sharing off.
+Recording starts at that point; run `sun init` earlier if you want to capture work before
+your first push or pull.
 Successful pushes publish recorded Sun history for each pushed branch, including when Git
 says the branch is already up to date. Successful pulls record the resulting local files
 and join the pulled branch's Sun ancestry, so remote operations appear in `sun log` and

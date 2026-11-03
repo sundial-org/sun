@@ -1,9 +1,21 @@
 # sun
 
-Sun is an operation log on top of git. It records who made every change, whether that was you
-or a specific agent session. Rules in `RULES.md` say what should hold for the work, and checks
-record who verified what, so a pull request can say what a person, a program, or a model has
-looked at. Raw conversations stay local unless you explicitly share them.
+Seamless context and attribution sharing across your team's agents, with control over what you share.
+
+## Why Sun
+
+Your team's agents should be able to pick up where one another left off. Git carries the code,
+but a commit alone doesn't tell the next agent which session made a change, what happened along
+the way, or who checked the result. Sun carries that recorded context alongside your Git workflow,
+so people and agents can understand earlier work without rebuilding the story from scratch.
+
+Sharing that context shouldn't require sharing every conversation. Sun shares recorded operations
+and attribution while keeping raw conversations local by default. You choose whether to share
+transcripts, so your team can collaborate without automatically exposing entire agent sessions.
+
+Sun is an operation log on top of Git. It attributes recorded changes to humans or specific agent
+sessions. Rules in `RULES.md` say what should hold for the work, and checks record who verified
+what, so a pull request can say what a person, a program, or a model has looked at.
 
 ![the sun operation log: attributed commits on the left, one commit's events on the right](examples/viz.png)
 

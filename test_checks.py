@@ -196,13 +196,15 @@ class ChecksTest(unittest.TestCase):
                     write("c.txt", "c\n")  # the clone's own initial state differs from the shared tip
                     run("init", "--no-instructions")
                     stranded, = self.check(rule="tidy", verdict="pass", actor="program:t", cites=[{"at": turn}])
-                    run("push")  # a diverged history is fetched and joined, never rejected
+                    run("pull")  # reconcile history locally before publishing
+                    run("push")
                 finally:
                     os.chdir(self.dir)
             self.assertIn(stranded["id"], self.git("--git-dir", remote, "for-each-ref", "refs/sun/checks/"))
             time.sleep(1.1)
             self.check(**twin)  # the same check, recorded on two machines: one ID, two timestamps
             write("later.txt", "later\n"); run("sync")
+            run("pull")
             run("push")  # the remote keeps its copy of the twin, and history is still published
             self.assertEqual(self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip(), self.sun_head())
             self.git("fetch", "origin", *git_store.refspecs())  # this clone ran init before origin existed

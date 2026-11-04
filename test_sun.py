@@ -356,7 +356,7 @@ class SunTest(unittest.TestCase):
         finally:
             shutil.rmtree(bare, ignore_errors=True)
 
-    def test_push_joins_history_without_recording_dirty_worktree(self):
+    def test_push_rejects_divergence_then_pull_joins_without_recording_dirty_worktree(self):
         normal = self.git("rev-parse", "HEAD").strip()
         base = self.sun_head()
         write("remote.txt", "remote\n")
@@ -375,9 +375,20 @@ class SunTest(unittest.TestCase):
             self.git("init", "--bare", bare)
             self.git("remote", "add", "origin", bare)
             self.git("push", "origin", f"{remote}:{git_store.shadow_ref()}")
+            with self.assertRaisesRegex(SystemExit, "sun pull origin"):
+                run("push")
+            self.assertEqual(self.sun_head(), local)
+            self.assertEqual(self.git("--git-dir", bare, "rev-parse", git_store.shadow_ref()).strip(), remote)
+            self.assertEqual(self.git("--git-dir", bare, "for-each-ref", "refs/heads/"), "")
+            run("pull")
+            joined = self.sun_head()
+            self.assertEqual(self.git("--git-dir", bare, "rev-parse", git_store.shadow_ref()).strip(), remote)
             run("push")
+            self.assertEqual(self.sun_head(), joined)
             self.assertEqual(self.git("--git-dir", bare, "rev-parse", git_store.shadow_ref()).strip(),
                              self.sun_head())
+            self.assertNotEqual(subprocess.run(["git", "--git-dir", bare, "cat-file", "-e", normal],
+                                              capture_output=True).returncode, 0)
         merged = self.sun_head()
         parents = self.git("rev-list", "--parents", "-n1", merged).split()[1:]
         self.assertEqual(parents, [local, remote])

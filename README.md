@@ -38,8 +38,9 @@ in a working repository initializes Sun without prompts, with raw transcript sha
 Recording starts at that point; run `sun init` earlier if you want to capture work before
 your first push or pull.
 Successful pushes publish recorded Sun history for each pushed branch, including when Git
-says the branch is already up to date. Successful pulls record the resulting local files
-and join the pulled branch's Sun ancestry, so remote operations appear in `sun log` and
+says the branch is already up to date. This uses `sun push`, which rejects divergent history
+without joining it. Successful pulls record the resulting local files and run `sun pull`
+to join the pulled branch's Sun ancestry, so remote operations appear in `sun log` and
 `sun viz` immediately. This also works when only Sun history has changed.
 Git still merges files and resolves conflicts; joining Sun history keeps the local snapshot
 and does not apply edits found only in remote Sun snapshots. A failed pull does not join histories.
@@ -104,10 +105,16 @@ replace `core.hooksPath` and want to reconnect Sun.
 Git commits. The default is origin/current branch. It does not run sync, require a clean worktree,
 or push a normal Git branch. Use `git push` separately for normal Git history. Uncommitted edits
 that Sun has recorded are publishable; edits not yet recorded are not included.
+It never joins histories or advances the local Sun branch. If the remote has history your
+local branch lacks, the push is rejected: run `sun pull`, inspect the joined history, then
+retry `sun push`.
 
-Fetching alone does not join histories. The optional shell integration joins the pulled
-history after a successful `git pull`. When publishing, Sun combines the selected branch's local
-and fetched Sun ancestry, preserving original operation IDs and keeping the local snapshot.
+`sun pull [remote] [branch]` fetches Sun objects and joins the named remote branch into the
+current local Sun history. The default is origin/current branch. It preserves original
+operation IDs and the local recorded snapshot, and does not sync unrecorded edits or publish.
+When the remote extends local history and has the same snapshot, the local pointer fast-forwards;
+otherwise a join commit preserves the local snapshot. Fetching alone does not join histories.
+The optional shell integration runs this same pull after a successful `git pull`.
 This is a history join, not a file merge: it neither applies remote files nor resolves conflicts.
 Resolve file conflicts through normal Git once, then run `sun sync` to observe the result.
 A `merge` operation in Sun describes this history join, not a mirrored Git merge commit.
@@ -124,7 +131,7 @@ or bounded by a Git commit: they may include later conversation or other branche
 
 Published operations and operations inherited by another local Sun branch are not squashed.
 Interleaved turns may also remain separate commits. Atomic pushes require server support and
-are never retried non-atomically. A concurrent push rejection can be retried: Sun fetches and
+are never retried non-atomically. A concurrent push rejection requires `sun pull` before retrying:
 joins the additional history without changing your files. Recorded attempts and undone edits
 remain part of published history; Sun is not a secret-redaction tool.
 `sun log`, `sun show`, `sun blame`, and `sun viz` read this history. Only the first person in a

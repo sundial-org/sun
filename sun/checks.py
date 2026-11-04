@@ -689,8 +689,8 @@ def cmd_coverage(a):
         for row in commit["rules"]:
             by = "; ".join(f"{c['verdict']} by {row['labels'][c['id']]} {c['id'][:8]}"
                            + (" rule changed since" if c["id"] in row["outdated"] else "") for c in row["checks"])
-            eyes = {"terminal": "", "chat": "chat only"}.get(row["eyes"], "needs eyes")
-            print(f"  {row['rule']:<24} {row['status']:<14} {eyes:<11} {by}".rstrip())
+            reviewed = "human-reviewed" if row["eyes"] == "terminal" else ""
+            print(f"  {row['rule']:<24} {row['status']:<14} {reviewed:<14} {by}".rstrip())
 
 
 def default_base():
@@ -752,8 +752,8 @@ def render_pr(table, rs, base, writer):
                 selfc.append(f"{name} {row['status']} on {H} ({', '.join(row['labels'][i] for i in row['self'])})")
             else:
                 only.append(f"{name} {row['status']} on {H} ({', '.join(row['labels'][c['id']] for c in live_ids)})")
-    section("Checked at a terminal", terminal)
-    section("Said in chat, not yet confirmed at a terminal", chat)
+    section("human-reviewed", terminal)
+    section("Recorded chat verdicts", chat)
     section("Self-checked by the agent that made the change", selfc)
     section("Checked only by programs, models, or declared actors", only)
     section("Checked before the rule changed", before)

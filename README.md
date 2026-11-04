@@ -290,14 +290,16 @@ conversation is never read as the person's words. `sun show <check id>` prints o
 
 `sun coverage [-n COUNT] [--json]` folds checks onto Sun commits. Each commit and rule is
 `unchecked`, the verdict, `mixed` when checkers disagree, or `outdated` when the rule changed since.
-A row says `needs eyes` until a person's verdict counts, `chat only` when that verdict came from a
-reply, and nothing when one came from a terminal, so a terminal review of a chat verdict promotes
-it. A check written during a turn lands on that turn's commit once the turn is squashed. Coverage
+A row says `human-reviewed` when a current verdict was recorded by a person at a terminal.
+Rows without a terminal-confirmed review have no human-review label, including verdicts
+extracted from chat. A terminal review of a chat verdict adds the label; a superseded or outdated
+review no longer qualifies. Verdicts and their evidence remain visible independently of this label.
+A check written during a turn lands on that turn's commit once the turn is squashed. Coverage
 is computed when you ask and stored nowhere.
 
 `sun pr [--base BRANCH]` prints a Markdown section for the pull request: per rule, what was
-checked on which Sun commits and by whom; then what a person checked at a terminal, what was said
-in chat and not yet confirmed (with the quote and the command that confirms it), what the agent
+checked on which Sun commits and by whom; then a `human-reviewed` section for terminal-confirmed
+reviews, recorded chat verdicts (with the quote and the command that confirms them), what the agent
 checked on its own work, what only programs and models checked, what was checked before a rule
 changed, and what nobody has checked. `sun pr --update` writes it into the open pull request with
 `gh`. The section names who generated it, including an agent that generated it from its own shell.

@@ -87,6 +87,33 @@ class IntegrationTest(unittest.TestCase):
             self.wrapped(self.dir, "push", "origin", branch + ":published")
             self.assertEqual(self.git("--git-dir", bare, "rev-parse", "refs/sun/heads/published").strip(), tip)
 
+    def test_git_push_warns_on_sun_divergence_until_explicit_pull(self):
+        with tempfile.TemporaryDirectory() as temp:
+            bare, branch = self.remote(temp)
+            base = self.sun_head()
+            write("README.md", "remote history\n")
+            run("sync")
+            remote = self.sun_head()
+            run("push")
+            self.git("update-ref", "refs/sun/heads/" + branch, base)
+            write("README.md", "local history\n")
+            run("sync")
+            local = self.sun_head()
+            result = self.wrapped(self.dir, "push", check=False)
+            self.assertEqual(result.returncode, 0)  # Sun failures do not undo a successful Git push.
+            self.assertIn("sun pull origin", result.stderr)
+            self.assertIn("was not published", result.stderr)
+            self.assertEqual(self.sun_head(), local)
+            self.assertEqual(self.git("--git-dir", bare, "rev-parse", "refs/sun/heads/" + branch).strip(), remote)
+            run("pull")
+            joined = self.sun_head()
+            self.assertNotEqual(joined, local)
+            self.assertIn("already up to date", run("pull"))
+            self.assertEqual(self.sun_head(), joined)
+            self.wrapped(self.dir, "push")
+            self.assertEqual(self.sun_head(), joined)
+            self.assertEqual(self.git("--git-dir", bare, "rev-parse", "refs/sun/heads/" + branch).strip(), joined)
+
     def test_failed_pull_does_not_join_remote_sun_history(self):
         with tempfile.TemporaryDirectory() as temp:
             bare, branch = self.remote(temp)

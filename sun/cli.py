@@ -3,7 +3,7 @@
 Each Git branch has its own Sun history. Unpublished, non-interleaved agent calls are grouped
 per turn while remaining individually inspectable and undoable. Recording stays local. Resolve file
 conflicts with normal Git. `sun push` publishes the selected Sun branch independently of Git commits;
-it combines recorded histories without changing files or normal Git refs.
+it rejects divergent history. `sun pull` fetches and joins Sun histories locally without changing files.
 Raw transcripts are shared only when you explicitly enable session sharing."""
 
 import argparse
@@ -258,6 +258,7 @@ def main(argv=None):
         ("restore", "restore files to a Sun commit and record the restoration"),
         ("sessions", "manage explicitly shared agent transcripts"),
         ("push", "publish recorded Sun history independently of Git commits"),
+        ("pull", "fetch and join Sun history locally, keeping the local snapshot"),
         ("check", "record a verdict on a rule, or run the rules that name a command, model, or agent"),
         ("coverage", "show which commits were checked against each rule, and by whom"),
         ("extract", "record the verdicts you gave your agents in conversation"),
@@ -286,6 +287,8 @@ def main(argv=None):
     ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
     ps["push"].add_argument("remote", nargs="?", default="origin")
     ps["push"].add_argument("branch", nargs="?", help="local branch (default: checked-out branch)")
+    ps["pull"].add_argument("remote", nargs="?", default="origin")
+    ps["pull"].add_argument("branch", nargs="?", help="remote branch to join into the current Sun branch (default: current branch name)")
     ps["sync"].add_argument("--recover", action="store_true",
                             help="after stopping agents, release abandoned calls and record uncertain edits")
     session_sub = ps["sessions"].add_subparsers(
@@ -347,7 +350,7 @@ def main(argv=None):
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
-        "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
+        "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push, "pull": history.cmd_pull,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
         "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
@@ -366,7 +369,7 @@ def main(argv=None):
             commands[a.cmd](a)
         else:
             with git_store.lock():
-                history.ensure_branch()
+                if a.cmd not in ("push", "pull"): history.ensure_branch()
                 commands[a.cmd](a)
     else:
         commands[a.cmd](a)

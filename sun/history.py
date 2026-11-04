@@ -239,10 +239,8 @@ def cmd_push(a):
     ref = "refs/sun/heads/" + branch
     target = getattr(a, "target_branch", None) or branch
     transport = getattr(a, "transport", None) or a.remote
-    if not git_store.ref_oid(ref): sys.exit("sun: branch has no recorded Sun history")
-    # Fetch ancestry, not mutable session refs: publication must not overwrite our local transcripts.
-    git_store.git("fetch", "-q", transport, *git_store.refspecs(False, a.remote))
-    tip = join_history(git_store.ref_oid(f"refs/sun/remotes/{a.remote}/{target}"), ref)
+    tip = git_store.ref_oid(ref)
+    if not tip: sys.exit("sun: branch has no recorded Sun history")
     selected = events(scope=[tip])
     snapshots = {e.get("snapshot", e["commit"]) for e in selected}
     # ponytail: one refspec per operation; batch transport if very large histories hit ARG_MAX.
@@ -261,7 +259,30 @@ def cmd_push(a):
             print(f"sun: warning: check upload to {a.remote} failed; checks remain local. "
                   "Continuing with history push; retry `sun push` after fixing the error.", file=sys.stderr)
             if result.stderr.strip(): print(result.stderr.strip(), file=sys.stderr)
-    git_store.git("push", "--atomic", "--no-verify", "--", transport, *specs)
+    result = git_store.quiet("git", "push", "--atomic", "--no-verify", "--", transport, *specs)
+    if result.returncode:
+        sys.exit(f"sun: history push failed: {result.stderr.strip()}\n"
+                 f"sun: if the remote history advanced, switch to {branch}, run "
+                 f"`sun pull {a.remote} {target}`, then retry the push")
+
+
+def cmd_pull(a):
+    """Fetch Sun objects and join into the current history without changing files or Git branches."""
+    branch = a.branch or git_store.git("symbolic-ref", "--short", "HEAD").strip()
+    if git_store.quiet("git", "check-ref-format", "refs/heads/" + branch).returncode:
+        sys.exit("sun: pull requires a branch name, not a revision or refspec")
+    git_store.git("fetch", "--no-write-fetch-head", "-q", a.remote,
+                  *git_store.refspecs(git_store.cfg_share_sessions(), a.remote))
+    remote = git_store.ref_oid(f"refs/sun/remotes/{a.remote}/{branch}")
+    if not remote:
+        return print("sun: remote branch has no recorded Sun history")
+    history_ref = git_store.shadow_ref()
+    if not git_store.ref_oid(history_ref):
+        ensure_branch()
+    before = git_store.ref_oid(history_ref)
+    tip = join_history(remote, history_ref)
+    print("sun: history already up to date" if tip == before else
+          "sun: joined remote history locally; kept the local snapshot and left files unchanged")
 
 
 def cmd_sync(a):

@@ -114,7 +114,9 @@ class CheckCollaborationTest(unittest.TestCase):
         return self.rows(repo)[at or self.initial][rule]
 
     def share(self, *publishers):
-        for p in publishers: self.sun(p, 'push')
+        for p in publishers:
+            self.sun(p, 'pull')
+            self.sun(p, 'push')
         for p in self.clones: self.git(p, 'fetch', 'origin')
 
     def assert_row(self, repo, status, records, eyes=None, at=None, rule='correct-total'):
@@ -202,7 +204,7 @@ class CheckCollaborationTest(unittest.TestCase):
             snapshots.append((at, records))
         self.sun(self.alice, 'push')
         # Join histories explicitly; fetching alone never moves Bob's Sun tip.
-        self.sun(self.bob, 'push')
+        self.sun(self.bob, 'pull')
         for at, records in snapshots:
             for c in records: self.assert_row(self.bob, c['verdict'], [c], at=at, rule=c['rule'])
 
@@ -258,7 +260,7 @@ class CheckCollaborationTest(unittest.TestCase):
         turn = self.tip(self.alice)
         self.assertNotIn(mid, self.git(self.alice, 'rev-list', turn).split())
         self.sun(self.alice, 'push')
-        self.sun(self.bob, 'push')
+        self.sun(self.bob, 'pull')
         self.assert_row(self.bob, 'fail', [c], at=turn, rule='no-todos')
         self.assertIn('TODO', self.git(self.bob, 'show', mid + ':report.md'))
         self.assertNotIn('TODO', self.git(self.bob, 'show', turn + ':report.md'))
@@ -375,7 +377,7 @@ class CheckCollaborationTest(unittest.TestCase):
                 retry = self.sun(self.alice, 'push')
                 self.assertNotIn('warning: check upload', retry.stderr)
                 self.assertEqual(self.stored(self.remote)[c['id']], c)
-                self.sun(self.bob, 'push')
+                self.sun(self.bob, 'pull')
                 self.assert_row(self.bob, 'pass', [c], at=at)
 
 

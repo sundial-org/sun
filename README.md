@@ -131,8 +131,8 @@ or bounded by a Git commit: they may include later conversation or other branche
 
 Published operations and operations inherited by another local Sun branch are not squashed.
 Interleaved turns may also remain separate commits. Atomic pushes require server support and
-are never retried non-atomically. A concurrent push rejection requires `sun pull` before retrying:
-joins the additional history without changing your files. Recorded attempts and undone edits
+are never retried non-atomically. After a concurrent push rejection, `sun pull` joins the
+additional history locally before you retry. Recorded attempts and undone edits
 remain part of published history; Sun is not a secret-redaction tool.
 `sun log`, `sun show`, `sun blame`, and `sun viz` read this history. Only the first person in a
 repository runs `sun init`: it writes the harness hook configuration, which is committed. Every
@@ -170,6 +170,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun undo --dry-run` | check whether the latest reversal can apply without changing anything |
 | `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
 | `sun push [remote] [branch]` | publish the selected Sun history, separately from normal Git |
+| `sun pull [remote] [branch]` | fetch and join remote Sun history locally, keeping the local snapshot |
 | `sun shell-init` | print the optional shell function for automatic Git integration |
 | `sun git ...` | run Git with automatic Sun setup, publication, and pull reconciliation |
 | `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |

@@ -131,19 +131,28 @@ class ChecksTest(unittest.TestCase):
             f"create refs/sun/checks/emma/{i} {sha}\n" for i, sha in zip(chain, blobs)))
         self.assertEqual(self.row(turn)["status"], "v1099")
 
-    def test_only_a_person_at_the_terminal_counts_as_eyes(self):
+    def test_only_current_terminal_reviews_receive_the_human_reviewed_label(self):
         turn = self.sun_head()
+        for text in (run("coverage"), run("pr")):
+            self.assertNotIn("human-reviewed", text)
+            self.assertNotIn("needs eyes", text)
         judge, = self.check(rule="honest", verdict="pass", actor="human:ana", cites=[{"at": turn}])  # declared
         self.assertFalse(self.row(turn)["eyes"])
+        self.assertNotIn("human-reviewed", run("coverage"))
         call = dict(tool_name="Bash", tool_input={"command": "sun check honest pass"}, tool_use_id="bash0")
         hook("PreToolUse", **call)
         with self.assertRaises(SystemExit): run("check", "honest", "pass")  # an agent's shell is not you
         hook("PostToolUse", **call)
         run("check", "honest", "fail", judge["id"][:8], "-m", "the receipt shows sorry")  # you review the judge
         self.assertEqual((self.row(turn)["status"], self.row(turn)["eyes"]), ("fail", "terminal"))
+        self.assertIn("human-reviewed", run("coverage"))
+        self.assertIn("human-reviewed:\n- honest fail on " + turn[:7], run("pr"))
         mine = next(c for c in checks.checks().values() if c["actor"] == "emma/local")
         self.check(verdict="pass", actor="agent:second", cites=[{"check": mine["id"]}])
-        self.assertFalse(self.row(turn)["eyes"])  # your check was replaced, so it needs your eyes again
+        self.assertFalse(self.row(turn)["eyes"])  # superseded reviews no longer carry a label
+        for text in (run("coverage"), run("pr")):
+            self.assertNotIn("human-reviewed", text)
+            self.assertNotIn("needs eyes", text)
 
     def test_a_person_checks_what_they_see(self):
         write("draft.txt", "not yet recorded\n")
@@ -400,13 +409,15 @@ class RulesTest(unittest.TestCase):
         self.assertEqual(c["meta"]["at_method"], "turn")
         self.assertEqual(c["meta"]["extractor"], {"model": "extract.py", "version": "sun-extract/1"})
         self.assertEqual((self.row(seen)["status"], self.row(seen)["eyes"]), ("pass", "chat"))
-        self.assertIn("chat only", run("coverage"))
+        self.assertNotIn("chat only", run("coverage"))
+        self.assertNotIn("human-reviewed", run("coverage"))
         self.assertIn("recorded 0 verdicts", run("extract"))  # already read
         self.transcript(("assistant", "ok"), ("user", "there is a stray file"))  # a quote that is not her words is dropped
         self.assertIn("recorded 0 verdicts", run("extract", "--session", "session12345"))
         self.assertEqual(len([c for c in checks.checks().values() if c["actor"] == "emma/chat"]), 1)
         run("check", "honest", "pass", c["id"][:8], "-m", "confirmed")  # a terminal review promotes it
         self.assertEqual(self.row(seen)["eyes"], "terminal")
+        self.assertIn("human-reviewed", run("coverage"))
 
     def test_extract_refuses_an_agent_shell_and_an_undeclared_chat_actor(self):
         hook("PreToolUse", tool_name="Bash", tool_input={"command": "sun extract"}, tool_use_id="b")
@@ -451,8 +462,8 @@ class RulesTest(unittest.TestCase):
         md = run("pr")
         self.assertIn("## Checks recorded by sun", md)
         self.assertIn("by emma at a terminal", md)
-        self.assertIn("Checked at a terminal:\n- tidy pass on", md)
-        self.assertIn("Said in chat, not yet confirmed at a terminal:\n- honest pass on " + seen[:7], md)
+        self.assertIn("human-reviewed:\n- tidy pass on", md)
+        self.assertIn("Recorded chat verdicts:\n- honest pass on " + seen[:7], md)
         self.assertIn('"the notes look right", extracted by extract.py; confirm with `sun check honest pass', md)
         self.assertIn(f"Sun commits on `{base_branch()}`", md)
         self.assertIn("Checked only by programs, models, or declared actors:", md)

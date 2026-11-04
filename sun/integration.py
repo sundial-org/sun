@@ -128,6 +128,8 @@ def publish_push(output):
 
 def reconcile_pull():
     """Join only the Sun lineage named by this pull's mergeable FETCH_HEAD."""
+    from argparse import Namespace
+
     path = git_store.git("rev-parse", "--git-path", "FETCH_HEAD").strip()
     rows = [line.split("\t", 2) for line in git_store.read_text(path).splitlines()]
     fetched = [row for row in rows if len(row) == 3 and row[1] == ""]
@@ -142,13 +144,9 @@ def reconcile_pull():
         if not remote:
             print("sun: pulled source has no configured remote; Sun history was not joined", file=sys.stderr)
             continue
-        git_store.git("fetch", "--no-write-fetch-head", "-q", remote,
-                      *git_store.refspecs(git_store.cfg_share_sessions(), remote))
-        tip = git_store.ref_oid(f"refs/sun/remotes/{remote}/{branch}")
-        if tip:
-            sources.append(tip)
+        sources.append(Namespace(remote=remote, branch=branch))
     with git_store.lock():
         history.ensure_branch()
         history.sync()
-        for tip in sources:
-            history.join_history(tip, git_store.shadow_ref())
+        for source in sources:
+            history.cmd_pull(source)

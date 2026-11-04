@@ -44,6 +44,10 @@ to join the pulled branch's Sun ancestry, so remote operations appear in `sun lo
 `sun viz` immediately. This also works when only Sun history has changed.
 Git still merges files and resolves conflicts; joining Sun history keeps the local snapshot
 and does not apply edits found only in remote Sun snapshots. A failed pull does not join histories.
+`git fetch` only downloads Sun history. Pull variants such as `git pull origin main`,
+`git pull --rebase`, and `git pull --ff-only` join the Sun history of the branch actually
+pulled. Those flags govern Git only: Sun operations are not rebased, and `--ff-only`
+does not prohibit a Sun history join.
 
 The integration supports configured remotes, Git's `-C`/`-c` options, and named branch
 destinations. Push output uses Git's porcelain format to identify those destinations.

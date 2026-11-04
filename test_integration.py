@@ -131,6 +131,27 @@ class IntegrationTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(self.git("-C", clone, "rev-parse", "refs/sun/heads/" + branch), before)
 
+    def test_fetch_only_downloads_and_pull_joins_the_explicit_source_branch(self):
+        with tempfile.TemporaryDirectory() as temp:
+            bare, branch = self.remote(temp)
+            clone = os.path.join(temp, "clone")
+            self.git("clone", "-q", "-b", branch, bare, clone)
+            self.wrapped(clone, "pull")
+            before = self.git("-C", clone, "rev-parse", "refs/sun/heads/" + branch).strip()
+            self.git("switch", "-c", "feature")
+            write("feature.txt", "remote feature history only\n")
+            run("sync")
+            feature = self.sun_head()
+            self.wrapped(self.dir, "push", "origin", "feature")
+            self.wrapped(clone, "fetch", "origin")
+            self.assertEqual(self.git("-C", clone, "rev-parse", "refs/sun/heads/" + branch).strip(), before)
+            self.assertEqual(self.git("-C", clone, "rev-parse", "refs/sun/remotes/origin/feature").strip(), feature)
+            self.wrapped(clone, "pull", "--ff-only", "origin", "feature")
+            self.git("-C", clone, "merge-base", "--is-ancestor", feature, "refs/sun/heads/" + branch)
+            self.assertEqual(self.git("-C", clone, "branch", "--show-current").strip(), branch)
+            self.assertFalse(os.path.exists(os.path.join(clone, "feature.txt")))
+            self.assertEqual(self.git("--git-dir", bare, "rev-parse", "refs/sun/heads/" + branch).strip(), before)
+
     def test_first_push_initializes_plain_repo(self):
         with tempfile.TemporaryDirectory() as temp:
             bare = os.path.join(temp, "bare.git")

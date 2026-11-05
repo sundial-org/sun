@@ -40,7 +40,7 @@ def run_gh(args):
     parser.add_argument("-R", "--repo")
     parser.add_argument("-H", "--head")
     options, rest = parser.parse_known_args(args)
-    creating = rest[:2] == ["pr", "create"] and not any(arg in args for arg in ("--help", "-h", "--dry-run"))
+    creating = rest[:2] == ["pr", "create"] and not any(arg in args for arg in ("--help", "-h", "--dry-run", "--web", "-w"))
     started = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()
     # Preserve gh's terminal and interactive prompts. Find the newly created PR
     # by its branch, commit and creation time instead of capturing terminal output.
@@ -67,7 +67,9 @@ def refresh_prs(head=None, repo=None, created_since=None):
         normal = git_store.ref_oid("HEAD")
         args = ["gh", "pr", "list", "--state", "open", "--head", name,
                 "--json", "url,headRefName,headRefOid,createdAt,baseRefName,headRepositoryOwner,isCrossRepository"]
-        if repo: args += ["--repo", repo]
+        if repo:
+            repo = re.sub(r"^git@([^:]+):", r"https://\1/", repo).removesuffix(".git")
+            args += ["--repo", repo]
         candidates = json.loads(git_store.sh(*args))
         candidates = [pr for pr in candidates if pr["headRefName"] == name and pr["headRefOid"] == normal
                       and (not owner or pr["headRepositoryOwner"]["login"] == owner)

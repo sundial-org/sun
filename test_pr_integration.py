@@ -67,14 +67,21 @@ with open(path, 'w') as f: json.dump(state, f)
 
     def test_create_targets_new_pr_preserves_body_and_does_not_sync_dirty_files(self):
         before = self.sun_head()
+        state = self.state()
+        state['prs'] = [dict(url='https://github.com/team/repo/pull/11',
+                            headRefName=self.git('branch', '--show-current').strip(),
+                            headRefOid=git_store.ref_oid('HEAD'), createdAt='2000-01-01T00:00:00Z',
+                            baseRefName='main', headRepositoryOwner={'login': 'team'}, isCrossRepository=False)]
+        write(self.state_path, json.dumps(state))
         write("private-draft.txt", "not recorded\n")
-        result = self.wrapped("gh", "pr", "create", "--title", "Example", "--body", "Description")
+        result = self.wrapped("gh", "-R", "team/repo", "pr", "create", "--title", "Example", "--body", "Description")
         self.assertEqual(result.returncode, 0, result.stderr)
         state = self.state()
         self.assertIn("https://github.com/team/repo/pull/12", result.stdout)
         self.assertTrue(state['body'].startswith("User description\n\nKeep this text."))
         self.assertIn("## Checks recorded by sun", state['body'])
         self.assertIn("https://github.com/team/repo/pull/12", next(c for c in state['calls'] if 'edit' in c))
+        self.assertIn("team/repo", next(c for c in state['calls'] if 'list' in c))
         self.assertEqual(self.sun_head(), before)
         self.assertNotIn("private-draft", state['body'])
         integration.refresh_prs()

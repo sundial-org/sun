@@ -14,14 +14,14 @@ uv tool install git+https://github.com/sundial-org/sun
 cd your-repo && sun init   # sets up every harness it detects (Claude Code, Codex)
 ```
 
-For automatic setup and sharing through normal Git commands, add this to your
+For automatic setup, sharing, and PR coverage through Git and GitHub CLI commands, add this to your
 `~/.zshrc` or `~/.bashrc`, then open a new shell:
 
 ```sh
 eval "$(sun shell-init)"
 ```
 
-This shell function runs `sun git` around Git. The first `git push` or `git pull`
+These shell functions run `sun git` around Git and `sun gh` around GitHub CLI. The first `git push` or `git pull`
 in a working repository initializes Sun without prompts, with raw transcript sharing off.
 Recording starts at that point; run `sun init` earlier if you want to capture work before
 your first push or pull.
@@ -42,7 +42,34 @@ destinations. Push output uses Git's porcelain format to identify those destinat
 Dry runs skip Sun setup and publication. Sun failures warn without changing Git's exit status.
 Git aliases, GUI clients, and programs invoking the Git executable directly bypass this shell
 function; use `sun git push` / `sun git pull` explicitly there, or the existing repository hooks.
-Remove the shell initialization line and run `unset -f git` to disable the wrapper.
+Remove the shell initialization line and run `unset -f git gh` to disable the wrappers.
+
+In an initialized Sun repository with rules, successful `gh pr create` adds check coverage
+to the newly created PR. Successful `git push` refreshes coverage on matching open PRs in
+the pushed repository after Sun history publishes. This requires an authenticated `gh`
+installation. Automatic updates preserve the description outside the `<!-- sun -->` section,
+use existing recorded checks, and do not sync dirty files or extract new chat verdicts.
+Updates are limited to the checked-out branch and PRs at the same Git commit. Failed commands,
+dry runs, browser-based creation (`--web`), and PRs for a different local branch are skipped.
+Pushes to forks do not automatically update PRs in a different base repository; use `sun pr --update --pr URL`.
+Coverage failures warn without changing the original command's exit status.
+
+Opt out for one command without disabling Sun history sharing:
+
+```sh
+gh pr create --no-sun-pr
+git push --no-sun-pr
+```
+
+Or disable either automatic PR update in your shell configuration:
+
+```sh
+eval "$(sun shell-init --no-gh-pr)"   # disable coverage after gh pr create
+eval "$(sun shell-init --no-git-pr)"  # disable coverage after git push
+```
+
+Use both flags in one `sun shell-init` call to disable both automatic updates.
+The same per-command opt-out works with `sun gh` and `sun git` without installing shell functions.
 
 `sun init` scans sessions that touched this repo for each harness it detects. Worktrees and
 subagents are included. Raw transcripts remain in their existing local directories by default.
@@ -163,13 +190,14 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun restore <commit>` | restore an older Sun state as a new commit without rewriting history |
 | `sun push [remote] [branch]` | publish the selected Sun history, separately from normal Git |
 | `sun pull [remote] [branch]` | fetch and join remote Sun history locally, keeping the local snapshot |
-| `sun shell-init` | print the optional shell function for automatic Git integration |
+| `sun shell-init [--no-gh-pr] [--no-git-pr]` | print Git and GitHub CLI wrappers, with independent PR coverage opt-outs |
 | `sun git ...` | run Git with automatic Sun setup, publication, and pull reconciliation |
+| `sun gh ...` | run GitHub CLI and add coverage after PR creation |
 | `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |
 | `sun check --run [RULE ...]` | run the rules that name a command, model, or agent, and record their verdicts |
 | `sun coverage [-n COUNT] [--json]` | see which commits were checked against each rule, and by whom |
 | `sun extract` | record the verdicts you gave your agents in conversation |
-| `sun pr [--update]` | summarize checks for the pull request as Markdown, or write it into the PR |
+| `sun pr [--update] [--pr URL]` | summarize checks or update the selected PR (default: current branch's PR) |
 | `sun trust` | let hooks on this machine run the commands `RULES.md` names |
 | `sun export [-o path]` | export prompts, tool calls, and edits as JSONL |
 | `sun update` | update a Sun installation made from this repository with uv |

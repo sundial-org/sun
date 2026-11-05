@@ -9,6 +9,7 @@ import re
 import shlex
 import subprocess
 import sys
+from urllib.parse import urlsplit
 
 from . import git_store, history
 
@@ -68,7 +69,11 @@ def refresh_prs(head=None, repo=None, created_since=None):
         args = ["gh", "pr", "list", "--state", "open", "--head", name,
                 "--json", "url,headRefName,headRefOid,createdAt,baseRefName,headRepositoryOwner,isCrossRepository"]
         if repo:
-            repo = re.sub(r"^git@([^:]+):", r"https://\1/", repo).removesuffix(".git")
+            repo = re.sub(r"^git@([^:]+):", r"https://\1/", repo)
+            if "://" in repo:
+                url = urlsplit(repo)
+                repo = url.netloc.rsplit("@", 1)[-1] + url.path
+            repo = repo.rstrip("/").removesuffix(".git")
             args += ["--repo", repo]
         candidates = json.loads(git_store.sh(*args))
         candidates = [pr for pr in candidates if pr["headRefName"] == name and pr["headRefOid"] == normal

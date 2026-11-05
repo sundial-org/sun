@@ -1,17 +1,96 @@
 """Optional shell integration around the real Git executable."""
 
 import contextlib
+import argparse
+import datetime
+import json
 import os
 import re
 import shlex
 import subprocess
 import sys
+from urllib.parse import urlsplit
 
 from . import git_store, history
 
 
-def shell_init():
-    print('git() { command sun git "$@"; }')
+def shell_init(args=()):
+    parser = argparse.ArgumentParser(prog="sun shell-init")
+    parser.add_argument("--no-git-pr", action="store_true", help="disable automatic PR coverage on Git push")
+    parser.add_argument("--no-gh-pr", action="store_true", help="disable automatic PR coverage on gh pr create")
+    options = parser.parse_args(args)
+    for command in ("git", "gh"):
+        flag = " --no-sun-pr" if getattr(options, "no_" + command + "_pr") else ""
+        print(f'{command}() {{ command sun {command}{flag} "$@"; }}')
+
+
+def pr_opt_out(args):
+    # The wrapper flag is consumed before invoking the underlying executable.
+    before, separator, after = [], [], []
+    if "--" in args:
+        position = args.index("--")
+        before, separator, after = args[:position], ["--"], args[position + 1:]
+    else:
+        before = args
+    return [arg for arg in before if arg != "--no-sun-pr"] + separator + after, "--no-sun-pr" in before
+
+
+def run_gh(args):
+    args, skip_pr = pr_opt_out(args)
+    parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    parser.add_argument("-R", "--repo")
+    parser.add_argument("-H", "--head")
+    options, rest = parser.parse_known_args(args)
+    creating = rest[:2] == ["pr", "create"] and not any(arg in args for arg in ("--help", "-h", "--dry-run", "--web", "-w"))
+    started = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()
+    # Preserve gh's terminal and interactive prompts. Find the newly created PR
+    # by its branch, commit and creation time instead of capturing terminal output.
+    result = subprocess.run(["gh", *args])
+    if creating and not skip_pr and result.returncode == 0:
+        refresh_prs(head=options.head, repo=options.repo, created_since=started)
+    return result.returncode
+
+
+def refresh_prs(head=None, repo=None, created_since=None):
+    """Update only PRs whose head matches this checkout's recorded context."""
+    from . import checks
+
+    try:
+        if git_store.git("rev-parse", "--is-inside-work-tree", check=False).strip() != "true": return
+        if not git_store.initialized() or not checks.read_rules()[1]: return
+        branch = git_store.git("symbolic-ref", "--short", "HEAD", check=False).strip()
+        if not branch: return
+        head = head or branch
+        owner, _, name = head.rpartition(":")
+        if created_since and name != branch:
+            print("sun: PR coverage skipped: the created PR uses a different local branch", file=sys.stderr)
+            return
+        normal = git_store.ref_oid("HEAD")
+        args = ["gh", "pr", "list", "--state", "open", "--head", name,
+                "--json", "url,headRefName,headRefOid,createdAt,baseRefName,headRepositoryOwner,isCrossRepository"]
+        if repo:
+            repo = re.sub(r"^git@([^:]+):", r"https://\1/", repo)
+            if "://" in repo:
+                url = urlsplit(repo)
+                repo = url.netloc.rsplit("@", 1)[-1] + url.path
+            repo = repo.rstrip("/").removesuffix(".git")
+            args += ["--repo", repo]
+        candidates = json.loads(git_store.sh(*args))
+        candidates = [pr for pr in candidates if pr["headRefName"] == name and pr["headRefOid"] == normal
+                      and (not owner or pr["headRepositoryOwner"]["login"] == owner)
+                      and (created_since is not None or not pr["isCrossRepository"])]
+        if created_since:
+            since = datetime.datetime.fromisoformat(created_since)
+            candidates = [pr for pr in candidates if datetime.datetime.fromisoformat(pr["createdAt"].replace("Z", "+00:00")) >= since]
+            if len(candidates) != 1:
+                print("sun: could not identify the newly created PR uniquely; run `sun pr --update`", file=sys.stderr)
+                return
+        for pr in candidates:
+            with contextlib.redirect_stdout(sys.stderr):
+                checks.cmd_pr(argparse.Namespace(base=pr["baseRefName"], json=False, update=True,
+                                                 pr=pr["url"], automatic=True))
+    except (SystemExit, Exception) as exc:
+        print(f"sun: automatic PR coverage update failed: {exc}; retry `sun pr --update`", file=sys.stderr)
 
 
 def git_command(args):
@@ -29,8 +108,10 @@ def git_command(args):
 
 
 def run_git(args):
+    args, skip_pr = pr_opt_out(args)
     prefix, command, rest = git_command(args)
     env = os.environ.copy()
+    if skip_pr: env["SUN_SKIP_PR"] = "1"
     dry = "--dry-run" in rest or command == "push" and "-n" in rest
     if dry or command == "push":
         env["SUN_SKIP_PUSH"] = "1"
@@ -124,6 +205,11 @@ def publish_push(output):
                                            target_branch=target.removeprefix("refs/heads/")))
         except (SystemExit, Exception) as exc:
             print(f"sun: history for {branch} was not published: {exc}", file=sys.stderr)
+        else:
+            if not os.environ.get("SUN_SKIP_PR"):
+                current = git_store.git("symbolic-ref", "--short", "HEAD", check=False).strip()
+                if branch == current:
+                    refresh_prs(head=target.removeprefix("refs/heads/"), repo=destination)
 
 
 def reconcile_pull():

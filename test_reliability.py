@@ -332,7 +332,7 @@ class ReliabilityTest(unittest.TestCase):
         with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
             self.assertEqual(f.read(), index)
 
-    def test_push_joins_conflicting_snapshots_without_merging_files(self):
+    def test_pull_joins_conflicting_snapshots_without_merging_files(self):
         base = self.sun_head()
         write("README.md", "remote\n")
         remote = self.plumbing_commit(base, ["README.md"])
@@ -343,7 +343,7 @@ class ReliabilityTest(unittest.TestCase):
             self.git("init", "--bare", bare)
             self.git("remote", "add", "origin", bare)
             self.git("push", "origin", f"{remote}:{git_store.shadow_ref()}")
-            run("push")
+            run("pull")
         self.assertEqual(self.git("rev-list", "--parents", "-n1", self.sun_head()).split()[1:],
                          [local, remote])
         self.assertEqual(read("README.md"), "local\n")
@@ -410,6 +410,7 @@ class ReliabilityTest(unittest.TestCase):
                     remote_tip = self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip()
                     with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
                         index = f.read()
+                    run("pull")
                     run("push")
                     joined = self.sun_head()
                     self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:],

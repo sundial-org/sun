@@ -51,6 +51,26 @@ class Event(TypedDict, total=False):
     pr: int
     branch: str
     sequence: int
+    git_action: Dict[str, Any]  # Reflog identity is separate from edit authorship.
+
+
+def pull_action(before, after):
+    """Only identify an immediately matching reflog transition; otherwise leave it unknown."""
+    if not before or before == after: return
+    rows = git_store.git("reflog", "show", "-2", "--format=%H%x00%gn%x00%ge%x00%gs",
+                         "HEAD", check=False).splitlines()
+    if len(rows) != 2: return
+    current, previous = [row.split("\0", 3) for row in rows]
+    if len(current) != 4 or current[0] != after or previous[0] != before: return
+    if not current[3].startswith("pull ") and not current[3].startswith("pull:"): return
+    return {"command": "git " + current[3].rsplit(": ", 1)[0].removesuffix(":"), "reflog": current[3],
+            "name": current[1], "email": current[2], "before": before, "after": after,
+            "executor": "unknown"}
+
+
+def observed_subject(action):
+    return (f"sun: observed changes after {action['command']} (Git identity: {action['name']})"
+            if action else "sun: observed repository state")
 
 
 def ensure_branch():
@@ -77,7 +97,13 @@ def ensure_branch():
     # A changed checkout is evidence of a new state, not evidence that this user authored it.
     observe = previous.get("observe", False) or bool(tip and not previous) or bool(previous and (
         previous.get("ref") != ref or previous.get("git") != normal))
-    git_store.save_state("branch.json", {"ref": ref, "git": normal, "observe": observe})
+    action = previous.get("git_action") if previous.get("observe") else None
+    if previous.get("ref") != ref:
+        action = None
+    elif previous.get("git") != normal:
+        action = pull_action(previous.get("git"), normal)
+    git_store.save_state("branch.json", {"ref": ref, "git": normal, "observe": observe,
+                                         "git_action": action})
 
 
 def events(include_unreachable=False, scope=None) -> List[Event]:
@@ -138,12 +164,14 @@ def sync(exclude=(), method="sync"):  # record unclaimed file changes, without t
             git_store.save_state("branch.json", {**branch, "observe": False})
         return None
     pre, actor = git_store.history_head(), "unknown" if method in ("uncertain", "observed") else git_store.local()
-    c = git_store.commit_files(files, "sun: observed repository state" if method == "observed"
+    action = branch.get("git_action") if method == "observed" else None
+    c = git_store.commit_files(files, observed_subject(action) if method == "observed"
                      else edits_msg(actor, files), actor)
     p = git_store.patches(pre, c, files)
     ev = record(type="observe" if method == "observed" else "edit", actor=actor, commit=c, patch_id=git_store.patch_id(c),
                   edits=[{"file": f, "patch": p[f],
-                          "attribution": {"method": method}} for f in files])
+                          "attribution": {"method": method}} for f in files],
+                **({"git_action": action} if action else {}))
     if not active and branch.get("observe"):
         git_store.save_state("branch.json", {**branch, "observe": False})
     return ev
@@ -209,14 +237,14 @@ def cmd_push(a):
     if git_store.quiet("git", "check-ref-format", "refs/heads/" + branch).returncode:
         sys.exit("sun: push requires a local branch name, not a revision or refspec")
     ref = "refs/sun/heads/" + branch
-    if not git_store.ref_oid(ref): sys.exit("sun: branch has no recorded Sun history")
-    # Fetch ancestry, not mutable session refs: publication must not overwrite our local transcripts.
-    git_store.git("fetch", "-q", a.remote, *git_store.refspecs(False, a.remote))
-    tip = join_history(git_store.ref_oid(f"refs/sun/remotes/{a.remote}/{branch}"), ref)
+    target = getattr(a, "target_branch", None) or branch
+    transport = getattr(a, "transport", None) or a.remote
+    tip = git_store.ref_oid(ref)
+    if not tip: sys.exit("sun: branch has no recorded Sun history")
     selected = events(scope=[tip])
     snapshots = {e.get("snapshot", e["commit"]) for e in selected}
     # ponytail: one refspec per operation; batch transport if very large histories hit ARG_MAX.
-    specs = [f"{tip}:{ref}"]
+    specs = [f"{tip}:refs/sun/heads/{target}"]
     specs += [f"refs/sun/events/{e['id']}:refs/sun/events/{e['id']}" for e in selected]
     specs += [f"refs/sun/ops/{sha}:refs/sun/ops/{sha}" for sha in sorted(snapshots)]
     if git_store.cfg_share_sessions():
@@ -226,12 +254,35 @@ def cmd_push(a):
     # Protect operations even when an interrupted push has an unknown outcome.
     git_store.git("update-ref", ref.replace("refs/sun/heads/", "refs/sun/published/"), tip)
     if git_store.refs("refs/sun/checks/"):  # separately, and fail-soft: checks never block history
-        result = git_store.quiet("git", "push", "--no-verify", "--", a.remote, "refs/sun/checks/*:refs/sun/checks/*")
+        result = git_store.quiet("git", "push", "--no-verify", "--", transport, "refs/sun/checks/*:refs/sun/checks/*")
         if result.returncode:
             print(f"sun: warning: check upload to {a.remote} failed; checks remain local. "
                   "Continuing with history push; retry `sun push` after fixing the error.", file=sys.stderr)
             if result.stderr.strip(): print(result.stderr.strip(), file=sys.stderr)
-    git_store.git("push", "--atomic", "--no-verify", "--", a.remote, *specs)
+    result = git_store.quiet("git", "push", "--atomic", "--no-verify", "--", transport, *specs)
+    if result.returncode:
+        sys.exit(f"sun: history push failed: {result.stderr.strip()}\n"
+                 f"sun: if the remote history advanced, switch to {branch}, run "
+                 f"`sun pull {a.remote} {target}`, then retry the push")
+
+
+def cmd_pull(a):
+    """Fetch Sun objects and join into the current history without changing files or Git branches."""
+    branch = a.branch or git_store.git("symbolic-ref", "--short", "HEAD").strip()
+    if git_store.quiet("git", "check-ref-format", "refs/heads/" + branch).returncode:
+        sys.exit("sun: pull requires a branch name, not a revision or refspec")
+    git_store.git("fetch", "--no-write-fetch-head", "-q", a.remote,
+                  *git_store.refspecs(git_store.cfg_share_sessions(), a.remote))
+    remote = git_store.ref_oid(f"refs/sun/remotes/{a.remote}/{branch}")
+    if not remote:
+        return print("sun: remote branch has no recorded Sun history")
+    history_ref = git_store.shadow_ref()
+    if not git_store.ref_oid(history_ref):
+        ensure_branch()
+    before = git_store.ref_oid(history_ref)
+    tip = join_history(remote, history_ref)
+    print("sun: history already up to date" if tip == before else
+          "sun: joined remote history locally; kept the local snapshot and left files unchanged")
 
 
 def cmd_sync(a):

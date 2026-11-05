@@ -231,12 +231,14 @@ def cmd_update(a):  # uv re-resolves the git source to the latest commit
 def main(argv=None):
     git_store._u.clear()
     argv = sys.argv[1:] if argv is None else argv
-    if argv[:1] in (["git"], ["shell-init"], ["git-integrate"]):
+    if argv[:1] in (["git"], ["gh"], ["shell-init"], ["git-integrate"]):
         from . import integration
         if argv[0] == "git":
             raise SystemExit(integration.run_git(argv[1:]))
+        if argv[0] == "gh":
+            raise SystemExit(integration.run_gh(argv[1:]))
         if argv[0] == "shell-init":
-            return integration.shell_init()
+            return integration.shell_init(argv[1:])
         if argv[1:] not in (["prepare"], ["finish"], ["finish-push"]):
             sys.exit("sun: invalid Git integration phase")
         raise SystemExit(integration.integrate(argv[1]))
@@ -248,6 +250,7 @@ def main(argv=None):
         ("init", "initialize Sun and install agent hooks"),
         ("shell-init", "print shell integration for automatic setup, push and pull"),
         ("git", "run Git with automatic Sun integration"),
+        ("gh", "run GitHub CLI with automatic PR coverage updates"),
         ("sync", "record file changes since the last Sun snapshot"),
         ("log", "list Sun commits with attributed actors and turns"),
         ("show", "show a Sun commit and its recorded operations"),
@@ -343,6 +346,7 @@ def main(argv=None):
     ps["pr"].add_argument("--json", action="store_true", help="print the coverage of the pull request as JSON")
     ps["pr"].add_argument("--update", action="store_true",
                           help="write the section into the open pull request's description with gh")
+    ps["pr"].add_argument("--pr", help="PR URL or number to update (default: current branch's PR)")
     ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
                                 help="maximum commits (default: 30; 0 for all)")
     ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")

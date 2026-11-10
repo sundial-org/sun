@@ -1318,6 +1318,50 @@ class SunTest(unittest.TestCase):
         self.assertTrue(all(d["file"] != "viz.html" for e in history.events()
                             for d in e.get("edits", [])))
 
+    def test_display_groups_interleaved_turns_without_rewriting_history(self):
+        hook("UserPromptSubmit", "a")
+        self.tool_call("a", "a.txt", "one\n", 0)
+        hook("UserPromptSubmit", "b")
+        self.tool_call("b", "b.txt", "two\n", 0)
+        self.tool_call("a", "a.txt", "three\n", 1)
+        hook("Stop", "a")  # another agent prevents Git squashing
+        before = self.sun_head()
+        raw = output.viz_data()
+        grouped = output.turn_history(raw, 1)
+        row = grouped["commits"][0]
+        self.assertIn("turn 1 (2 tool calls)", row["subject"])
+        self.assertEqual(len(row["members"]), 2)
+        self.assertEqual([op["tool_calls"][0]["id"] for op in row["operations"]],
+                         ["tool0", "tool1"])
+        self.assertIn("snapshots", "\n".join(output.commit_lines(row)))
+        self.assertEqual(len(raw["commits"]), 4)
+        self.assertEqual(len(run("log", "-n", "1").splitlines()), 1)
+        self.assertIn("turn 1 (2 tool calls)", run("log", "-n", "1"))
+        with mock.patch("sun.output.run_viz_tui") as tui:
+            run("viz", "-n", "1")
+            self.assertEqual(tui.call_args.args[0]["commits"], grouped["commits"])
+        run("viz", "-n", "1", "-o", "viz.html")
+        html = read("viz.html")
+        self.assertIn("turn 1 (2 tool calls)", html)
+        self.assertEqual(self.sun_head(), before)
+        self.assertEqual(len(json.loads(run("data"))["commits"]), 4)
+
+    def test_display_does_not_merge_legacy_unknown_turns(self):
+        self.tool_call("a", "a.txt", "one\n", 0)
+        self.tool_call("a", "a.txt", "two\n", 1)
+        data = output.viz_data()
+        for commit in data["commits"]:
+            for op in commit["operations"]: op["turn"] = "turn0"
+        self.assertEqual(len(output.turn_history(data)["commits"]), 3)
+
+    def test_subagent_first_tool_initializes_turn_without_prompt_hook(self):
+        self.tool_call("child", "child.txt", "one\n", 0)
+        self.tool_call("child", "child.txt", "two\n", 1)
+        self.assertEqual([e["turn"] for e in history.events() if e.get("session_id") == "child"],
+                         ["turn1", "turn1"])
+        hook("Stop", "child")
+        self.assertIn("turn 1 (2 tool calls)", self.head_subject())
+
     def test_viz_writes_selfcontained_html(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])
         run("viz", "-o", "viz.html")

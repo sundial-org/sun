@@ -1340,8 +1340,9 @@ class SunTest(unittest.TestCase):
         with mock.patch("sun.output.run_viz_tui") as tui:
             run("viz", "-n", "1")
             self.assertEqual(tui.call_args.args[0]["commits"], grouped["commits"])
-        run("viz", "-n", "1", "-o", "viz.html")
-        html = read("viz.html")
+        html_path = os.path.join(self.proj, "viz.html")
+        run("viz", "-n", "1", "-o", html_path)
+        html = read(html_path)
         self.assertIn("turn 1 (2 tool calls)", html)
         self.assertEqual(self.sun_head(), before)
         self.assertEqual(len(json.loads(run("data"))["commits"]), 4)

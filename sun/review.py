@@ -177,12 +177,15 @@ def tui(screen, data):
 
 
 def cmd_review(a):
-    if not a.json and (not sys.stdin.isatty() or not sys.stdout.isatty()):
+    if not a.json and not getattr(a, "web", False) and (not sys.stdin.isatty() or not sys.stdout.isatty()):
         sys.exit('sun: review needs an interactive terminal; use sun review --json')
     with git_store.lock():
         history.ensure_branch()
         history.maybe_sync()
         data = review_data(a.base)
     if a.json: return print(json.dumps(data))
+    if getattr(a, 'web', False):
+        from . import review_web
+        return review_web.run(data)
     import curses
     curses.wrapper(tui, data)

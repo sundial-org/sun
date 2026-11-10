@@ -195,7 +195,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun gh ...` | run GitHub CLI and add coverage after PR creation |
 | `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |
 | `sun check --run [RULE ...]` | run the rules that name a command, model, or agent, and record their verdicts |
-| `sun coverage [-n COUNT] [--json]` | see which commits were checked against each rule, and by whom |
+| `sun coverage [-n COUNT] [--json | --tui]` | see which commits were checked against each rule, and by whom |
 | `sun extract` | record the verdicts you gave your agents in conversation |
 | `sun pr [--update] [--pr URL]` | summarize checks or update the selected PR (default: current branch's PR) |
 | `sun trust` | let hooks on this machine run the commands `RULES.md` names |
@@ -315,6 +315,21 @@ the state you were looking at when you replied, and drops anything that is not a
 `sun extract` does the same on demand for every session seen in this checkout, and `sun pr` reads
 unread replies first when the model is trusted. What a harness or a hook injected into the
 conversation is never read as the person's words. `sun show <check id>` prints one check.
+
+`sun coverage --tui` opens a deterministic terminal browser. Use `-n 0` for all history
+(default: 30 commits). `j/k` or arrows select, Enter opens, `h` or Escape goes back,
+and `q` exits. Start with missing/outdated checks or explicit negative verdicts
+("needs revision"), open a commit and its evidence, then request its diff. The
+commit map shows actual parent edges and joins, not inferred PR dependencies.
+Diffs are loaded only when opened; joins show changes against their first parent.
+The browser releases the repository lock before opening and displays a fixed snapshot.
+
+No new commit structure is needed: immutable Sun commits provide parent edges and
+snapshots; events provide session/turn attribution; separate check records cite
+commits, files, or lines. JSON coverage includes `parents` for the same ancestry.
+Checks do not propagate to descendants or joins. "Checks recorded" does not mean
+all lines are covered, and unrecognized verdict text is shown without inventing a
+revision request. This view does not generate new tests or infer merge requirements.
 
 `sun coverage [-n COUNT] [--json]` folds checks onto Sun commits. Each commit and rule is
 `unchecked`, the verdict, `mixed` when checkers disagree, or `outdated` when the rule changed since.

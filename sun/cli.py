@@ -349,7 +349,9 @@ def main(argv=None):
     ps["pr"].add_argument("--pr", help="PR URL or number to update (default: current branch's PR)")
     ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
                                 help="maximum commits (default: 30; 0 for all)")
-    ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")
+    coverage_format = ps["coverage"].add_mutually_exclusive_group()
+    coverage_format.add_argument("--json", action="store_true", help="print one JSON object")
+    coverage_format.add_argument("--tui", action="store_true", help="browse coverage and commit ancestry in the terminal")
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
@@ -366,7 +368,7 @@ def main(argv=None):
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(git_store.root())
         if not adopt(): git_store.sun_dir()  # exits with the `sun init` hint
-        if a.cmd in ("viz", "data"):
+        if a.cmd in ("viz", "data") or a.cmd == "coverage" and a.tui:
             commands[a.cmd](a)
         elif a.cmd in ("extract", "pr") or a.cmd == "check" and a.run:  # may start a judge, whose hooks need the lock
             with git_store.lock(): history.ensure_branch()

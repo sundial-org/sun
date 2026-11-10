@@ -657,10 +657,10 @@ def coverage(n=0, commits=None):
     for c in sorted(stored.values(), key=lambda c: (c.get("timestamp", ""), c["id"])):
         for H in lands[c["id"]]: found.setdefault((H, c["rule"]), []).append(c)
     if commits is None:
-        commits = git_store.git("log", *git_store.history_refs(), *([f"-{n}"] if n > 0 else []), "--format=%H").split()
+        commits = git_store.git("log", "--topo-order", *git_store.history_refs(), *([f"-{n}"] if n > 0 else []), "--format=%H").split()
     out = []
     for H in commits:
-        short, date, subject = git_store.git("log", "-1", "--format=%h\t%ad\t%s", "--date=short", H).rstrip("\n").split("\t", 2)
+        short, date, parents, subject = git_store.git("log", "-1", "--format=%h\t%ad\t%P\t%s", "--date=short", H).rstrip("\n").split("\t", 3)
         rows = []
         for name in sorted(rs):
             here = found.get((H, name), [])
@@ -676,11 +676,14 @@ def coverage(n=0, commits=None):
                          "labels": {c["id"]: check_label(c, authored.get(H)) for c in here},
                          "outdated": [c["id"] for c in current if c not in live],
                          "self": [c["id"] for c in live if c.get("from") and c["from"] == authored.get(H)]})
-        out.append({"commit": H, "short": short, "date": date, "subject": subject, "session": authored.get(H), "rules": rows})
+        out.append({"commit": H, "short": short, "date": date, "subject": subject, "session": authored.get(H), "parents": parents.split(), "rules": rows})
     return out
 
 
 def cmd_coverage(a):
+    if getattr(a, "tui", False):
+        from . import coverage_tui
+        return coverage_tui.run(a.n)
     history.maybe_sync()
     table = coverage(a.n)
     if a.json: return print(json.dumps({"rules": rules(), "commits": table}))

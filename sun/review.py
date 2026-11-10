@@ -155,7 +155,7 @@ def tui(screen, data):
             label = f"{item['file']}  | {item['reason']}"
             _tui_put(screen, y, 0, clean(label).replace('\n', '?'), width - 1,
                      curses.A_REVERSE if i == selected else 0)
-        _tui_put(screen, height - 2, 0, message or 'Current diff only. File identity is checked; cross-file behavior may still change.', width - 1)
+        _tui_put(screen, height - 2, 0, message or (items[selected]['reason'] if items else 'Current diff only. Reopen to refresh.'), width - 1)
         _tui_put(screen, height - 1, 0, 'j/k move  Enter open remaining changes in Vim  q quit', width - 1)
         screen.refresh()
         key = screen.getch()

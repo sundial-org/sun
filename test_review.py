@@ -109,6 +109,7 @@ class ReviewTest(unittest.TestCase):
 
     def test_mode_change_invalidates_file_check(self):
         H = self.change()
+        self.base = H
         self.passed(H)
         os.chmod('a.txt', 0o755)
         run('sync')

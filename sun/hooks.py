@@ -5,6 +5,7 @@ import os
 import re
 import shlex
 import sys
+import tempfile
 import uuid
 from typing import Dict, List, TypedDict
 
@@ -43,6 +44,8 @@ class ActiveCall(TypedDict, total=False):
     git: str
     input: dict
     tool: str
+    transcript: str
+    transcript_offset: int
 
 
 READ_TOOLS = {"Read", "Glob", "Grep", "LS", "WebFetch", "WebSearch", "view_image"}
@@ -88,6 +91,44 @@ def relative_tool_files(tool, inp):
     return [git_store.rel_to_root(f) for f in tool_files(tool, inp)]
 
 
+def verified_patch_files(st, payload, after):
+    """Verify a completed Codex patch against both snapshots, using an isolated index."""
+    if st.get("tool") != "apply_patch" or payload.get("hook_event_name") != "PostToolUse" \
+            or not payload.get("tool_use_id") or "transcript_offset" not in st: return set()
+    try:
+        with open(st.get("transcript", ""), "rb") as stream:
+            stream.seek(st.get("transcript_offset", 0))
+            records = session_store.parse_events(stream.read().decode())
+    except (OSError, UnicodeError): return set()
+    items = [r["payload"].get("item", {}) for r in records
+             if isinstance(r, dict) and isinstance(r.get("payload"), dict)
+             and r["payload"].get("type") == "item_completed"]
+    item = next((i for i in reversed(items) if isinstance(i, dict) and i.get("type") == "FileChange"
+                 and i.get("id") == payload.get("tool_use_id")), {})
+    if item.get("status") != "completed" or not isinstance(item.get("changes"), dict): return set()
+    verified = set()
+    with tempfile.TemporaryDirectory(prefix="sun-patch-") as tmp:
+        env = {**os.environ, "GIT_INDEX_FILE": os.path.join(tmp, "index")}
+        git_store.git("read-tree", st["before"], env=env)
+        for path, change in item["changes"].items():
+            f = git_store.rel_to_root(path)
+            if f not in st["files"] or f.startswith("../") or os.path.isabs(f) or not isinstance(change, dict): continue
+            if change.get("move_path"): continue  # Moves need evidence for both paths.
+            kind = change.get("type")
+            # ponytail: verify in-place text updates only; add creation/deletion/move replay when needed.
+            if kind != "update": continue
+            diff = change.get("unified_diff")
+            if not isinstance(diff, str): continue
+            patch = f"--- {json.dumps('a/' + f, ensure_ascii=False)}\n+++ {json.dumps('b/' + f, ensure_ascii=False)}\n{diff}"
+            applied = git_store.quiet("git", "apply", "--cached", "--unidiff-zero", "--whitespace=nowarn", "-",
+                                      input=patch, env=env)
+            if applied.returncode: continue
+            expected = git_store.git("write-tree", env=env).strip()
+            if not git_store.quiet("git", "--literal-pathspecs", "diff", "--quiet", expected, after, "--", f).returncode:
+                verified.add(f)
+    return verified
+
+
 # Attribution covers the observed pre/post hook interval. Background writes after
 # completion, or writes without paired hooks, cannot reliably belong to this call.
 def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
@@ -113,10 +154,13 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
         history.sync(method="uncertain")
         return
     after, tip = git_store.snapshot_tree(), git_store.history_head()
+    # A broad shell finishing first must not consume a scoped patch's changes.
+    reserved = {f for k, s in active.items() if k != key and st.get("all_files")
+                and s.get("tool") == "apply_patch" for f in s["files"]}
     recorded = set(git_store.tree_changes(st["pre"], tip))
     dirty = set(git_store.tree_changes(tip, after))
     files = [f for f in git_store.tree_changes(st["before"], after)
-             if (f not in others or f in st.get("overlap", []) or "*" in st.get("overlap", []))
+             if f not in reserved and (f not in others or f in st.get("overlap", []) or "*" in st.get("overlap", []))
              and (f not in recorded or f in dirty)]
     if not files:
         release()
@@ -181,6 +225,9 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
         overlap = st.get("overlap", [])
         uncertain = a_files if payload.get("hook_event_name") == "PostToolUseFailure" or "*" in overlap \
             else [f for f in a_files if f in overlap]
+        if uncertain and harness == "codex":
+            verified = verified_patch_files(st, payload, after)
+            uncertain = [f for f in uncertain if f not in verified]
         unknown_actor = st.get("ambiguous_actor") or payload.get("hook_event_name") == "PostToolUseFailure"
         for owner, group, method in ((actor, [f for f in a_files if f not in uncertain], "hook"),
                                       ("unknown" if unknown_actor else actor, uncertain, "uncertain")):
@@ -373,6 +420,7 @@ def handle_hook(a, payload):
                        "id": uuid.uuid4().hex,
                        "actor": git_store.agent(sid, harness),
                        "git": git_store.ref_oid("HEAD"), "input": inp, "tool": tool,
+                       "transcript": tp or "", "transcript_offset": os.path.getsize(tp) if tp and os.path.exists(tp) else 0,
                        "branch": git_store.shadow_ref(), "pre": git_store.history_head(), "before": git_store.snapshot_tree(),
                        "turn": git_store.state("turns.json", {}).get(git_store.session_key(sid, harness), {}).get("n", 0)}
         git_store.git("update-ref", "refs/sun/pending/" + active[key]["id"], active[key]["before"])

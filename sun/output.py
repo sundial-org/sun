@@ -227,7 +227,11 @@ def turn_history(data, n=0):
                  for op in row["operations"] for tc in op["tool_calls"]}
         row["subject"] = f"sun: {actor} turn {turn.removeprefix('turn')} ({len(calls)} tool calls)"
     rows = rows[:n] if n > 0 else rows
+    counts = {}
+    for row in rows:
+        for op in row["operations"]: counts[op["actor"]] = counts.get(op["actor"], 0) + 1
     return {**data, "commits": rows,
+            "actors": [{**a, "operations": counts[a["id"]]} for a in data["actors"] if a["id"] in counts],
             "summary": {**data["summary"], "entries": len(rows),
                         "operations": sum(len(c["operations"]) for c in rows)}}
 

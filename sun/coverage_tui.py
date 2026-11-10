@@ -93,7 +93,7 @@ class Browser:
     def label(self, c):
         gaps = sum(r['status'] in ('unchecked', 'outdated') for r in c['rules'])
         suffix = '  needs revision' if needs_revision(c) else f'  {gaps} rule gaps' if gaps else ''
-        return f"{c['short']} {c['subject']}{suffix}"
+        return f"{c['short']}{suffix}  {c['subject']}"
 
     def open(self):
         rows = self.rows()
@@ -111,6 +111,10 @@ def tui(screen, browser):
     try: curses.curs_set(0)
     except curses.error: pass
     screen.keypad(True)
+    if curses.has_colors():
+        curses.start_color()
+        try: curses.use_default_colors()
+        except curses.error: pass
     while True:
         screen.erase()
         height, width = screen.getmaxyx()
@@ -145,7 +149,9 @@ def run(n):
         history.ensure_branch()
         history.maybe_sync()
         table = checks.coverage(n)
+        parents = {p for c in table for p in c['parents']}
+        tips = [c['commit'] for c in table if c['commit'] not in parents]
         graph = git_store.git('log', '--graph', '--topo-order', '--no-color', '--format=%H',
-                              f'-{len(table)}', *[c['commit'] for c in table]) if table else ''
+                              f'-{len(table)}', *tips) if table else ''
     # Hooks can keep recording while the user browses this fixed snapshot.
     curses.wrapper(tui, Browser(table, graph))

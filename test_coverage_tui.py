@@ -3,7 +3,7 @@ import contextlib
 import unittest
 from unittest import mock
 
-from sun import checks, coverage_tui, git_store
+from sun import checks, cli, coverage_tui, git_store
 import test_checks as fixtures
 from test_sun import run, write
 
@@ -80,7 +80,7 @@ class CoverageTuiTest(unittest.TestCase):
             self.assertIn('Commit map', '\n'.join(r[0] for r in browser.rows()))
         with mock.patch.object(git_store, 'lock', lock), mock.patch('sys.stdin.isatty', return_value=True), \
                 mock.patch('sys.stdout.isatty', return_value=True), mock.patch('curses.wrapper', side_effect=wrapper) as opened:
-            run('coverage', '--tui')
+            cli.main(['coverage', '--tui'])
         opened.assert_called_once()
 
     def test_nonterminal_is_actionable_and_json_remains_available(self):
@@ -101,7 +101,7 @@ class CoverageTuiTest(unittest.TestCase):
             def refresh(self): pass
             def getch(self): return next(self.keys)
         screen = Screen()
-        with mock.patch('curses.curs_set'):
+        with mock.patch('curses.curs_set'), mock.patch('curses.has_colors', return_value=False):
             coverage_tui.tui(screen, self.browser())
         self.assertIn('sun coverage / commit', '\n'.join(screen.writes))
         empty = coverage_tui.Browser([], '')

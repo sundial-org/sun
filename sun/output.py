@@ -51,6 +51,7 @@ def cmd_log(a):
         tags = "".join(dict.fromkeys(
             f"  [{e['actor']}" + (f" {e['turn']}" if e.get("turn") else "")
             + (f" pr#{e['pr']}" if e.get("pr") else "")
+            + (" uncertain" if "uncertain" in e.get("attribution_methods", []) else "")
             + (f" {e['type']}" if e["type"] in ("undo", "restore") else "") + "]"
             for e in commit["operations"]))
         print(f"{commit['short']} {commit['date'][:10]} {commit['subject']}{tags or '  [untracked]'}")
@@ -106,6 +107,9 @@ def cmd_blame(a):
           + (f" {ev['turn']}" if ev.get("turn") else "") + f"  op {ev['id']}" if ev else "untracked"))
     print("> " + next((l[1:] for l in out.splitlines() if l.startswith("\t")), ""))
     if not ev: return print("no sun operations recorded for this commit")
+    if any(ed.get("file") == of and (ed.get("attribution") or {}).get("method") == "uncertain"
+           for ed in ev.get("edits", [])):
+        print("attribution uncertain: observed tool call; overlapping or interrupted writes")
     if ev["actor"] == "unknown":
         return print("observed change; author unknown: no conversation\n" + json.dumps(ev, indent=2))
     if "/agent:" not in ev["actor"]:
@@ -238,8 +242,9 @@ def turn_history(data, n=0):
 
 def operation_lines(op, prefix=""):
     info = op["actor_info"]
+    label = "observed agent" if info["kind"] == "agent" and "uncertain" in op.get("attribution_methods", []) else "edited by"
     out = [f"{prefix}operation {op['id']}  {op['type']}",
-           f"{prefix}edited by     {actor_label(info)}"]
+           f"{prefix}{label:<14}{actor_label(info)}"]
     if op.get("snapshot") or op.get("commit"):
         out.append(f"{prefix}snapshot      {op.get('snapshot') or op['commit']}")
     if op.get("git_action"):

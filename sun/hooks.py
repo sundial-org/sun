@@ -181,9 +181,10 @@ def finish_call(sid, active: Dict[str, ActiveCall], payload, harness="claude"):
         overlap = st.get("overlap", [])
         uncertain = a_files if payload.get("hook_event_name") == "PostToolUseFailure" or "*" in overlap \
             else [f for f in a_files if f in overlap]
-        unknown_actor = st.get("ambiguous_actor") or payload.get("hook_event_name") == "PostToolUseFailure"
+        # The paired hook identifies the observed agent even when ownership of
+        # individual changes is uncertain because calls overlap or fail.
         for owner, group, method in ((actor, [f for f in a_files if f not in uncertain], "hook"),
-                                      ("unknown" if unknown_actor else actor, uncertain, "uncertain")):
+                                      (actor, uncertain, "uncertain")):
             if group:
                 entries.append(dict(type="edit", actor=owner, session_id=sid, turn=f"turn{turn}",
                        patch_id=git_store.patch_id(c), tool_calls=[call], edits=[

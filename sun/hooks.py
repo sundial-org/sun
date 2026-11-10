@@ -323,7 +323,16 @@ def handle_hook(a, payload):
             git_store.session_key(sid, harness), {}).get("stopped"):  # Stop never fired:
         history.squash_turn(sid, harness)  # squash the turn + store its transcript slice
         stop_chunk(sid, payload, harness)
-    elif event == "PreToolUse": prompt_boundary(sid, payload, harness)
+    elif event == "PreToolUse":
+        # Subagents may receive tool hooks without a UserPromptSubmit hook.
+        turns = git_store.state("turns.json", {})
+        key = git_store.session_key(sid, harness)
+        if key not in turns:
+            turns[key] = {"n": 1, "start": git_store.history_head(),
+                          "transcript": payload.get("transcript_path", ""),
+                          "branch": git_store.shadow_ref(), "toffset": 0}
+            git_store.save_state("turns.json", turns)
+        prompt_boundary(sid, payload, harness)
     if event in ("SessionStart", "SubagentStart", "UserPromptSubmit", "PreToolUse"):
         history.sync(method="hook")  # everything dirty before an agent tool runs is local
     if event == "SessionStart":  # stdout lands in the agent's context

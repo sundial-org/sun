@@ -195,6 +195,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun gh ...` | run GitHub CLI and add coverage after PR creation |
 | `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |
 | `sun check --run [RULE ...]` | run the rules that name a command, model, or agent, and record their verdicts |
+| `sun review [-n COUNT] [--json]` | inspect changes not hidden by current passing checks, using a terminal queue and Vim |
 | `sun coverage [-n COUNT] [--json | --tui]` | see which commits were checked against each rule, and by whom |
 | `sun extract` | record the verdicts you gave your agents in conversation |
 | `sun pr [--update] [--pr URL]` | summarize checks or update the selected PR (default: current branch's PR) |
@@ -315,6 +316,28 @@ the state you were looking at when you replied, and drops anything that is not a
 `sun extract` does the same on demand for every session seen in this checkout, and `sun pr` reads
 unread replies first when the model is trusted. What a harness or a hook injected into the
 conversation is never read as the person's words. `sun show <check id>` prints one check.
+
+`sun review` is an experimental alternative: show less code to the reviewer.
+It opens a terminal list of remaining file revisions. Enter opens only their remaining
+changed lines in a disposable, nonmodifiable Vim buffer; `q` returns to the queue.
+Checked code is absent from that buffer, not folded. No source file is edited and
+opening or closing Vim does not record a human review. `sun review --json` exposes
+the same filtered queue to agents. Use `-n 0` for all history (default: 30 commits).
+
+A current `pass`, `passed`, or `supported` check can hide changes at the exact
+revision it cites. Whole-commit and whole-file checks count, including agent and
+program checks. A rule's `files:` filter still limits its scope. Overlapping
+nonpassing verdicts keep changes visible. Superseded checks and checks for an old
+rule definition do not hide anything. Reviews can inherit the scope of the check
+they cite. Checks of intermediate tool snapshots do not hide final-turn changes.
+
+Line-scoped checks hide added lines within their post-image range. Deleted lines,
+binary changes, and metadata require file- or commit-scoped checks; ambiguous
+changes stay visible. This is check-based filtering, not proof of correctness or
+an inference that every rule passed. Excerpts label original line numbers and are
+not applicable patches. Each commit is compared to its first parent; the queue
+is historical, not a combined final PR diff. Rerun the command after new changes
+or checks to rebuild the queue. Vim starts without user configuration or modelines.
 
 `sun coverage --tui` opens a deterministic terminal browser. Use `-n 0` for all history
 (default: 30 commits). `j/k` or arrows select, Enter opens, `h` or Escape goes back,

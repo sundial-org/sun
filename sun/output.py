@@ -242,7 +242,7 @@ def turn_history(data, n=0):
 
 def operation_lines(op, prefix=""):
     info = op["actor_info"]
-    label = "observed agent" if info["kind"] == "agent" and "uncertain" in op.get("attribution_methods", []) else "edited by"
+    label = "observed via" if info["kind"] == "agent" and "uncertain" in op.get("attribution_methods", []) else "edited by"
     out = [f"{prefix}operation {op['id']}  {op['type']}",
            f"{prefix}{label:<14}{actor_label(info)}"]
     if op.get("snapshot") or op.get("commit"):

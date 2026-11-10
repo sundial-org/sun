@@ -251,7 +251,7 @@ class ReliabilityTest(unittest.TestCase):
         self.assertEqual(ev["actor"], git_store.agent("writer", "codex"))
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
         detail = "\n".join(output.operation_lines(output.viz_operation(ev)))
-        self.assertIn("observed agentCodex", detail)
+        self.assertIn("observed via  Codex", detail)
         self.assertIn("attribution   uncertain", detail)
         self.assertIn("uncertain", run("log"))
         self.assertIn("attribution uncertain", run("blame", "summary.md", "1"))

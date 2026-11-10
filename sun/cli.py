@@ -15,6 +15,7 @@ import sys
 
 from . import branches
 from . import checks
+from . import review
 from . import git_store
 from . import history
 from . import hooks
@@ -264,6 +265,7 @@ def main(argv=None):
         ("pull", "fetch and join Sun history locally, keeping the local snapshot"),
         ("check", "record a verdict on a rule, or run the rules that name a command, model, or agent"),
         ("coverage", "show which commits were checked against each rule, and by whom"),
+        ("review", "inspect only remaining changes in a terminal queue and Vim"),
         ("extract", "record the verdicts you gave your agents in conversation"),
         ("pr", "summarize checks for the pull request as Markdown, or update its description"),
         ("trust", "let hooks on this machine run the commands RULES.md names"),
@@ -352,6 +354,8 @@ def main(argv=None):
     coverage_format = ps["coverage"].add_mutually_exclusive_group()
     coverage_format.add_argument("--json", action="store_true", help="print one JSON object")
     coverage_format.add_argument("--tui", action="store_true", help="browse coverage and commit ancestry in the terminal")
+    ps["review"].add_argument("-n", type=int, default=30, metavar="COUNT", help="maximum commits (default: 30; 0 for all)")
+    ps["review"].add_argument("--json", action="store_true", help="emit the filtered review queue")
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
@@ -359,7 +363,7 @@ def main(argv=None):
         "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push, "pull": history.cmd_pull,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
-        "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
+        "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage, "review": review.cmd_review,
         "extract": checks.cmd_extract, "pr": checks.cmd_pr, "trust": checks.cmd_trust,
     }
     if a.cmd not in ("init", "hook", "git-hook", "update"):  # hook locates its repo from the payload
@@ -368,7 +372,7 @@ def main(argv=None):
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(git_store.root())
         if not adopt(): git_store.sun_dir()  # exits with the `sun init` hint
-        if a.cmd in ("viz", "data") or a.cmd == "coverage" and a.tui:
+        if a.cmd in ("viz", "data", "review") or a.cmd == "coverage" and a.tui:
             commands[a.cmd](a)
         elif a.cmd in ("extract", "pr") or a.cmd == "check" and a.run:  # may start a judge, whose hooks need the lock
             with git_store.lock(): history.ensure_branch()

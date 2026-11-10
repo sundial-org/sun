@@ -7,12 +7,14 @@ from unittest import mock
 
 import test_checks as fixtures
 from sun import checks, cli, git_store, review
-from test_sun import run, write
+from test_sun import hook, run, write
 
 
 class ReviewTest(unittest.TestCase):
     tearDown = fixtures.ChecksTest.tearDown
     git, sun_head, check = fixtures.ChecksTest.git, fixtures.ChecksTest.sun_head, fixtures.ChecksTest.check
+
+    tool_call = fixtures.ChecksTest.tool_call
 
     def setUp(self):
         fixtures.ChecksTest.setUp(self)
@@ -174,3 +176,29 @@ class ReviewTest(unittest.TestCase):
                 mock.patch('sys.stdout.isatty', return_value=True), mock.patch('curses.wrapper', side_effect=wrapper):
             cli.main(['review', '--base', self.base])
         with self.assertRaisesRegex(SystemExit, 'review --json'): run('review')
+
+    def test_check_before_file_creation_does_not_claim_it_was_checked(self):
+        self.passed(self.base)
+        self.change()
+        item, = self.data()['items']
+        self.assertIn('No check', item['reason'])
+
+    def test_check_in_squashed_turn_covers_file_unchanged_after_snapshot(self):
+        hook('UserPromptSubmit')
+        self.tool_call('session12345', 'a.txt', 'checked\n', 0)
+        mid = self.sun_head()
+        self.passed(mid, 'a.txt')
+        self.tool_call('session12345', 'b.txt', 'other\n', 1)
+        hook('Stop')
+        self.assertNotIn(mid, self.git('rev-list', self.sun_head()).split())
+        self.assertIn('a.txt', {i['file'] for i in self.data()['hidden_files']})
+
+    def test_later_edit_in_same_turn_invalidates_snapshot_check(self):
+        hook('UserPromptSubmit')
+        self.tool_call('session12345', 'a.txt', 'checked\n', 0)
+        self.passed(self.sun_head(), 'a.txt')
+        self.tool_call('session12345', 'a.txt', 'unchecked\n', 1)
+        hook('Stop')
+        item, = self.data()['items']
+        self.assertIn('changed since', item['reason'])
+        self.assertIn('+unchecked', item['patch'])

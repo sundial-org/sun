@@ -73,7 +73,10 @@ def review_data(base=None):
             for cite in cites:
                 at = cite['at']
                 if at not in owners or cite.get('file', path) != path: continue
-                if version(at, path) != version(head, path) or not after(last, owners[at]):
+                checked_version, current_version = version(at, path), version(head, path)
+                if checked_version is None and (current_version is not None or not after(last, owners[at])):
+                    continue  # a check before a file existed is not a check of that file
+                if checked_version != current_version or not after(last, owners[at]):
                     changed.append(c['id'])
                 elif c.get('rule_text', rule['hash']) != rule['hash']:
                     stale.append(c['id'])

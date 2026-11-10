@@ -235,6 +235,54 @@ class ReliabilityTest(unittest.TestCase):
         # The unknown-scope shell overlaps this call, so do not invent precise attribution.
         self.assertEqual(changes["other.txt"], "unknown")
 
+    def test_codex_patch_evidence_resolves_shell_overlap_in_either_order(self):
+        for shell_first in (False, True):
+            for evidence in ("exact", "other-file", "extra-write", "missing", "failed", "wrong-call", "stale", "bad-diff", "move"):
+                with self.subTest(shell_first=shell_first, evidence=evidence):
+                    # Brackets also exercise literal Git path handling.
+                    fn = f"note[{shell_first}-{evidence}].md"
+                    write(fn, "base\n")
+                    history.sync()
+                    tp = os.path.join(self.codex, "proof.jsonl")
+                    item = {"type": "event_msg", "payload": {"type": "item_completed", "item": {
+                        "type": "FileChange", "id": "patch", "status": "completed", "changes": {
+                            os.path.abspath(fn): {"type": "update", "move_path": None,
+                                "unified_diff": "@@ -1 +1,2 @@\n base\n+patch line\n"}}}}}
+                    if evidence == "failed": item["payload"]["item"]["status"] = "failed"
+                    if evidence == "wrong-call": item["payload"]["item"]["id"] = "another-call"
+                    if evidence == "move":
+                        item["payload"]["item"]["changes"][os.path.abspath(fn)]["move_path"] = "moved.md"
+                    if evidence == "bad-diff":
+                        item["payload"]["item"]["changes"][os.path.abspath(fn)]["unified_diff"] = "not a patch"
+                    write(tp, json.dumps(item) + "\n" if evidence == "stale" else "")
+                    shell = dict(harness="codex", tool_name="exec_command", tool_use_id="shell",
+                                 tool_input={"cmd": "cat README.md"})
+                    patch = dict(harness="codex", tool_name="apply_patch", tool_use_id="patch",
+                                 transcript_path=tp, tool_input={"command":
+                                    f"*** Begin Patch\n*** Update File: {fn}\n@@\n base\n+patch line\n*** End Patch"})
+                    hook("PreToolUse", "reader", **shell)
+                    hook("PreToolUse", "writer", **patch)
+                    content = "base\npatch line\n" + ("shell line\n" if evidence == "extra-write" else "")
+                    write(fn, content)
+                    if evidence == "other-file": write(fn + ".shell", "shell edit\n")
+                    if evidence not in ("missing", "stale"):
+                        with open(tp, "a") as f: f.write(json.dumps(item) + "\n")
+                    index = self.git("write-tree").strip()
+                    if shell_first: hook("PostToolUse", "reader", **shell)
+                    hook("PostToolUse", "writer", **patch)
+                    if not shell_first: hook("PostToolUse", "reader", **shell)
+                    ev = next(e for e in reversed(history.events()) if any(d["file"] == fn for d in e.get("edits", [])))
+                    self.assertEqual(ev["session_id"], "writer")
+                    self.assertEqual(ev["tool_calls"][0]["id"], "patch")
+                    self.assertEqual(ev["actor"], git_store.agent("writer", "codex") if evidence in ("exact", "other-file") else "unknown")
+                    self.assertEqual(ev["edits"][0]["attribution"]["method"], "hook" if evidence in ("exact", "other-file") else "uncertain")
+                    self.assertEqual(read(fn), content)
+                    self.assertEqual(self.git("write-tree").strip(), index)
+                    self.assertFalse(git_store.state("active.json", {}))
+                    if evidence == "other-file":
+                        shell_ev = next(e for e in history.events() if any(d["file"] == fn + ".shell" for d in e.get("edits", [])))
+                        self.assertEqual(shell_ev["actor"], git_store.agent("reader", "codex"))
+
     def test_failed_publication_keeps_head_and_claim_retryable(self):
         hook("UserPromptSubmit")
         inp = {"file_path": "a.txt"}
@@ -332,7 +380,7 @@ class ReliabilityTest(unittest.TestCase):
         with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
             self.assertEqual(f.read(), index)
 
-    def test_push_joins_conflicting_snapshots_without_merging_files(self):
+    def test_pull_joins_conflicting_snapshots_without_merging_files(self):
         base = self.sun_head()
         write("README.md", "remote\n")
         remote = self.plumbing_commit(base, ["README.md"])
@@ -343,7 +391,7 @@ class ReliabilityTest(unittest.TestCase):
             self.git("init", "--bare", bare)
             self.git("remote", "add", "origin", bare)
             self.git("push", "origin", f"{remote}:{git_store.shadow_ref()}")
-            run("push")
+            run("pull")
         self.assertEqual(self.git("rev-list", "--parents", "-n1", self.sun_head()).split()[1:],
                          [local, remote])
         self.assertEqual(read("README.md"), "local\n")
@@ -410,6 +458,7 @@ class ReliabilityTest(unittest.TestCase):
                     remote_tip = self.git("--git-dir", remote, "rev-parse", git_store.shadow_ref()).strip()
                     with open(self.git("rev-parse", "--git-path", "index").strip(), "rb") as f:
                         index = f.read()
+                    run("pull")
                     run("push")
                     joined = self.sun_head()
                     self.assertEqual(self.git("rev-list", "--parents", "-n1", joined).split()[1:],

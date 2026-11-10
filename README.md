@@ -195,7 +195,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun gh ...` | run GitHub CLI and add coverage after PR creation |
 | `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |
 | `sun check --run [RULE ...]` | run the rules that name a command, model, or agent, and record their verdicts |
-| `sun review [-n COUNT] [--json]` | inspect changes not hidden by current passing checks, using a terminal queue and Vim |
+| `sun review [--base REV] [--json]` | inspect changes not hidden by current passing checks, using a terminal queue and Vim |
 | `sun coverage [-n COUNT] [--json | --tui]` | see which commits were checked against each rule, and by whom |
 | `sun extract` | record the verdicts you gave your agents in conversation |
 | `sun pr [--update] [--pr URL]` | summarize checks or update the selected PR (default: current branch's PR) |
@@ -317,27 +317,32 @@ the state you were looking at when you replied, and drops anything that is not a
 unread replies first when the model is trusted. What a harness or a hook injected into the
 conversation is never read as the person's words. `sun show <check id>` prints one check.
 
-`sun review` is an experimental alternative: show less code to the reviewer.
-It opens a terminal list of remaining file revisions. Enter opens only their remaining
-changed lines in a disposable, nonmodifiable Vim buffer; `q` returns to the queue.
-Checked code is absent from that buffer, not folded. No source file is edited and
-opening or closing Vim does not record a human review. `sun review --json` exposes
-the same filtered queue to agents. Use `-n 0` for all history (default: 30 commits).
+`sun review` opens a file-level review queue for the **current changes**, not a
+list of historical revisions. By default it compares current Sun HEAD (after
+syncing the working tree) with the Git merge base of the checked-out branch and
+main/master (or origin's default branch). Without a base branch it uses Git HEAD.
+Use `sun review --base REV` to choose an explicit Git or Sun commit instead.
+Each changed file appears at most once. Transient changes that were later undone
+are absent. Enter opens the file's current diff in Vim with highlighted additions
+and deletions, surrounding context, and an explanation of why review is needed.
+`q` returns to the queue. Opening Vim does not record a human review or edit files.
 
-A current `pass`, `passed`, or `supported` check can hide changes at the exact
-revision it cites. Whole-commit and whole-file checks count, including agent and
-program checks. A rule's `files:` filter still limits its scope. Overlapping
-nonpassing verdicts keep changes visible. Superseded checks and checks for an old
-rule definition do not hide anything. Reviews can inherit the scope of the check
-they cite. Checks of intermediate tool snapshots do not hide final-turn changes.
+A file is omitted when a current whole-file or whole-commit passing check covers
+it at or after its latest edit, with the same content and mode as current HEAD.
+The check may come from the turn that edited the file or a later turn; unrelated
+subsequent edits do not make that file reappear. A changed file reappears until
+checked again. Only this branch's ancestry and its recorded tool snapshots are
+eligible. Whole-commit checks still respect a rule's `files:` filter. Superseded
+checks and changed rule definitions do not count; conflicting current nonpassing
+checks keep the file visible. `pass`, `passed`, and `supported` are passing verdicts.
 
-Line-scoped checks hide added lines within their post-image range. Deleted lines,
-binary changes, and metadata require file- or commit-scoped checks; ambiguous
-changes stay visible. This is check-based filtering, not proof of correctness or
-an inference that every rule passed. Excerpts label original line numbers and are
-not applicable patches. Each commit is compared to its first parent; the queue
-is historical, not a combined final PR diff. Rerun the command after new changes
-or checks to rebuild the queue. Vim starts without user configuration or modelines.
+This experiment deliberately works by file: line-scoped checks do not omit a
+whole file. Reasons include no check, file changed, partial checks, stale rule,
+or a nonpassing check. Comparing file identity is deterministic, but does not
+prove behavior is unaffected by changes elsewhere in the repository. Vim uses a
+nonmodifiable scratch buffer without user configuration or modelines.
+`sun review --json` returns the same queue plus omitted files and their check IDs.
+Reopen the command to refresh after edits or new checks.
 
 `sun coverage --tui` opens a deterministic terminal browser. Use `-n 0` for all history
 (default: 30 commits). `j/k` or arrows select, Enter opens, `h` or Escape goes back,

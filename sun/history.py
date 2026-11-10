@@ -10,7 +10,8 @@ from typing import Any, Dict, List, Optional, TypedDict
 from . import git_store
 
 
-# How the edit was attributed; the responsible actor is stored on Event.
+# How the edit was attributed; Event.actor identifies the observed agent for
+# uncertain tool edits, without claiming exclusive ownership of their changes.
 # Options are hook, sync, observed, and uncertain.
 # TODO: potentially flatten this into Edit
 class Attribution(TypedDict, total=False):

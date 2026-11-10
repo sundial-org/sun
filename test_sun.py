@@ -1356,12 +1356,19 @@ class SunTest(unittest.TestCase):
         self.assertEqual(len(output.turn_history(data)["commits"]), 3)
 
     def test_subagent_first_tool_initializes_turn_without_prompt_hook(self):
-        self.tool_call("child", "child.txt", "one\n", 0)
-        self.tool_call("child", "child.txt", "two\n", 1)
+        tp = os.path.join(self.codex, "child.jsonl")
+        prompt = '{"type":"event_msg","payload":{"type":"task_started"}}\n'
+        write(tp, prompt)
+        for i in range(2):
+            args = dict(harness="codex", transcript_path=tp, tool_name="Write",
+                        tool_use_id=f"tool{i}", tool_input={"file_path": "child.txt"})
+            hook("PreToolUse", "child", **args)
+            write("child.txt", f"{i}\n")
+            hook("PostToolUse", "child", **args)
+            with open(tp, "a") as f: f.write(prompt)
         self.assertEqual([e["turn"] for e in history.events() if e.get("session_id") == "child"],
-                         ["turn1", "turn1"])
-        hook("Stop", "child")
-        self.assertIn("turn 1 (2 tool calls)", self.head_subject())
+                         ["turn1", "turn2"])
+        self.assertEqual(git_store.state("turns.json", {})["codex/child"]["n"], 2)
 
     def test_viz_writes_selfcontained_html(self):
         self.agent_turn("session12345", [("foo.ts", "x\n")])

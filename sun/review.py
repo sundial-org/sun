@@ -1,16 +1,14 @@
-"""Experimental review queue: subtract checked changes, open the remainder in Vim."""
+"""Review the current branch diff, omitting files checked since their last edit."""
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
 import tempfile
 
-from . import checks, coverage_tui, git_store, history
+from . import checks, git_store, history
 
 PASS = {'pass', 'passed', 'supported'}
-HUNK = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@')
 
 
 def citations(check, stored, seen=None):
@@ -24,102 +22,86 @@ def citations(check, stored, seen=None):
             for cite in citations(stored[c['check']], stored, seen)]
 
 
-def file_scopes(commit, path, stored, rules):
-    scopes = []
-    for row in commit['rules']:
-        if not checks.matches(rules[row['rule']], [path]): continue
-        for c in coverage_tui.current_checks(row):
-            for cite in citations(c, stored):
-                # A tool-call snapshot is not the final turn, even if coverage folds it there.
-                if cite.get('at') != commit['commit']: continue
-                if cite.get('file', path) != path: continue
-                bounds = cite.get('lines')
-                passed = c['verdict'].lower() in PASS
-                if bounds is not None and (not cite.get('file') or not 0 < bounds[0] <= bounds[1]):
-                    if passed: continue
-                    bounds = None  # ambiguous negative evidence must not allow hiding
-                scopes.append((c['id'], passed, bounds))
-    return scopes
+def default_base():
+    """Compare branch work to its Git merge base; fall back to Git HEAD."""
+    name = checks.default_base()
+    for ref in ('refs/heads/' + name, 'refs/remotes/origin/' + name):
+        if git_store.ref_oid(ref):
+            base = git_store.git('merge-base', 'HEAD', ref, check=False).strip()
+            if base: return base
+    return git_store.git('rev-parse', '--verify', 'HEAD').strip()
 
 
-def covering(scopes, line=None):
-    """Return passing check IDs only when no overlapping nonpassing check exists.
-
-    line=None represents deletion/metadata, which post-image line cites cannot cover.
-    A nonpassing line check conservatively blocks hiding deletions in that file.
-    """
-    positive, blocked = set(), False
-    for identity, passed, bounds in scopes:
-        overlaps = bounds is None or line is not None and bounds[0] <= line <= bounds[1]
-        if not passed and (overlaps or line is None): blocked = True
-        if passed and overlaps: positive.add(identity)
-    return set() if blocked else positive
-
-
-def excerpt(patch, scopes):
-    """Keep only unhidden changed lines; output is a review excerpt, not an applicable patch."""
-    output, ids, hidden, remaining = [], set(), 0, 0
-    old = new = None
-    pending = None
-    has_hunks = False
-    last_visible = False
-    metadata = []
-    for line in patch.splitlines():
-        match = HUNK.match(line)
-        if match:
-            old, new = int(match[1]), int(match[3])
-            pending = match[0]  # never leak function context following the hunk coordinates
-            has_hunks = True
-        elif old is not None and line[:1] in ('+', '-'):
-            plus = line.startswith('+')
-            evidence = covering(scopes, new if plus else None)
-            last_visible = not evidence
-            if evidence:
-                hidden += 1
-                ids.update(evidence)
-            else:
-                if pending:
-                    output.append(pending)
-                    pending = None
-                output.append(f"{line[0]} {new if plus else old:>6} | {line[1:]}")
-                remaining += 1
-            if plus: new += 1
-            else: old += 1
-        elif old is not None and line.startswith('\\ No newline') and last_visible:
-            output.append(line)
-        elif old is not None and line.startswith(' '):
-            old += 1
-            new += 1
-        elif old is None and not line.startswith(('diff --git ', 'index ', '--- ', '+++ ')):
-            metadata.append(line)
-    # Binary, empty-file, mode and other structural changes have no new-line scope.
-    if metadata or not has_hunks:
-        evidence = covering(scopes)
-        if evidence: ids.update(evidence)
-        else:
-            output = (metadata or ['File metadata changed.']) + output
-    return {'lines': output, 'hidden': hidden, 'remaining': remaining, 'checks': sorted(ids)}
-
-
-def review_data(n):
-    table = checks.coverage(n)
+def review_data(base=None):
+    head = git_store.history_head()
+    base = (git_store.git('rev-parse', '--verify', '--end-of-options', base + '^{commit}').strip()
+            if base else default_base())
+    ancestors = set(git_store.git('rev-list', head).split())
+    owners = {H: H for H in ancestors}
+    for event in history.events():
+        if event['commit'] in ancestors and event.get('snapshot'):
+            owners[event['snapshot']] = event['commit']
     stored, rules = checks.checks(), checks.read_rules()[1]
-    items, hidden, total_files, hidden_files = [], 0, 0, 0
-    for commit in table:
-        H = commit['commit']
-        base = checks.parent_of(H)
-        paths = git_store.git('diff', '--no-ext-diff', '--no-renames', '--name-only', '-z', base, H, '--').split('\0')
-        for path in filter(None, paths):
-            total_files += 1
-            patch = git_store.git('--literal-pathspecs', 'diff', '--no-ext-diff', '--no-textconv', '--no-color',
-                                  '--no-renames', '--unified=0', base, H, '--', path)
-            result = excerpt(patch, file_scopes(commit, path, stored, rules))
-            hidden += result['hidden']
-            if result['lines']:
-                items.append({'commit': H, 'parent': base, 'file': path, **result})
-            else: hidden_files += 1
-    return {'commits': len(table), 'files': total_files, 'hidden_files': hidden_files,
-            'hidden_lines': hidden, 'items': items}
+    scoped = [(c, citations(c, stored)) for c in stored.values() if c['rule'] in rules]
+    # A check from an unrelated branch cannot supersede evidence on this branch.
+    scoped = [(c, cites) for c, cites in scoped if any(x['at'] in owners for x in cites)]
+    replaced = {x['check'] for c, _ in scoped for x in c['cites'] if 'check' in x}
+    scoped = [(c, cites) for c, cites in scoped if c['id'] not in replaced]
+    paths = git_store.git('diff', '--no-ext-diff', '--no-renames', '--name-only', '-z', base, head, '--').split('\0')
+    versions, ancestry = {}, {}
+
+    def version(at, path):
+        key = (at, path)
+        if key not in versions:
+            entry = git_store.git('--literal-pathspecs', 'ls-tree', '-z', at, '--', path)
+            versions[key] = entry.split('\t', 1)[0] if entry else None
+        return versions[key]  # includes mode and object type, not just the content hash
+
+    def after(last, at):
+        key = (last, at)
+        if key not in ancestry:
+            ancestry[key] = not last or git_store.quiet('git', 'merge-base', '--is-ancestor', last, at).returncode == 0
+        return ancestry[key]
+
+    items, hidden = [], []
+    for path in filter(None, paths):
+        last = git_store.git('--literal-pathspecs', 'log', '-1', '--format=%H', head, '--', path).strip()
+        passing, blocking, partial, stale, changed = [], [], [], [], []
+        for c, cites in scoped:
+            rule = rules[c['rule']]
+            if not checks.matches(rule, [path]): continue
+            for cite in cites:
+                at = cite['at']
+                if at not in owners or cite.get('file', path) != path: continue
+                checked_version, current_version = version(at, path), version(head, path)
+                if checked_version is None and (current_version is not None or not after(last, owners[at])):
+                    continue  # a check before a file existed is not a check of that file
+                if checked_version != current_version or not after(last, owners[at]):
+                    changed.append(c['id'])
+                elif c.get('rule_text', rule['hash']) != rule['hash']:
+                    stale.append(c['id'])
+                elif c['verdict'].lower() not in PASS:
+                    blocking.append(c['id'])
+                elif cite.get('lines') is not None:
+                    partial.append(c['id'])
+                else:
+                    passing.append(c['id'])
+        if passing and not blocking:
+            hidden.append({'file': path, 'checks': sorted(set(passing)),
+                           'reason': 'Passing check covers this file since its last edit.'})
+            continue
+        reason = ('A current check is nonpassing or conflicts with a passing check.' if blocking else
+                  'Only part of this file has been checked.' if partial else
+                  'The check definition changed since this file was checked.' if stale else
+                  'This file changed since its recorded check.' if changed else
+                  'No check covers this file since its last edit.')
+        patch = git_store.git('--literal-pathspecs', 'diff', '--no-ext-diff', '--no-textconv', '--no-color',
+                              '--no-renames', '--unified=3', base, head, '--', path)
+        items.append({'commit': head, 'base': base, 'file': path, 'last_change': last,
+                      'reason': reason, 'checks': sorted(set(blocking + partial + stale + changed)),
+                      'patch': patch})
+    return {'head': head, 'base': base, 'files': len(items) + len(hidden),
+            'hidden_files': hidden, 'items': items}
 
 
 def clean(text):
@@ -127,11 +109,12 @@ def clean(text):
 
 
 def vim_text(item):
-    return ('Sun review excerpt (not an applicable patch). q returns to the queue.\n'
-            f"Commit: {item['commit']}\nFile: {clean(item['file'])}\n"
-            '+ numbers refer to the new file; - numbers refer to the parent.\n'
-            f"{item['hidden']} checked lines omitted. Opening this does not record a review.\n\n"
-            + '\n'.join(clean(line) for line in item['lines']) + '\n')
+    return ('Sun review / current changes. q returns to the queue.\n'
+            f"File: {clean(item['file'])}\nWhy: {item['reason']}\n"
+            f"Base: {item['base']}\nCurrent Sun HEAD: {item['commit']}\n"
+            'File-level review: the changed chunks below need attention.\n'
+            'Opening this view does not record a human review.\n\n'
+            + clean(item['patch']))
 
 
 def open_vim(item):
@@ -165,17 +148,17 @@ def tui(screen, data):
         height, width = screen.getmaxyx()
         count = max(1, height - 6)
         start = max(0, min(selected - count // 2, len(items) - count))
-        _tui_put(screen, 0, 0, 'sun review / remaining changes', width - 1, curses.A_BOLD)
-        _tui_put(screen, 1, 0, f"{len(items)} file revisions to inspect; {data['hidden_files']} hidden; "
-                 f"{data['hidden_lines']} checked lines hidden", width - 1)
+        _tui_put(screen, 0, 0, 'sun review / current changes', width - 1, curses.A_BOLD)
+        _tui_put(screen, 1, 0, f"{len(items)} files need review; {len(data['hidden_files'])} checked files omitted; "
+                 f"base {data['base'][:8]}", width - 1)
         if not items:
-            _tui_put(screen, 3, 0, 'No remaining changes in the loaded history.', width - 1)
+            _tui_put(screen, 3, 0, 'No files need review in the current diff.', width - 1)
         for y, i in enumerate(range(start, min(len(items), start + count)), 3):
             item = items[i]
-            label = f"{item['commit'][:8]}  {item['file']}  ({item['remaining']} lines / metadata)"
+            label = f"{item['file']}  | {item['reason']}"
             _tui_put(screen, y, 0, clean(label).replace('\n', '?'), width - 1,
                      curses.A_REVERSE if i == selected else 0)
-        _tui_put(screen, height - 2, 0, message or 'Exact revisions only. Snapshot view; exit and reopen to refresh.', width - 1)
+        _tui_put(screen, height - 2, 0, message or (items[selected]['reason'] if items else 'Current diff only. Reopen to refresh.'), width - 1)
         _tui_put(screen, height - 1, 0, 'j/k move  Enter open remaining changes in Vim  q quit', width - 1)
         screen.refresh()
         key = screen.getch()
@@ -199,7 +182,7 @@ def cmd_review(a):
     with git_store.lock():
         history.ensure_branch()
         history.maybe_sync()
-        data = review_data(a.n)
+        data = review_data(a.base)
     if a.json: return print(json.dumps(data))
     import curses
     curses.wrapper(tui, data)

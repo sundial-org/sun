@@ -34,8 +34,11 @@ def file_scopes(commit, path, stored, rules):
                 if cite.get('at') != commit['commit']: continue
                 if cite.get('file', path) != path: continue
                 bounds = cite.get('lines')
-                if bounds is not None and (not cite.get('file') or not 0 < bounds[0] <= bounds[1]): continue
-                scopes.append((c['id'], c['verdict'].lower() in PASS, bounds))
+                passed = c['verdict'].lower() in PASS
+                if bounds is not None and (not cite.get('file') or not 0 < bounds[0] <= bounds[1]):
+                    if passed: continue
+                    bounds = None  # ambiguous negative evidence must not allow hiding
+                scopes.append((c['id'], passed, bounds))
     return scopes
 
 
@@ -59,6 +62,7 @@ def excerpt(patch, scopes):
     old = new = None
     pending = None
     has_hunks = False
+    last_visible = False
     metadata = []
     for line in patch.splitlines():
         match = HUNK.match(line)
@@ -69,6 +73,7 @@ def excerpt(patch, scopes):
         elif old is not None and line[:1] in ('+', '-'):
             plus = line.startswith('+')
             evidence = covering(scopes, new if plus else None)
+            last_visible = not evidence
             if evidence:
                 hidden += 1
                 ids.update(evidence)
@@ -80,6 +85,8 @@ def excerpt(patch, scopes):
                 remaining += 1
             if plus: new += 1
             else: old += 1
+        elif old is not None and line.startswith('\\ No newline') and last_visible:
+            output.append(line)
         elif old is not None and line.startswith(' '):
             old += 1
             new += 1

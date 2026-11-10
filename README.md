@@ -195,7 +195,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun gh ...` | run GitHub CLI and add coverage after PR creation |
 | `sun check RULE VERDICT` | record your own verdict on a rule ([below](#check-the-history)) |
 | `sun check --run [RULE ...]` | run the rules that name a command, model, or agent, and record their verdicts |
-| `sun review [--base REV] [--json]` | inspect changes not hidden by current passing checks, using a terminal queue and Vim |
+| `sun review [--base REV] [--json | --web]` | inspect changes not hidden by current passing checks, using a terminal queue and Vim |
 | `sun coverage [-n COUNT] [--json | --tui]` | see which commits were checked against each rule, and by whom |
 | `sun extract` | record the verdicts you gave your agents in conversation |
 | `sun pr [--update] [--pr URL]` | summarize checks or update the selected PR (default: current branch's PR) |
@@ -316,6 +316,21 @@ the state you were looking at when you replied, and drops anything that is not a
 `sun extract` does the same on demand for every session seen in this checkout, and `sun pr` reads
 unread replies first when the model is trusted. What a harness or a hook injected into the
 conversation is never read as the person's words. `sun show <check id>` prints one check.
+
+`sun review --web` opens the same current-change review in your browser using
+[Pierre diffs](https://diffs.com/). Select a file, switch between unified and split
+views, and expand unchanged context from the recorded base and head. Review reasons
+and check IDs remain visible; checked files are omitted from the queue and listed
+separately. Binary and metadata-only changes show their raw Git summary.
+
+The page and its assets are served only on loopback at a random port with an
+unguessable URL. No CDN or Node runtime is needed. Keep the command running while
+reviewing; Ctrl-C stops it. The view is a fixed snapshot, so reopen the command to
+refresh. Full file context is loaded from those exact Git objects, not live files.
+
+Frontend development: `npm ci --prefix web` then `npm run build --prefix web`.
+The pinned source and lockfile live in `web/`; the compressed browser bundle and
+license notices ship in `sun/review_assets/`. Rebuild the bundle after frontend edits.
 
 `sun review` opens a file-level review queue for the **current changes**, not a
 list of historical revisions. By default it compares current Sun HEAD (after

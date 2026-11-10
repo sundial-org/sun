@@ -46,10 +46,12 @@ function select(index) {
         overflow: 'wrap',
         loadDiffFiles: async () => {
           const response = await fetch(`files/${index}.json`);
-          if (!response.ok) throw new Error('Could not load full file context');
+          if (!response.ok) {
+            if (version === generation) $('notice').textContent = 'Full file context could not be loaded.';
+            throw new Error('Could not load full file context');
+          }
           return response.json();
         },
-        onError: error => showRaw(`Diff renderer unavailable: ${error.message || error}`),
       });
       instances.push(instance);
       instance.render({fileDiff, containerWrapper:$('diff')});

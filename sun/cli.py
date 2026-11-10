@@ -354,7 +354,7 @@ def main(argv=None):
     coverage_format = ps["coverage"].add_mutually_exclusive_group()
     coverage_format.add_argument("--json", action="store_true", help="print one JSON object")
     coverage_format.add_argument("--tui", action="store_true", help="browse coverage and commit ancestry in the terminal")
-    ps["review"].add_argument("-n", type=int, default=30, metavar="COUNT", help="maximum commits (default: 30; 0 for all)")
+    ps["review"].add_argument("--base", metavar="REV", help="diff base (default: Git merge base with main/master, else Git HEAD)")
     ps["review"].add_argument("--json", action="store_true", help="emit the filtered review queue")
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")

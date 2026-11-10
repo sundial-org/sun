@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 import test_sun as fixtures
 from test_sun import run, hook, write, read
-from sun import hooks, git_store, history, sessions
+from sun import hooks, git_store, history, sessions, output
 
 
 class ReliabilityTest(unittest.TestCase):
@@ -42,7 +42,7 @@ class ReliabilityTest(unittest.TestCase):
         ev = history.events()[-1]
         self.assertNotIn("+existing text", ev["edits"][0]["patch"])
         self.assertIn("+actual addition", ev["edits"][0]["patch"])
-        self.assertEqual(ev["actor"], "unknown")
+        self.assertEqual(ev["actor"], git_store.agent("writer"))
         parent = self.git("rev-parse", ev["commit"] + "^").strip()
         self.assertEqual(self.git("show", parent + ":note.md"), "existing text\n")
         run("sync", "--recover")
@@ -222,7 +222,7 @@ class ReliabilityTest(unittest.TestCase):
             hook("PostToolUse", sid, tool_name="Write", tool_use_id=sid,
                  tool_input={"file_path": "same.txt"})
         ev = history.events()[-1]
-        self.assertEqual(ev["actor"], "unknown")
+        self.assertEqual(ev["actor"], git_store.agent("a"))
         self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
 
     def test_shell_edits_cannot_be_stolen_by_another_pre_hook(self):
@@ -233,7 +233,37 @@ class ReliabilityTest(unittest.TestCase):
         changes = {d["file"]: e["actor"] for e in history.events() for d in e.get("edits", [])}
         self.assertEqual(changes["shell.txt"], git_store.agent("shell"))
         # The unknown-scope shell overlaps this call, so do not invent precise attribution.
-        self.assertEqual(changes["other.txt"], "unknown")
+        self.assertEqual(changes["other.txt"], git_store.agent("other"))
+        edit = next(d for e in history.events() for d in e.get("edits", []) if d["file"] == "other.txt")
+        self.assertEqual(edit["attribution"]["method"], "uncertain")
+
+    def test_read_only_shell_overlap_preserves_observed_codex_agent(self):
+        hook("PreToolUse", "reader", harness="codex", tool_name="exec_command",
+             tool_use_id="read", tool_input={"cmd": "cat README.md"})
+        patch = "*** Begin Patch\n*** Add File: summary.md\n+results\n*** End Patch"
+        args = dict(harness="codex", tool_name="apply_patch", tool_use_id="patch", tool_input=patch)
+        hook("PreToolUse", "writer", **args)
+        write("summary.md", "results\n")
+        hook("PostToolUse", "writer", **args)
+        hook("PostToolUse", "reader", harness="codex", tool_name="exec_command",
+             tool_use_id="read", tool_input={"cmd": "cat README.md"})
+        ev = history.events()[-1]
+        self.assertEqual(ev["actor"], git_store.agent("writer", "codex"))
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
+        detail = "\n".join(output.operation_lines(output.viz_operation(ev)))
+        self.assertIn("observed agentCodex", detail)
+        self.assertIn("attribution   uncertain", detail)
+        self.assertIn("uncertain", run("log"))
+        self.assertIn("attribution uncertain", run("blame", "summary.md", "1"))
+
+    def test_failed_tool_preserves_observed_agent_and_uncertainty(self):
+        args = dict(tool_name="Write", tool_use_id="failed", tool_input={"file_path": "partial.txt"})
+        hook("PreToolUse", "writer", **args)
+        write("partial.txt", "partial\n")
+        hook("PostToolUseFailure", "writer", **args)
+        ev = history.events()[-1]
+        self.assertEqual(ev["actor"], git_store.agent("writer"))
+        self.assertEqual(ev["edits"][0]["attribution"]["method"], "uncertain")
 
     def test_failed_publication_keeps_head_and_claim_retryable(self):
         hook("UserPromptSubmit")

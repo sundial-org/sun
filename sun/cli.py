@@ -313,7 +313,7 @@ def main(argv=None):
     session_ps["prune"].add_argument("--remote", action="store_true",
                                      help="also delete the selected refs from origin")
     ps["log"].add_argument("-n", type=int, default=30, metavar="COUNT",
-                           help="maximum commits to show (default: 30)")
+                           help="maximum history entries to show (default: 30)")
     ps["show"].add_argument("commit", help="Sun commit, snapshot, or ref")
     undo_target = ps["undo"].add_mutually_exclusive_group()
     undo_target.add_argument("--op", nargs="?", const="", default=None, metavar="ID",
@@ -331,7 +331,7 @@ def main(argv=None):
     ps["viz"].add_argument("-o", "--output", default=None,
                             help="HTML output path (implies --html)")
     ps["viz"].add_argument("-n", type=int, default=0, metavar="COUNT",
-                           help="maximum commits to load (default: all)")
+                           help="maximum history entries to show (default: all)")
     ps["export"].add_argument("-o", "--output", default=None,
                               help="output path (default: stdout)")
     ps["check"].add_argument("args", nargs="*", metavar="RULE VERDICT [REV|CHECK]",

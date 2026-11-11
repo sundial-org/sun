@@ -47,18 +47,13 @@ def cmd_export(a):  # JSONL fine-tuning dump: one record per turn/op, prompt pai
 
 def cmd_log(a):
     history.maybe_sync()
-    by_commit = {}
-    for ev in history.events(): by_commit.setdefault(ev.get("commit"), []).append(ev)
-    revisions = git_store.history_refs()
-    for line in git_store.git("log", "--topo-order", *revisions, f"-{a.n}", "--pretty=%H\t%h\t%ad\t%s",
-                    "--date=short").splitlines():
-        H, h, date, subj = line.split("\t", 3)
+    for commit in turn_history(viz_data(), a.n)["commits"]:
         tags = "".join(dict.fromkeys(
             f"  [{e['actor']}" + (f" {e['turn']}" if e.get("turn") else "")
             + (f" pr#{e['pr']}" if e.get("pr") else "")
             + (f" {e['type']}" if e["type"] in ("undo", "restore") else "") + "]"
-            for e in by_commit.get(H, [])))
-        print(f"{h} {date} {subj}{tags or '  [untracked]'}")
+            for e in commit["operations"]))
+        print(f"{commit['short']} {commit['date'][:10]} {commit['subject']}{tags or '  [untracked]'}")
 
 
 def cmd_show(a):
@@ -153,6 +148,8 @@ def viz_operation(ev):
             "actor": ev.get("actor", "unknown"),
             "actor_info": git_store.actor_info(ev.get("actor", "unknown")),
             "session_id": ev.get("session_id"), "timestamp": ev.get("timestamp"),
+            "branch": ev.get("branch"), "commit": ev.get("commit"),
+            "snapshot": ev.get("snapshot"),
             "turn": ev.get("turn"), "pr": ev.get("pr"),
             "target_op": ev.get("target_op"), "target_commit": ev.get("target_commit"),
             "attribution_methods": methods, "tool_calls": ev.get("tool_calls") or [],
@@ -207,10 +204,44 @@ def viz_data(n=0):
             "summary": {"commits": len(commits), "operations": sum(counts.values())}}
 
 
+def turn_history(data, n=0):
+    """Group display rows only; raw commits and operation snapshots remain unchanged."""
+    rows, groups = [], {}
+    for commit in data["commits"]:  # newest first: place each turn at its latest edit
+        ops = commit["operations"]
+        keys = {(op["actor"], op.get("session_id"), op.get("turn"), op.get("branch"))
+                for op in ops}
+        key = next(iter(keys)) if len(keys) == 1 else None
+        eligible = (key and key[1] and key[2] not in (None, "turn0")
+                    and all(op["type"] == "edit" for op in ops))
+        if eligible and key in groups:
+            row = groups[key]
+            row["operations"] = ops + row["operations"]
+            row["members"].append(commit["hash"])
+        else:
+            row = {**commit, "operations": ops[:], "members": [commit["hash"]]}
+            rows.append(row)
+            if eligible: groups[key] = row
+    for (actor, sid, turn, branch), row in groups.items():
+        calls = {(op.get("snapshot") or op.get("commit"), tc.get("id"))
+                 for op in row["operations"] for tc in op["tool_calls"]}
+        row["subject"] = f"sun: {actor} turn {turn.removeprefix('turn')} ({len(calls)} tool calls)"
+    rows = rows[:n] if n > 0 else rows
+    counts = {}
+    for row in rows:
+        for op in row["operations"]: counts[op["actor"]] = counts.get(op["actor"], 0) + 1
+    return {**data, "commits": rows,
+            "actors": [{**a, "operations": counts[a["id"]]} for a in data["actors"] if a["id"] in counts],
+            "summary": {**data["summary"], "entries": len(rows),
+                        "operations": sum(len(c["operations"]) for c in rows)}}
+
+
 def operation_lines(op, prefix=""):
     info = op["actor_info"]
     out = [f"{prefix}operation {op['id']}  {op['type']}",
            f"{prefix}edited by     {actor_label(info)}"]
+    if op.get("snapshot") or op.get("commit"):
+        out.append(f"{prefix}snapshot      {op.get('snapshot') or op['commit']}")
     if op.get("git_action"):
         action = op["git_action"]
         out.extend([f"{prefix}git action    {action['reflog']}",
@@ -249,6 +280,8 @@ def commit_lines(commit):
     out = [f"commit        {commit['hash']}",
            f"subject       {display_subject(commit['subject'], actors)}",
            f"timestamp     {commit['date']}", f"git identity  {git_identity}"]
+    if len(commit.get("members", [])) > 1:
+        out.append("snapshots     " + ", ".join(commit["members"]))
     if commit["refs"]: out.append(f"refs          {commit['refs']}")
     if actors:
         out.append("attributed to " + ", ".join(actor_label(a) for a in actors))
@@ -286,7 +319,7 @@ def viz_tui(screen, data):
         else:
             first = len(commits) - visible
             selected = min(max(selected, first), max(len(commits) - 1, 0))
-            title = (f" sun viz  {data['summary']['commits']} commits  "
+            title = (f" sun viz  {len(commits)} entries  "
                      f"{data['summary']['operations']} operations ")
             _tui_put(screen, 0, 0, title, width - 1, curses.A_REVERSE)
             _tui_put(screen, height - 1, 0,
@@ -352,7 +385,8 @@ def cmd_viz(a):
     with git_store.lock():
         history.ensure_branch()
         history.maybe_sync([git_store.rel_to_root(a.output)] if a.output else stdout_file())
-        data = viz_data(a.n)
+        data = viz_data(a.n if a.cmd == "data" else 0)
+        if a.cmd != "data": data = turn_history(data, a.n)
     if getattr(a, "html", False) or a.output:
         return write_viz_html(data, a.output or os.path.join(git_store.sun_dir(), "viz.html"))
     if a.cmd == "data": return print(json.dumps(data))
@@ -379,6 +413,7 @@ const rows=[...c.children];rows.forEach((li,i)=>li.onclick=()=>{rows.forEach(r=>
 s.max=cs.length;s.value=cs.length;
 function cut(){const n=+s.value;pos.textContent=n+'/'+cs.length;rows.forEach((li,i)=>li.style.display=cs.length-1-i<n?'':'none');}
 function operation(e,p=''){let i=e.actor_info,o=`${p}operation ${e.id}  ${e.type}\\n${p}generated by  ${e.actor}\\n${p}source        ${i.kind}${i.kind=='agent'?` via ${i.harness}`:''}\\n`;
+if(e.snapshot||e.commit)o+=`${p}snapshot      ${e.snapshot||e.commit}\\n`;
 if(e.git_action){const a=e.git_action;o+=`${p}git action    ${a.reflog}\\n${p}Git identity  ${a.name} <${a.email}>\\n${p}executor      ${a.executor}\\n`;}
 if(e.session_id)o+=`${p}session       ${e.session_id}\\n`;
 if(e.turn)o+=`${p}turn          ${e.turn}\\n`;if(e.timestamp)o+=`${p}observed      ${e.timestamp}\\n`;
@@ -387,6 +422,7 @@ for(const tc of e.tool_calls){const input=tc.input||{},target=input.file||(input
 for(const ed of e.edits)o+=`${p}file          ${ed.file||'?'}${ed.tool_call_id?'  tool '+ed.tool_call_id:''}\\n`+(ed.patch||'').split('\\n').filter(Boolean).map(l=>p+'  '+l).join('\\n')+'\\n';return o;}
 function detail(x){let actors=x.attribution.actors.map(a=>a.id).join(', ')||'untracked';
 let o=`commit        ${x.hash}\\nsubject       ${x.subject}\\ndate          ${x.date}\\ngit author    ${x.git_author.name} <${x.git_author.email}>\\ngit committer ${x.git_committer.name} <${x.git_committer.email}>\\nsun actors    ${actors}\\n`;
+if((x.members||[]).length>1)o+='snapshots     '+x.members.join(', ')+'\\n';
 if(x.attribution.matched_by=='patch_id')o+='matched via   patch-id (commit was rewritten)\\n';
 for(const e of x.operations)o+='\\n'+operation(e);if(!x.operations.length)o+='\\nno sun operations recorded for this commit';d.textContent=o;}
 let t=null;play.onclick=()=>{if(t){clearInterval(t);t=null;return}s.value=0;cut();

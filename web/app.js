@@ -19,8 +19,6 @@ function select(index) {
   clearDiff();
   const item = data.items[index];
   $('notice').textContent = '';
-  $('filename').textContent = item.file;
-  $('reason').textContent = item.reason;
   $('position').textContent = `${index + 1} / ${data.items.length}`;
   $('previous').disabled = index === 0;
   $('next').disabled = index === data.items.length - 1;
@@ -40,7 +38,8 @@ function select(index) {
     if (!patches.some(patch => patch.files.length)) throw new Error('No text diff parsed');
     for (const patch of patches) for (const fileDiff of patch.files) {
       const instance = new FileDiff({
-        theme: {dark:'pierre-dark', light:'pierre-light'},
+        theme: 'pierre-light',
+        themeType: 'light',
         diffStyle: $('layout').value,
         disableFileHeader: true,
         overflow: 'wrap',
@@ -62,7 +61,6 @@ async function start() {
   const response = await fetch('data.json');
   if (!response.ok) throw new Error('Could not load this review snapshot');
   data = await response.json();
-  $('summary').textContent = `${data.items.length} files need review · ${data.hidden_files.length} checked files omitted`;
   $('revision').textContent = `base ${data.base.slice(0,8)} → ${data.head.slice(0,8)}`;
   $('omittedSummary').textContent = `${data.hidden_files.length} checked files omitted`;
   for (const file of data.hidden_files) {
@@ -83,9 +81,8 @@ async function start() {
   $('next').addEventListener('click', () => select(Math.min(data.items.length-1, selected+1)));
   if (data.items.length) select(0);
   else {
-    $('filename').textContent = 'Nothing to review';
-    $('reason').textContent = data.files ? 'All changed files have matching passing checks.' : 'No changed files against this base.';
+    $('notice').textContent = data.files ? 'All changed files have matching passing checks.' : 'No changed files against this base.';
     $('previous').disabled = $('next').disabled = $('layout').disabled = true;
   }
 }
-start().catch(error => { $('summary').textContent = 'Review could not load'; $('notice').textContent = error.message; });
+start().catch(error => { $('notice').textContent = `Review could not load: ${error.message}`; });

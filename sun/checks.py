@@ -657,10 +657,10 @@ def coverage(n=0, commits=None):
     for c in sorted(stored.values(), key=lambda c: (c.get("timestamp", ""), c["id"])):
         for H in lands[c["id"]]: found.setdefault((H, c["rule"]), []).append(c)
     if commits is None:
-        commits = git_store.git("log", *git_store.history_refs(), *([f"-{n}"] if n > 0 else []), "--format=%H").split()
+        commits = git_store.git("log", "--topo-order", *git_store.history_refs(), *([f"-{n}"] if n > 0 else []), "--format=%H").split()
     out = []
     for H in commits:
-        short, date, subject = git_store.git("log", "-1", "--format=%h\t%ad\t%s", "--date=short", H).rstrip("\n").split("\t", 2)
+        short, date, parents, subject = git_store.git("log", "-1", "--format=%h\t%ad\t%P\t%s", "--date=short", H).rstrip("\n").split("\t", 3)
         rows = []
         for name in sorted(rs):
             here = found.get((H, name), [])
@@ -676,11 +676,14 @@ def coverage(n=0, commits=None):
                          "labels": {c["id"]: check_label(c, authored.get(H)) for c in here},
                          "outdated": [c["id"] for c in current if c not in live],
                          "self": [c["id"] for c in live if c.get("from") and c["from"] == authored.get(H)]})
-        out.append({"commit": H, "short": short, "date": date, "subject": subject, "session": authored.get(H), "rules": rows})
+        out.append({"commit": H, "short": short, "date": date, "subject": subject, "session": authored.get(H), "parents": parents.split(), "rules": rows})
     return out
 
 
 def cmd_coverage(a):
+    if getattr(a, "tui", False):
+        from . import coverage_tui
+        return coverage_tui.run(a.n)
     history.maybe_sync()
     table = coverage(a.n)
     if a.json: return print(json.dumps({"rules": rules(), "commits": table}))
@@ -689,8 +692,8 @@ def cmd_coverage(a):
         for row in commit["rules"]:
             by = "; ".join(f"{c['verdict']} by {row['labels'][c['id']]} {c['id'][:8]}"
                            + (" rule changed since" if c["id"] in row["outdated"] else "") for c in row["checks"])
-            eyes = {"terminal": "", "chat": "chat only"}.get(row["eyes"], "needs eyes")
-            print(f"  {row['rule']:<24} {row['status']:<14} {eyes:<11} {by}".rstrip())
+            reviewed = "human-reviewed" if row["eyes"] == "terminal" else ""
+            print(f"  {row['rule']:<24} {row['status']:<14} {reviewed:<14} {by}".rstrip())
 
 
 def default_base():
@@ -752,8 +755,8 @@ def render_pr(table, rs, base, writer):
                 selfc.append(f"{name} {row['status']} on {H} ({', '.join(row['labels'][i] for i in row['self'])})")
             else:
                 only.append(f"{name} {row['status']} on {H} ({', '.join(row['labels'][c['id']] for c in live_ids)})")
-    section("Checked at a terminal", terminal)
-    section("Said in chat, not yet confirmed at a terminal", chat)
+    section("human-reviewed", terminal)
+    section("Recorded chat verdicts", chat)
     section("Self-checked by the agent that made the change", selfc)
     section("Checked only by programs, models, or declared actors", only)
     section("Checked before the rule changed", before)
@@ -762,14 +765,16 @@ def render_pr(table, rs, base, writer):
 
 
 def cmd_pr(a):
-    with git_store.lock(): history.maybe_sync()
+    automatic = getattr(a, "automatic", False)
+    if not automatic:
+        with git_store.lock(): history.maybe_sync()
     base = a.base or default_base()
     config, rs = read_rules()
     if not rs: sys.exit("sun: no RULES.md; nothing to summarize")
     exclude = [r for r in (f"refs/sun/heads/{base}", f"refs/sun/remotes/origin/{base}") if git_store.ref_oid(r) and r != git_store.shadow_ref()]
     commits = git_store.git("rev-list", "--topo-order", git_store.shadow_ref(), *[f"^{r}" for r in exclude]).split()
     in_flight = in_flight_session() if harness_env() else None
-    if config.get("extract") and not agent_shell() and not a.json:
+    if config.get("extract") and not agent_shell() and not a.json and not automatic:
         if trusted(config, rs):
             for key, entry in git_store.state("session-paths.json", {}).items():
                 extract_session(key, config, rs, entry.get("harness") or "claude")
@@ -780,9 +785,10 @@ def cmd_pr(a):
     if a.json: return print(json.dumps({"base": base, "writer": writer, "commits": table}))
     md = render_pr(table, rs, base, writer)
     if not a.update: return print(md)
-    body = git_store.sh("gh", "pr", "view", "--json", "body", "-q", ".body")
+    target = [a.pr] if getattr(a, "pr", None) else []
+    body = git_store.sh("gh", "pr", "view", *target, "--json", "body", "-q", ".body")
     block = "<!-- sun -->\n" + md + "\n<!-- /sun -->"
     new = re.sub(r"<!-- sun -->.*?<!-- /sun -->", lambda m: block, body, flags=re.S) if "<!-- sun -->" in body \
         else body.rstrip() + "\n\n" + block + "\n"
-    git_store.sh("gh", "pr", "edit", "--body-file", "-", input=new)
+    git_store.sh("gh", "pr", "edit", *target, "--body-file", "-", input=new)
     print("sun: updated the pull request description")

@@ -65,6 +65,7 @@ exit "$status"
 if [ -x "$original" ]; then
     printf '%s\\n' "$input" | "$original" "$@" || exit $?
 fi
+[ "$SUN_SKIP_PUSH" = 1 ] && exit 0
 printf '%s\\n' "$input" | while read -r local_ref local_oid remote_ref remote_oid; do
     case "$local_ref" in
         refs/heads/*) branch="${local_ref#refs/heads/}";;

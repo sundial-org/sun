@@ -3,7 +3,7 @@
 Each Git branch has its own Sun history. Unpublished, non-interleaved agent calls are grouped
 per turn while remaining individually inspectable and undoable. Recording stays local. Resolve file
 conflicts with normal Git. `sun push` publishes the selected Sun branch independently of Git commits;
-it combines recorded histories without changing files or normal Git refs.
+it rejects divergent history. `sun pull` fetches and joins Sun histories locally without changing files.
 Raw transcripts are shared only when you explicitly enable session sharing."""
 
 import argparse
@@ -15,6 +15,7 @@ import sys
 
 from . import branches
 from . import checks
+from . import review
 from . import git_store
 from . import history
 from . import hooks
@@ -80,16 +81,16 @@ def remove_hooks(harness):  # a restrictive re-init un-installs the excluded har
 
 
 def configure_sharing(share_sessions=False):
-    if "origin" in git_store.git("remote", check=False).split():
+    for remote in git_store.git("remote", check=False).splitlines():
         for old in ("+refs/sun/*:refs/sun/*", "+refs/sun/sessions/*:refs/sun/sessions/*",
                     "+refs/sun/heads/*:refs/sun/heads/*", "+refs/sun/log/*:refs/sun/log/*",
                     "+refs/sun/ops/*:refs/sun/ops/*",
                     "refs/sun/checkpoints/*:refs/sun/checkpoints/*",
                     "refs/sun/session-checkpoints/*:refs/sun/session-checkpoints/*"):
-            git_store.git("config", "--fixed-value", "--unset-all", "remote.origin.fetch", old, check=False)
-        current = git_store.git("config", "--get-all", "remote.origin.fetch", check=False).splitlines()
-        for spec in git_store.refspecs(share_sessions):
-            if spec not in current: git_store.git("config", "--add", "remote.origin.fetch", spec)
+            git_store.git("config", "--fixed-value", "--unset-all", f"remote.{remote}.fetch", old, check=False)
+        current = git_store.git("config", "--get-all", f"remote.{remote}.fetch", check=False).splitlines()
+        for spec in git_store.refspecs(share_sessions, remote):
+            if spec not in current: git_store.git("config", "--add", f"remote.{remote}.fetch", spec)
     # Remove only exact Sun-owned hooks from the earlier design; preserve custom hooks.
     managed = {
         "pre-push": ('#!/bin/sh\n# sun: mirror shared refs\nexec sun push "$1"\n',
@@ -230,12 +231,27 @@ def cmd_update(a):  # uv re-resolves the git source to the latest commit
 
 def main(argv=None):
     git_store._u.clear()
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] in (["git"], ["gh"], ["shell-init"], ["git-integrate"]):
+        from . import integration
+        if argv[0] == "git":
+            raise SystemExit(integration.run_git(argv[1:]))
+        if argv[0] == "gh":
+            raise SystemExit(integration.run_gh(argv[1:]))
+        if argv[0] == "shell-init":
+            return integration.shell_init(argv[1:])
+        if argv[1:] not in (["prepare"], ["finish"], ["finish-push"]):
+            sys.exit("sun: invalid Git integration phase")
+        raise SystemExit(integration.integrate(argv[1]))
     ap = argparse.ArgumentParser(
         prog="sun", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Start with `sun init`, then use `sun viz` to explore recorded work.")
     sub = ap.add_subparsers(dest="cmd", required=True, title="commands", metavar="COMMAND")
     ps = {c: sub.add_parser(c, help=h) for c, h in [
         ("init", "initialize Sun and install agent hooks"),
+        ("shell-init", "print shell integration for automatic setup, push and pull"),
+        ("git", "run Git with automatic Sun integration"),
+        ("gh", "run GitHub CLI with automatic PR coverage updates"),
         ("sync", "record file changes since the last Sun snapshot"),
         ("log", "list Sun commits with attributed actors and turns"),
         ("show", "show a Sun commit and its recorded operations"),
@@ -246,8 +262,10 @@ def main(argv=None):
         ("restore", "restore files to a Sun commit and record the restoration"),
         ("sessions", "manage explicitly shared agent transcripts"),
         ("push", "publish recorded Sun history independently of Git commits"),
+        ("pull", "fetch and join Sun history locally, keeping the local snapshot"),
         ("check", "record a verdict on a rule, or run the rules that name a command, model, or agent"),
         ("coverage", "show which commits were checked against each rule, and by whom"),
+        ("review", "inspect only remaining changes in a terminal queue and Vim"),
         ("extract", "record the verdicts you gave your agents in conversation"),
         ("pr", "summarize checks for the pull request as Markdown, or update its description"),
         ("trust", "let hooks on this machine run the commands RULES.md names"),
@@ -274,6 +292,8 @@ def main(argv=None):
     ps["hook"].add_argument("--harness", choices=("claude", "codex"), default="claude")
     ps["push"].add_argument("remote", nargs="?", default="origin")
     ps["push"].add_argument("branch", nargs="?", help="local branch (default: checked-out branch)")
+    ps["pull"].add_argument("remote", nargs="?", default="origin")
+    ps["pull"].add_argument("branch", nargs="?", help="remote branch to join into the current Sun branch (default: current branch name)")
     ps["sync"].add_argument("--recover", action="store_true",
                             help="after stopping agents, release abandoned calls and record uncertain edits")
     session_sub = ps["sessions"].add_subparsers(
@@ -293,7 +313,7 @@ def main(argv=None):
     session_ps["prune"].add_argument("--remote", action="store_true",
                                      help="also delete the selected refs from origin")
     ps["log"].add_argument("-n", type=int, default=30, metavar="COUNT",
-                           help="maximum commits to show (default: 30)")
+                           help="maximum history entries to show (default: 30)")
     ps["show"].add_argument("commit", help="Sun commit, snapshot, or ref")
     undo_target = ps["undo"].add_mutually_exclusive_group()
     undo_target.add_argument("--op", nargs="?", const="", default=None, metavar="ID",
@@ -311,7 +331,7 @@ def main(argv=None):
     ps["viz"].add_argument("-o", "--output", default=None,
                             help="HTML output path (implies --html)")
     ps["viz"].add_argument("-n", type=int, default=0, metavar="COUNT",
-                           help="maximum commits to load (default: all)")
+                           help="maximum history entries to show (default: all)")
     ps["export"].add_argument("-o", "--output", default=None,
                               help="output path (default: stdout)")
     ps["check"].add_argument("args", nargs="*", metavar="RULE VERDICT [REV|CHECK]",
@@ -328,17 +348,24 @@ def main(argv=None):
     ps["pr"].add_argument("--json", action="store_true", help="print the coverage of the pull request as JSON")
     ps["pr"].add_argument("--update", action="store_true",
                           help="write the section into the open pull request's description with gh")
+    ps["pr"].add_argument("--pr", help="PR URL or number to update (default: current branch's PR)")
     ps["coverage"].add_argument("-n", type=int, default=30, metavar="COUNT",
                                 help="maximum commits (default: 30; 0 for all)")
-    ps["coverage"].add_argument("--json", action="store_true", help="print one JSON object")
+    coverage_format = ps["coverage"].add_mutually_exclusive_group()
+    coverage_format.add_argument("--json", action="store_true", help="print one JSON object")
+    coverage_format.add_argument("--tui", action="store_true", help="browse coverage and commit ancestry in the terminal")
+    ps["review"].add_argument("--base", metavar="REV", help="diff base (default: Git merge base with main/master, else Git HEAD)")
+    review_format = ps["review"].add_mutually_exclusive_group()
+    review_format.add_argument("--json", action="store_true", help="emit the filtered review queue")
+    review_format.add_argument("--web", action="store_true", help="open the review in a browser using Pierre diffs")
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
     commands = {
-        "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push,
+        "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push, "pull": history.cmd_pull,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
-        "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage,
+        "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage, "review": review.cmd_review,
         "extract": checks.cmd_extract, "pr": checks.cmd_pr, "trust": checks.cmd_trust,
     }
     if a.cmd not in ("init", "hook", "git-hook", "update"):  # hook locates its repo from the payload
@@ -347,14 +374,14 @@ def main(argv=None):
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(git_store.root())
         if not adopt(): git_store.sun_dir()  # exits with the `sun init` hint
-        if a.cmd in ("viz", "data"):
+        if a.cmd in ("viz", "data", "review") or a.cmd == "coverage" and a.tui:
             commands[a.cmd](a)
         elif a.cmd in ("extract", "pr") or a.cmd == "check" and a.run:  # may start a judge, whose hooks need the lock
             with git_store.lock(): history.ensure_branch()
             commands[a.cmd](a)
         else:
             with git_store.lock():
-                history.ensure_branch()
+                if a.cmd not in ("push", "pull"): history.ensure_branch()
                 commands[a.cmd](a)
     else:
         commands[a.cmd](a)

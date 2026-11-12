@@ -23,7 +23,6 @@ function select(index) {
   $('previous').disabled = index === 0;
   $('next').disabled = index === data.items.length - 1;
   [...$('files').children].forEach((button, i) => button.setAttribute('aria-current', String(i === index)));
-  $('evidence').textContent = item.checks.length ? item.checks.join('\n') : 'No matching check recorded.';
   const showRaw = message => {
     if (version !== generation) return;
     clearDiff();

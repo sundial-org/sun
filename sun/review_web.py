@@ -20,10 +20,18 @@ def create_server(data):
         'app.js': ('text/javascript; charset=utf-8', gzip.decompress((ASSETS / 'app.js.gz').read_bytes())),
         'data.json': ('application/json; charset=utf-8', json.dumps(data).encode()),
     }
-    root = git_store.root()
+    inbox = data.get('prs')
+    root = None if inbox is not None else git_store.root()
+    if inbox is not None:
+        static['index.html'] = ('text/html; charset=utf-8', (ASSETS / 'inbox.html').read_bytes())
+        static['inbox.js'] = ('text/javascript; charset=utf-8', (ASSETS / 'inbox.js').read_bytes())
+        public = {'prs': [{k: v for k, v in row.items() if k not in ('root', 'review')} |
+                          ({'coverage': row['review']['coverage']} if 'review' in row else {})
+                          for row in inbox]}
+        static['data.json'] = ('application/json; charset=utf-8', json.dumps(public).encode())
 
-    def file_contents(at, path):
-        result = subprocess.run(['git', 'show', f'{at}:{path}'], cwd=root, capture_output=True)
+    def file_contents(at, path, directory):
+        result = subprocess.run(['git', 'show', f'{at}:{path}'], cwd=directory, capture_output=True)
         if result.returncode: return None  # added/deleted file: absent on one side
         text = result.stdout.decode('utf-8')
         if '\0' in text: raise ValueError('Binary file')
@@ -36,15 +44,32 @@ def create_server(data):
                 self.send_error(404)
                 return
             name = self.path[len(token) + 2:]
-            if name in static:
-                content_type, body = static[name]
-            elif name.startswith('files/') and name.endswith('.json'):
+            current, directory = data, root
+            assets = static
+            if inbox is not None and name.startswith('prs/'):
+                parts = name.split('/', 2)
+                try:
+                    index = int(parts[1])
+                    if not 0 <= index < len(inbox): raise ValueError()
+                    row = inbox[index]
+                    current, directory = row['review'], row['root']
+                    name = parts[2]
+                except (ValueError, IndexError, KeyError):
+                    self.send_error(404)
+                    return
+                assets = dict(static)
+                assets['index.html'] = ('text/html; charset=utf-8', (ASSETS / 'index.html').read_bytes())
+                assets['data.json'] = ('application/json; charset=utf-8', json.dumps(current).encode())
+            if name in assets:
+                content_type, body = assets[name]
+            elif name.startswith('files/') and name.endswith('.json') and directory:
                 try:
                     index = int(name[6:-5])
-                    if not 0 <= index < len(data['items']): raise ValueError('Unknown file')
-                    item = data['items'][index]
-                    body = json.dumps({'oldFile': file_contents(data['base'], item['file']),
-                                       'newFile': file_contents(data['head'], item['file'])}).encode()
+                    items = current['items'] + current['hidden_files']
+                    if not 0 <= index < len(items): raise ValueError('Unknown file')
+                    item = items[index]
+                    body = json.dumps({'oldFile': file_contents(current['base'], item['file'], directory),
+                                       'newFile': file_contents(current['head'], item['file'], directory)}).encode()
                     content_type = 'application/json; charset=utf-8'
                 except (ValueError, UnicodeError):
                     self.send_error(404)

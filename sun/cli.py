@@ -344,6 +344,9 @@ def main(argv=None):
     ps["check"].add_argument("--since", metavar="REV",
                              help="base for the diff (default: the turn start when an agent call is in flight, else the parent)")
     ps["extract"].add_argument("--session", metavar="ID", help="one session (default: every session seen here)")
+    ps["pr"].add_argument("action", nargs="?", choices=["send"])
+    ps["pr"].add_argument("--reviewer", action="append", default=[], help="request a GitHub reviewer (repeatable or comma-separated)")
+    ps["pr"].add_argument("--title", help="title for a new PR")
     ps["pr"].add_argument("--base", metavar="BRANCH", help="base branch (default: origin's HEAD, else main)")
     ps["pr"].add_argument("--json", action="store_true", help="print the coverage of the pull request as JSON")
     ps["pr"].add_argument("--update", action="store_true",
@@ -354,6 +357,8 @@ def main(argv=None):
     coverage_format = ps["coverage"].add_mutually_exclusive_group()
     coverage_format.add_argument("--json", action="store_true", help="print one JSON object")
     coverage_format.add_argument("--tui", action="store_true", help="browse coverage and commit ancestry in the terminal")
+    ps["review"].add_argument("--inbox", action="store_true", help="open PRs requesting your review across GitHub repositories")
+    ps["review"].add_argument("--limit", type=int, default=100, help="maximum inbox PRs (default: 100)")
     ps["review"].add_argument("--base", metavar="REV", help="diff base (default: Git merge base with main/master, else Git HEAD)")
     review_format = ps["review"].add_mutually_exclusive_group()
     review_format.add_argument("--json", action="store_true", help="emit the filtered review queue")
@@ -361,6 +366,11 @@ def main(argv=None):
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
+    if a.cmd == "review" and a.inbox:
+        if a.base or a.limit < 1: ap.error("--inbox needs a positive --limit and cannot use --base")
+        return review.cmd_review(a)
+    if a.cmd == "pr" and a.action != "send" and (a.reviewer or a.title):
+        ap.error("--reviewer and --title require sun pr send")
     commands = {
         "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push, "pull": history.cmd_pull,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,

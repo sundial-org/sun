@@ -1,1 +1,1 @@
-{"private":true,"type":"module","scripts":{"build":"node build.mjs"},"dependencies":{"@pierre/diffs":"1.6.4"},"devDependencies":{"esbuild":"0.25.12"}}
+{"private":true,"type":"module","scripts":{"build":"node build.mjs"},"dependencies":{"@aiden0z/pptx-renderer":"1.4.0","@pierre/diffs":"1.6.4"},"devDependencies":{"esbuild":"0.25.12"}}

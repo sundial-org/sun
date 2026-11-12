@@ -14,4 +14,7 @@ for (const [path, info] of Object.entries(lock.packages)) {
     notices.push(`${path} @ ${info.version} / ${file}\n\n${readFileSync(`${path}/${file}`, 'utf8')}`);
   }
 }
-writeFileSync('../sun/review_assets/THIRD-PARTY-NOTICES.txt', notices.join('\n\n' + '='.repeat(72) + '\n\n'));
+const renderer = 'node_modules/@aiden0z/pptx-renderer';
+const embeddedNotices = ['THIRD_PARTY_NOTICES.md', ...readdirSync(`${renderer}/licenses`).map(f => `licenses/${f}`)];
+for (const file of embeddedNotices) notices.push(`${renderer}/${file}\n\n${readFileSync(`${renderer}/${file}`, 'utf8')}`);
+writeFileSync('../sun/review_assets/THIRD-PARTY-NOTICES.txt', notices.join('\n\n' + '='.repeat(72) + '\n\n').replace(/\r\n/g, '\n'));

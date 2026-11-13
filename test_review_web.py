@@ -17,11 +17,17 @@ class WebReviewTest(unittest.TestCase):
     setUp, tearDown = fixtures.ReviewTest.setUp, fixtures.ReviewTest.tearDown
     git, sun_head, check = fixtures.ReviewTest.git, fixtures.ReviewTest.sun_head, fixtures.ReviewTest.check
 
-    def serve(self):
+    def serve(self, inbox=False):
         write('a.py', 'print("snapshot")\n')
         run('sync')
         data = review.review_data(self.base)
-        server, url = review_web.create_server(data)
+        payload = data
+        if inbox:
+            data['hidden_files'] = data['items']
+            data['items'] = []
+            data['coverage'] = {'files': 1, 'covered_files': 1, 'turns': 1, 'checked_turns': 1}
+            payload = {'prs': [{'title': 'Demo', 'root': git_store.root(), 'review': data}]}
+        server, url = review_web.create_server(payload)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         def stop():
@@ -88,3 +94,17 @@ class WebReviewTest(unittest.TestCase):
             run('review', '--web', '--base', self.base)
         opened.assert_called_once()
         with self.assertRaises(SystemExit): run('review', '--web', '--json')
+
+    def test_inbox_routes_covered_files_and_hides_local_repository_paths(self):
+        data = self.serve(inbox=True)
+        status, _, body = self.get(self.prefix + 'data.json')
+        self.assertEqual(status, 200)
+        self.assertNotIn('root', json.loads(body)['prs'][0])
+        self.assertEqual(self.get(self.prefix + 'prs/0/index.html')[0], 200)
+        status, _, body = self.get(self.prefix + 'prs/0/data.json')
+        self.assertEqual(json.loads(body), data)
+        status, _, body = self.get(self.prefix + 'prs/0/files/0.json')
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['newFile']['contents'], 'print("snapshot")\n')
+        for suffix in ['documents/0/diff.json', 'prs/-1/data.json', 'prs/1/data.json', 'prs/0/../../data.json']:
+            self.assertEqual(self.get(self.prefix + suffix)[0], 404)

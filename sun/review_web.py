@@ -21,10 +21,18 @@ def create_server(data):
         'app.js': ('text/javascript; charset=utf-8', gzip.decompress((ASSETS / 'app.js.gz').read_bytes())),
         'data.json': ('application/json; charset=utf-8', json.dumps(data).encode()),
     }
-    root = git_store.root()
+    inbox = data.get('prs')
+    root = None if inbox is not None else git_store.root()
+    if inbox is not None:
+        static['index.html'] = ('text/html; charset=utf-8', (ASSETS / 'inbox.html').read_bytes())
+        static['inbox.js'] = ('text/javascript; charset=utf-8', (ASSETS / 'inbox.js').read_bytes())
+        public = {'prs': [{k: v for k, v in row.items() if k not in ('root', 'review')} |
+                          ({'coverage': row['review']['coverage']} if 'review' in row else {})
+                          for row in inbox]}
+        static['data.json'] = ('application/json; charset=utf-8', json.dumps(public).encode())
 
-    def file_contents(at, path):
-        result = subprocess.run(['git', 'show', f'{at}:{path}'], cwd=root, capture_output=True)
+    def file_contents(at, path, directory):
+        result = subprocess.run(['git', 'show', f'{at}:{path}'], cwd=directory, capture_output=True)
         if result.returncode: return None  # added/deleted file: absent on one side
         text = result.stdout.decode('utf-8')
         if '\0' in text: raise ValueError('Binary file')
@@ -37,29 +45,45 @@ def create_server(data):
                 self.send_error(404)
                 return
             name = self.path[len(token) + 2:]
-            if name in static:
-                content_type, body = static[name]
-            elif name.startswith('documents/'):
+            current, directory = data, root
+            assets = static
+            if inbox is not None and name.startswith('prs/'):
+                parts = name.split('/', 2)
+                try:
+                    index = int(parts[1])
+                    if not 0 <= index < len(inbox): raise ValueError()
+                    row = inbox[index]
+                    current, directory = row['review'], row['root']
+                    name = parts[2]
+                except (ValueError, IndexError, KeyError):
+                    self.send_error(404)
+                    return
+                assets = dict(static)
+                assets['index.html'] = ('text/html; charset=utf-8', (ASSETS / 'index.html').read_bytes())
+                assets['data.json'] = ('application/json; charset=utf-8', json.dumps(current).encode())
+            if name in assets:
+                content_type, body = assets[name]
+            elif name.startswith('documents/') and directory:
                 try:
                     parts = name.split('/')
                     if len(parts) != 3: raise ValueError('Unknown document')
                     index = int(parts[1])
-                    if not 0 <= index < len(data['items']): raise ValueError('Unknown file')
-                    item, action = data['items'][index], parts[2]
+                    if not 0 <= index < len(current['items'] + current['hidden_files']): raise ValueError('Unknown file')
+                    item, action = (current['items'] + current['hidden_files'])[index], parts[2]
                     if Path(item['file']).suffix.lower() not in document_diff.EXTENSIONS:
                         raise ValueError('Unsupported document')
                     if action == 'diff.json':
                         try:
-                            old = document_diff.read_blob(root, data['base'], item['file'])
-                            new = document_diff.read_blob(root, data['head'], item['file'])
+                            old = document_diff.read_blob(directory, current['base'], item['file'])
+                            new = document_diff.read_blob(directory, current['head'], item['file'])
                             result = document_diff.compare(item['file'], old, new)
                         except ValueError as error:
                             result = {'kind': 'unavailable', 'notice': str(error)}
                         body = json.dumps(result).encode()
                         content_type = 'application/json; charset=utf-8'
                     elif action in ('before.pptx', 'after.pptx') and item['file'].lower().endswith('.pptx'):
-                        at = data['base'] if action == 'before.pptx' else data['head']
-                        body = document_diff.read_blob(root, at, item['file'])
+                        at = current['base'] if action == 'before.pptx' else current['head']
+                        body = document_diff.read_blob(directory, at, item['file'])
                         if body is None: raise ValueError('Absent file')
                         document_diff.validate_archive(body)
                         content_type = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
@@ -67,13 +91,14 @@ def create_server(data):
                 except (ValueError, zipfile.BadZipFile, RuntimeError, subprocess.CalledProcessError):
                     self.send_error(404)
                     return
-            elif name.startswith('files/') and name.endswith('.json'):
+            elif name.startswith('files/') and name.endswith('.json') and directory:
                 try:
                     index = int(name[6:-5])
-                    if not 0 <= index < len(data['items']): raise ValueError('Unknown file')
-                    item = data['items'][index]
-                    body = json.dumps({'oldFile': file_contents(data['base'], item['file']),
-                                       'newFile': file_contents(data['head'], item['file'])}).encode()
+                    items = current['items'] + current['hidden_files']
+                    if not 0 <= index < len(items): raise ValueError('Unknown file')
+                    item = items[index]
+                    body = json.dumps({'oldFile': file_contents(current['base'], item['file'], directory),
+                                       'newFile': file_contents(current['head'], item['file'], directory)}).encode()
                     content_type = 'application/json; charset=utf-8'
                 except (ValueError, UnicodeError):
                     self.send_error(404)

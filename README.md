@@ -492,3 +492,37 @@ bare remote and CSV/report fixtures for totals, item counts, and TODO markers.
 Checks use fixed verdicts and timestamps; no model calls or network services are needed.
 The suite exercises sharing, reviews, retries, branch scope, turn squashing, concurrent
 submissions, and partial publication failures.
+
+
+### Send a PR and review your inbox
+
+With GitHub CLI authenticated (gh auth login, and gh auth setup-git for HTTPS
+Git access), commit your feature branch and run:
+
+    sun pr send --reviewer alice
+    sun pr send --reviewer alice --reviewer myorg/team --base main
+
+This pushes the current branch to its github.com origin, publishes Sun history
+and checks using the existing transcript-sharing preference, and creates or
+updates that branch's PR with the requested reviewers. It does not commit files.
+The shared Sun snapshot is pinned to the exact Git commit sent for review.
+
+    sun review --inbox
+    sun review --inbox --json --limit 100
+
+The inbox lists open PRs requesting your review across repositories. Each row
+shows recorded turns with checks and current passing file coverage. Open a PR
+to browse Needs review, Covered, or All files. JSON includes the same snapshot
+and coverage information for agents to prepare a review queue.
+
+The inbox fetches objects into disposable repositories without checking out or
+running PR code. Your current branch and working files are untouched. Missing,
+inaccessible, or mismatched Sun evidence is labeled unknown and never hides a
+file. A failed PR fetch remains visible as an error row. Reopen the command to
+refresh; views are pinned snapshots, not live approvals. Turn counts indicate
+recorded checks, not necessarily passing checks or complete turn coverage.
+
+Current send support targets the origin repository on github.com. Fork PRs can
+be read in the inbox when accessible, but creating fork-to-upstream PRs through
+send is not yet supported. Line-hover session summaries and guided agent review
+are not part of these commands yet.

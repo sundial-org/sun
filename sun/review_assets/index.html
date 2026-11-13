@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sun · Review</title><link rel="stylesheet" href="style.css"><script type="module" src="app.js"></script></head>
 <body><header><span class="brand">☀ sun <span>/ review</span></span><span id="revision"></span></header>
-<main><aside><nav id="files" aria-label="Files needing review"></nav><details><summary id="omittedSummary">Checked files omitted</summary><div id="omitted"></div></details></aside>
+<main><aside><label>Files <select id="scope"><option value="needs">Needs review</option><option value="covered">Covered</option><option value="all">All</option></select></label><nav id="files" aria-label="Files needing review"></nav></aside>
 <section class="review"><div class="toolbar"><div class="controls"><label>View <select id="layout"><option value="unified">Unified</option><option value="split">Split</option></select></label><button id="previous" aria-label="Previous file">←</button><span id="position"></span><button id="next" aria-label="Next file">→</button></div></div>
 <p id="notice" role="status"></p><div id="diff"></div></section></main>
 </body></html>

@@ -32,16 +32,18 @@ def default_base():
     return git_store.git('rev-parse', '--verify', 'HEAD').strip()
 
 
-def review_data(base=None):
-    head = git_store.history_head()
+def review_data(base=None, head=None, evidence_head=None, use_checks=True):
+    remote = head is not None
+    head = head or git_store.history_head()
+    evidence_head = evidence_head or head
     base = (git_store.git('rev-parse', '--verify', '--end-of-options', base + '^{commit}').strip()
             if base else default_base())
-    ancestors = set(git_store.git('rev-list', head).split())
+    ancestors = set(git_store.git('rev-list', evidence_head).split())
     owners = {H: H for H in ancestors}
-    for event in history.events():
+    for event in history.events(scope=[evidence_head]):
         if event['commit'] in ancestors and event.get('snapshot'):
             owners[event['snapshot']] = event['commit']
-    stored, rules = checks.checks(), checks.read_rules()[1]
+    stored, rules = (checks.checks() if use_checks else {}), checks.read_rules(head if remote else None)[1]
     scoped = [(c, citations(c, stored)) for c in stored.values() if c['rule'] in rules]
     # A check from an unrelated branch cannot supersede evidence on this branch.
     scoped = [(c, cites) for c, cites in scoped if any(x['at'] in owners for x in cites)]
@@ -65,7 +67,7 @@ def review_data(base=None):
 
     items, hidden = [], []
     for path in filter(None, paths):
-        last = git_store.git('--literal-pathspecs', 'log', '-1', '--format=%H', head, '--', path).strip()
+        last = git_store.git('--literal-pathspecs', 'log', '-1', '--format=%H', evidence_head, '--', path).strip()
         passing, blocking, partial, stale, changed = [], [], [], [], []
         for c, cites in scoped:
             rule = rules[c['rule']]
@@ -87,7 +89,7 @@ def review_data(base=None):
                 else:
                     passing.append(c['id'])
         if passing and not blocking:
-            hidden.append({'file': path, 'checks': sorted(set(passing)),
+            hidden.append({'file': path, 'patch': git_store.git('--literal-pathspecs', 'diff', '--no-ext-diff', '--no-textconv', '--no-color', '--no-renames', base, head, '--', path), 'checks': sorted(set(passing)),
                            'reason': 'Passing check covers this file since its last edit.'})
             continue
         reason = ('A current check is nonpassing or conflicts with a passing check.' if blocking else
@@ -177,6 +179,9 @@ def tui(screen, data):
 
 
 def cmd_review(a):
+    if getattr(a, "inbox", False):
+        from . import inbox
+        return inbox.run(a)
     if not a.json and not getattr(a, "web", False) and (not sys.stdin.isatty() or not sys.stdout.isatty()):
         sys.exit('sun: review needs an interactive terminal; use sun review --json')
     with git_store.lock():

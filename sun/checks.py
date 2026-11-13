@@ -72,13 +72,18 @@ def rule_record(name, meta, text):
                                    .encode()).hexdigest()[:12]}
 
 
-def read_rules():  # (front matter, {name: rule}) from RULES.md, or a legacy RULES file of `name: text` lines
-    p = os.path.join(git_store.root(), "RULES.md")
-    if not os.path.exists(p):
-        legacy = os.path.join(git_store.root(), "RULES")
-        found = re.findall(r"(?m)^([\w.-]+):[ \t]+(\S.*?)\s*$", git_store.read_text(legacy)) if os.path.exists(legacy) else []
+def read_rules(at=None):  # (front matter, {name: rule}) from RULES.md, or a legacy RULES file of `name: text` lines
+    def read(name):
+        if at:
+            result = git_store.quiet("git", "show", f"{at}:{name}")
+            return result.stdout if not result.returncode else None
+        path = os.path.join(git_store.root(), name)
+        return git_store.read_text(path) if os.path.exists(path) else None
+    text = read("RULES.md")
+    if text is None:
+        found = re.findall(r"(?m)^([\w.-]+):[ \t]+(\S.*?)\s*$", read("RULES") or "")
         return {}, {n: rule_record(n, {}, t) for n, t in found}
-    config, lines = front_matter(git_store.read_text(p).splitlines())
+    config, lines = front_matter(text.splitlines())
     rules, name, body, fenced = {}, None, [], False
     for l in lines + [None]:
         if l is not None and l.lstrip().startswith("```"): fenced = not fenced
@@ -765,6 +770,9 @@ def render_pr(table, rs, base, writer):
 
 
 def cmd_pr(a):
+    if getattr(a, "action", None) == "send":
+        from . import inbox
+        return inbox.send(a)
     automatic = getattr(a, "automatic", False)
     if not automatic:
         with git_store.lock(): history.maybe_sync()

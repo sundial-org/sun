@@ -2,7 +2,7 @@ import { FileDiff, parsePatchFiles } from '@pierre/diffs';
 import { documentView } from './documents.js';
 
 const $ = id => document.getElementById(id);
-let data, selected = 0, instances = [], generation = 0;
+let data, items = [], selected = 0, instances = [], generation = 0;
 function clearDiff() {
   instances.forEach(instance => instance.cleanUp());
   instances = [];
@@ -18,13 +18,13 @@ function select(index) {
   selected = index;
   const version = ++generation;
   clearDiff();
-  const item = data.items[index];
+const item = items[index];
   const documentFile = /\.(csv|tsv|xlsx|pptx|key)$/i.test(item.file);
   $('layout').disabled = documentFile;
   $('notice').textContent = '';
-  $('position').textContent = `${index + 1} / ${data.items.length}`;
+  $('position').textContent = `${index + 1} / ${items.length}`;
   $('previous').disabled = index === 0;
-  $('next').disabled = index === data.items.length - 1;
+  $('next').disabled = index === items.length - 1;
   [...$('files').children].forEach((button, i) => button.setAttribute('aria-current', String(i === index)));
   const showRaw = message => {
     if (version !== generation) return;
@@ -33,7 +33,7 @@ function select(index) {
   };
   if (documentFile) {
     $('notice').textContent = 'Loading document comparison…';
-    instances.push(documentView(index, $('diff'), $('notice'), showRaw));
+    instances.push(documentView(item.sourceIndex, $('diff'), $('notice'), showRaw));
     return;
   }
   if (!item.patch.includes('\n@@ ')) {
@@ -51,7 +51,7 @@ function select(index) {
         disableFileHeader: true,
         overflow: 'wrap',
         loadDiffFiles: async () => {
-          const response = await fetch(`files/${index}.json`);
+          const response = await fetch(`files/${item.sourceIndex}.json`);
           if (!response.ok) {
             if (version === generation) $('notice').textContent = 'Full file context could not be loaded.';
             throw new Error('Could not load full file context');
@@ -69,27 +69,36 @@ async function start() {
   if (!response.ok) throw new Error('Could not load this review snapshot');
   data = await response.json();
   $('revision').textContent = `base ${data.base.slice(0,8)} → ${data.head.slice(0,8)}`;
-  $('omittedSummary').textContent = `${data.hidden_files.length} checked files omitted`;
-  for (const file of data.hidden_files) {
-    const row = document.createElement('div');
-    const name = document.createElement('strong'); name.textContent = file.file;
-    const reason = document.createElement('p'); reason.textContent = file.reason;
-    const ids = document.createElement('code'); ids.textContent = file.checks.join(', ');
-    row.append(name, reason, ids); $('omitted').append(row);
-  }
-  data.items.forEach((item, index) => {
-    const button = document.createElement('button');
-    button.type = 'button'; button.textContent = item.file;
-    button.addEventListener('click', () => select(index));
-    $('files').append(button);
+  const needs = data.items.map((item, i) => ({...item, sourceIndex:i}));
+  const covered = data.hidden_files.map((item, i) => ({...item, sourceIndex:needs.length+i}));
+  [...$('scope').options].forEach((option, i) => {
+    option.textContent += ` (${[needs.length, covered.length, needs.length+covered.length][i]})`;
   });
-  $('layout').addEventListener('change', () => data.items.length && select(selected));
-  $('previous').addEventListener('click', () => select(Math.max(0, selected-1)));
-  $('next').addEventListener('click', () => select(Math.min(data.items.length-1, selected+1)));
-  if (data.items.length) select(0);
-  else {
-    $('notice').textContent = data.files ? 'All changed files have matching passing checks.' : 'No changed files against this base.';
-    $('previous').disabled = $('next').disabled = $('layout').disabled = true;
+  function showFiles() {
+    generation++;
+    clearDiff();
+    items = $('scope').value === 'covered' ? covered : $('scope').value === 'all' ? [...needs, ...covered] : needs;
+    $('files').replaceChildren();
+    items.forEach((item, index) => {
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = item.file;
+      button.title = item.reason;
+      button.addEventListener('click', () => select(index));
+      $('files').append(button);
+    });
+    $('layout').disabled = !items.length;
+    if (items.length) select(0);
+    else {
+      $('notice').textContent = 'No files in this view.';
+      $('position').textContent = '0 / 0';
+      $('previous').disabled = $('next').disabled = true;
+    }
   }
+  $('scope').addEventListener('change', showFiles);
+  showFiles();
+  $('layout').addEventListener('change', () => items.length && select(selected));
+  $('previous').addEventListener('click', () => select(Math.max(0, selected-1)));
+  $('next').addEventListener('click', () => select(Math.min(items.length-1, selected+1)));
+
 }
 start().catch(error => { $('notice').textContent = `Review could not load: ${error.message}`; });

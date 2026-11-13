@@ -25,6 +25,23 @@ class PluginPackageTest(unittest.TestCase):
             self.assertTrue((destination/'skills/sun-review2/SKILL.md').exists())
             with self.assertRaises(FileExistsError):package(workspace,destination)
 
+    def test_prepare_reads_a_real_sun_repository(self):
+        from test_sun import SunTest, run, write
+        repo=SunTest()
+        repo.setUp()
+        try:
+            with tempfile.TemporaryDirectory() as parent:
+                workspace=str(Path(parent)/'review')
+                write('note.md','A real recorded edit.\n')
+                run('sync')
+                run('review2','--prepare',workspace)
+                value=json.loads(run('review2','--open',workspace,'--json'))
+                self.assertTrue(any(c['file']=='note.md' for th in value['threads'] for t in th['turns'] for c in t['changes']))
+                self.assertTrue((Path(workspace)/'prompt.md').exists())
+        finally:
+            repo.tearDown()
+            repo.doCleanups()
+
 
 @unittest.skipUnless(importlib.util.find_spec('mcp'), 'optional MCP SDK not installed')
 class MCPIntegrationTest(unittest.TestCase):

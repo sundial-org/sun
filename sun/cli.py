@@ -357,6 +357,13 @@ def main(argv=None):
     coverage_format = ps["coverage"].add_mutually_exclusive_group()
     coverage_format.add_argument("--json", action="store_true", help="print one JSON object")
     coverage_format.add_argument("--tui", action="store_true", help="browse coverage and commit ancestry in the terminal")
+    guided = ps["review"].add_mutually_exclusive_group()
+    guided.add_argument("--prepare", metavar="DIRECTORY", help="gather a real inbox and prepare an agent review workspace")
+    guided.add_argument("--open", dest="open_review", metavar="DIRECTORY", help="open an agent-generated review workspace")
+    guided.add_argument("--instructions", action="store_true", help="print the bundled Sun review skill")
+    ps["review"].add_argument("--prompt", help="your priorities for the agent review")
+    ps["review"].add_argument("--skill", action="append", default=[], metavar="SKILL.md", help="personal review skill (repeatable)")
+    ps["review"].add_argument("--no-browser", action="store_true", help="print the review URL without opening a browser")
     ps["review"].add_argument("--inbox", action="store_true", help="open PRs requesting your review across GitHub repositories")
     ps["review"].add_argument("--limit", type=int, default=100, help="maximum inbox PRs (default: 100)")
     ps["review"].add_argument("--base", metavar="REV", help="diff base (default: Git merge base with main/master, else Git HEAD)")
@@ -366,6 +373,16 @@ def main(argv=None):
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
     a = ap.parse_args(argv)
+    if a.cmd == "review" and (a.prepare or a.open_review or a.instructions):
+        if a.base or a.inbox or a.web or a.limit < 1:
+            ap.error("guided review cannot use --base, --inbox, or --web and needs a positive --limit")
+        if (a.prompt or a.skill) and not a.prepare: ap.error("--prompt and --skill require --prepare")
+        if a.no_browser and not a.open_review: ap.error("--no-browser requires --open")
+        if a.json and not a.open_review: ap.error("--json requires --open for guided reviews")
+        from . import guided_review
+        return guided_review.run(a)
+    if a.cmd == "review" and (a.prompt or a.skill or a.no_browser):
+        ap.error("--prompt and --skill require --prepare; --no-browser requires --open")
     if a.cmd == "review" and a.inbox:
         if a.base or a.limit < 1: ap.error("--inbox needs a positive --limit and cannot use --base")
         return review.cmd_review(a)

@@ -202,3 +202,15 @@ class ReviewTest(unittest.TestCase):
         item, = self.data()['items']
         self.assertIn('changed since', item['reason'])
         self.assertIn('+unchecked', item['patch'])
+
+    def test_rule_summary_distinguishes_partial_failure_outdated_and_unknown(self):
+        head = self.change('one\ntwo\n')
+        self.passed(head, lines=[1, 1])
+        states = lambda data: {r['name']: r['status'] for r in data['check_results']}
+        self.assertEqual(states(self.data())['honest'], 'Partial')
+        self.assertEqual(states(self.data())['tidy'], 'Not recorded')
+        self.check(rule='honest', verdict='fail', actor='program:test', cites=[{'at': head}])
+        self.assertEqual(states(self.data())['honest'], 'Nonpassing')
+        self.change('different\n')
+        self.assertEqual(states(self.data())['honest'], 'Outdated')
+        self.assertEqual(states(review.review_data(self.base, use_checks=False))['honest'], 'Unknown')

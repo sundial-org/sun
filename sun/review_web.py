@@ -22,8 +22,15 @@ def create_server(data):
         'data.json': ('application/json; charset=utf-8', json.dumps(data).encode()),
     }
     inbox = data.get('prs')
+    guided = data.get('guided', False)
     root = None if inbox is not None else git_store.root()
-    if inbox is not None:
+    if guided:
+        folder = Path(__file__).with_name('guided_assets')
+        static = {name: (content_type, (folder / name).read_bytes()) for name, content_type in (
+            ('index.html', 'text/html; charset=utf-8'), ('style.css', 'text/css; charset=utf-8'),
+            ('app.mjs', 'text/javascript; charset=utf-8'), ('model.mjs', 'text/javascript; charset=utf-8'))}
+        static['data.json'] = ('application/json; charset=utf-8', json.dumps(data).encode())
+    elif inbox is not None:
         static['index.html'] = ('text/html; charset=utf-8', (ASSETS / 'inbox.html').read_bytes())
         static['inbox.js'] = ('text/javascript; charset=utf-8', (ASSETS / 'inbox.js').read_bytes())
         public = {'prs': [{k: v for k, v in row.items() if k not in ('root', 'review')} |
@@ -47,7 +54,7 @@ def create_server(data):
             name = self.path[len(token) + 2:]
             current, directory = data, root
             assets = static
-            if inbox is not None and name.startswith('prs/'):
+            if inbox is not None and not guided and name.startswith('prs/'):
                 parts = name.split('/', 2)
                 try:
                     index = int(parts[1])
@@ -125,12 +132,12 @@ def create_server(data):
     return server, f'http://127.0.0.1:{server.server_port}/{token}/index.html'
 
 
-def run(data):
+def run(data, open_browser=True):
     server, url = create_server(data)
     print(f'sun: review at {url}', flush=True)
     print('sun: local snapshot; Ctrl-C stops the server', flush=True)
     try:
-        webbrowser.open(url)
+        if open_browser: webbrowser.open(url)
         server.serve_forever()
     except KeyboardInterrupt:
         pass

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sun / review</title><link rel="stylesheet" href="style.css"><script type="module" src="app.mjs"></script></head>
+<body>
+<header><a class="brand" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4M4 4l3 3m10 10 3 3M4 20l3-3M17 7l3-3"/></svg>sun <span>/ review</span></a><nav aria-label="Preferences"><button id="skills">Skills</button><button id="settings">Settings</button></nav></header>
+<main><div class="workspace"><aside>
+<div class="queue-tabs"><button id="focus-tab">Focus <span id="focus-count"></span></button><button id="waiting-tab">Waiting <span id="waiting-count"></span></button><button id="later-tab">Later <span id="later-count"></span></button></div>
+<label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="search" placeholder="Search PRs" aria-label="Search all PRs"></label>
+<div id="queue"></div><div class="pagination"><button id="previous" aria-label="Previous page">Previous</button><span id="position"></span><button id="next" aria-label="Next page">Next</button></div>
+</aside><article id="brief" aria-live="polite"><p class="muted">Loading review…</p></article></div></main>
+<dialog id="skills-dialog" aria-labelledby="skills-title"><div class="dialog-head"><h2 id="skills-title">Skills and priorities</h2><button data-close="skills-dialog">Close</button></div><div id="skill-list"></div><p id="user-prompt" class="explain"></p><p class="quiet">Ask your agent to change priorities or apply another skill, then regenerate this review.</p></dialog>
+<dialog id="settings-dialog" aria-labelledby="settings-title"><form method="dialog"><div class="dialog-head"><h2 id="settings-title">Review action</h2><button value="cancel">Close</button></div><label class="field">When I finish<select id="review-action"><option value="local">Mark reviewed locally</option><option value="github">Review on GitHub</option></select></label><p class="muted">GitHub opens the real PR. Submit approval there; opening it does not mark this queue reviewed.</p><div class="dialog-footer"><button type="button" id="save-settings" class="primary">Save</button></div></form></dialog>
+<dialog id="agent-dialog" aria-labelledby="agent-title"><div class="dialog-head"><h2 id="agent-title">Ask your agent</h2><button data-close="agent-dialog">Close</button></div><p class="muted">Send this request to the agent that prepared your review.</p><pre id="prompt"></pre><button id="download">Download request</button></dialog>
+<div id="toast" role="status"></div>
+</body></html>

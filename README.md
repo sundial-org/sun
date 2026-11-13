@@ -526,3 +526,54 @@ Current send support targets the origin repository on github.com. Fork PRs can
 be read in the inbox when accessible, but creating fork-to-upstream PRs through
 send is not yet supported. Line-hover session summaries and guided agent review
 are not part of these commands yet.
+
+### Agent-guided review
+
+Ask your existing agent:
+
+> Run `sun review --instructions` and follow that skill to prepare my PR review.
+> Prioritize behavior changes and workspace isolation. Use my security review skill.
+
+The agent does the analysis in your current Codex, Claude Code, or other harness
+session. Sun gathers the real inbox and renders the result; it does not launch a
+second model. GitHub CLI must be installed and authenticated (`gh auth login`).
+
+```sh
+sun review --prepare /tmp/my-sun-review \
+  --prompt 'Prioritize behavior changes and workspace isolation' \
+  --skill /path/to/security-review/SKILL.md
+```
+
+Use a new workspace each time. Sun writes a pinned `snapshot.json`, the combined
+`prompt.md`, and a draft `review.json`. The command prints their paths. The agent
+reads the prompt and evidence, fills the review, and orders its `reviews` array by
+priority. Personal skills are applied by your agent, not executed as shell scripts.
+The default skill is bundled in the installed package and available through
+`sun review --instructions`.
+
+```sh
+sun review --open /tmp/my-sun-review --json       # validate the agent output
+sun review --open /tmp/my-sun-review --no-browser # serve and print the local URL
+```
+
+Omit `--no-browser` to open the browser automatically. Keep the process running;
+Ctrl-C stops it. A host that can display localhost pages can embed the same URL.
+The interface shows five priorities at a time, with the full queue searchable,
+short explanations, file-linked evidence, real diffs, dependencies, and recorded
+Sun rules and GitHub CI. Retrieval failures remain visible in Waiting. Agent output
+cannot override recorded check results or cite a different snapshot revision.
+Unknown, nonpassing, outdated, partial, skipped, and missing checks remain distinct.
+
+To change the review, have the agent update `review.json` and reopen it. For new
+commits or checks, prepare a new workspace. This is a pinned review, not live status.
+
+**Settings**, separate from the skill, chooses local **Mark reviewed** with Undo
+or **Review on GitHub**, using each real PR's URL. Submit approval on GitHub; opening
+a link does not submit a review or remove the PR locally. The setting is stored for
+the browser origin; a new server port has separate settings. Local queue completion
+resets on reload. No GitHub credentials are exposed to the browser.
+
+Validation: `python3 -m unittest test_guided_review test_review test_inbox test_review_web`
+and `node test_guided_ui.mjs`. The integration tests use real Git histories and
+mock GitHub transport; they cover prepare, agent output validation, render, check
+provenance, failure rows, and isolated snapshot fetching.

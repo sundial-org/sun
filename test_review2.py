@@ -38,13 +38,13 @@ class Review2Test(unittest.TestCase):
             try:
                 self.assertEqual(json.load(urlopen(url.replace('index.html','data.json')))['id'],example()['id'])
                 turn=example()['threads'][0]['turns'][0]
-                payload=json.dumps({'snapshot':example()['id'],'turn':turn['id'],'scope':'all','reviewed':True}).encode()
-                endpoint=url.replace('index.html','ack')
+                payload=json.dumps({'snapshot':example()['id'],'turn':turn['id'],'file':turn['changes'][0]['file']}).encode()
+                endpoint=url.replace('index.html','view')
                 with self.assertRaises(HTTPError):
                     urlopen(Request(endpoint,data=payload,headers={'Content-Type':'application/json','Origin':'https://evil.example'}))
                 origin='/'.join(url.split('/')[:3])
                 result=json.load(urlopen(Request(endpoint,data=payload,headers={'Content-Type':'application/json','Origin':origin})))
-                self.assertEqual(len(result['reviewed']),len(turn['changes']))
+                self.assertEqual(len(result['reviewed']),1)
                 for target in [url.replace('index.html','../snapshot.json'),url.split('/')[0]+'//'+url.split('/')[2]+'/data.json']:
                     with self.assertRaises(HTTPError):urlopen(target)
                 with self.assertRaises(HTTPError):urlopen(Request(url,headers={'Host':'evil.example'}))
@@ -72,19 +72,41 @@ class Review2SelectionTest(unittest.TestCase):
             plan=copy.deepcopy(self.plan);mutate(plan)
             with self.assertRaises(ValueError):self.state.validate(self.snapshot,plan)
 
-    def test_highlight_review_never_acknowledges_hidden_changes(self):
+    def test_file_view_never_marks_other_files_or_versions_viewed(self):
         with tempfile.TemporaryDirectory() as directory:
             self.state.save_selection(directory,self.snapshot,self.plan)
             turn=self.snapshot['threads'][0]['turns'][0]
-            payload={'snapshot':self.snapshot['id'],'turn':turn['id'],'scope':'highlights','reviewed':True}
-            result=self.state.acknowledge(directory,self.snapshot,payload)
-            self.assertEqual(result['reviewed'],[{'id':turn['changes'][0]['id'],'scope':'highlights'}])
+            payload={'snapshot':self.snapshot['id'],'turn':turn['id'],'file':turn['changes'][0]['file']}
+            result=self.state.record_view(directory,self.snapshot,payload)
+            self.assertEqual(result['reviewed'],[{'id':turn['changes'][0]['id'],'scope':'viewed'}])
             self.assertEqual(self.state.state(directory,self.snapshot),result)
-            # IDs include exact content, so an edit to the same path is not acknowledged.
-            self.assertNotIn({'id':'new-version','scope':'highlights'},result['reviewed'])
-            payload['scope']='all';self.state.acknowledge(directory,self.snapshot,payload)
-            self.assertEqual(len(self.state.state(directory,self.snapshot)['reviewed']),3)
-            payload['reviewed']=False;self.state.acknowledge(directory,self.snapshot,payload)
-            self.assertEqual(len(self.state.state(directory,self.snapshot)['reviewed']),1)
+            self.assertNotIn({'id':'new-version','scope':'viewed'},result['reviewed'])
+            self.assertEqual(self.state.record_view(directory,self.snapshot,payload),result)
+            payload['file']=turn['changes'][1]['file']
+            self.assertEqual(len(self.state.record_view(directory,self.snapshot,payload)['reviewed']),2)
+            turn['changes'][1]['patch']=''
+            with self.assertRaisesRegex(ValueError,'unavailable'):self.state.record_view(directory,self.snapshot,payload)
             payload['snapshot']='stale'
-            with self.assertRaises(ValueError):self.state.acknowledge(directory,self.snapshot,payload)
+            with self.assertRaises(ValueError):self.state.record_view(directory,self.snapshot,payload)
+
+    def test_only_complete_exact_checks_collapse_turns(self):
+        snapshot=example();turn=snapshot['threads'][0]['turns'][0]
+        changes=turn['changes']
+        from sun import checks
+        rule={'files':[], 'text':'Safe', 'hash':'rule'}
+        records={}
+        for i,c in enumerate(changes):
+            records[str(i)]={'id':str(i),'rule':'safe','verdict':'pass','cites':[{'at':c['at'],'file':c['file']}], 'actor':'test/program:tests'}
+        row={'rule':'safe','status':'pass','checks':list(records.values()),'outdated':[],'labels':{}}
+        table=[{'rules':[row]}]
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertTrue(turn['fully_checked'])
+        records['0']['cites'][0]['lines']=[1,2]
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertFalse(turn['fully_checked'])
+        records['0']['cites'][0].pop('lines');row['status']='mixed'
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertFalse(turn['fully_checked'])
+        row['status']='pass';records['0']['cites'][0]['at']='another revision'
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertFalse(turn['fully_checked'])

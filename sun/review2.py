@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 import webbrowser
 
-from . import git_store, output, sessions, review2_state
+from . import git_store, output, sessions, review2_state, checks, review, coverage_tui
 
 ASSETS = Path(__file__).with_name('review2_assets')
 
@@ -59,6 +59,45 @@ def build_snapshot(data, repo, context=None):
     return snapshot
 
 
+def attach_checks(snapshot, table, rules, stored):
+    """Only exact, whole-file coverage can collapse a turn automatically."""
+    rows = [row for commit in table for row in commit['rules']]
+    for thread in snapshot['threads']:
+        for turn in thread['turns']:
+            applicable, relevant = [], {}
+            for change in turn['changes']:
+                matched_rule = False
+                for name, rule in rules.items():
+                    if not checks.matches(rule, [change['file']]):
+                        continue
+                    matched_rule = True
+                    covered = False
+                    for row in rows:
+                        if row['rule'] != name:
+                            continue
+                        live = coverage_tui.current_checks(row)
+                        touching = [c for c in live if any(
+                            cite.get('at') == change['at'] and cite.get('file', change['file']) == change['file']
+                            for cite in review.citations(c, stored))]
+                        if touching:
+                            relevant.pop((name, ()), None)
+                            relevant[(name, tuple(c['id'] for c in live))] = row
+                        if row['status'].lower() in review.PASS and any(
+                            cite.get('at') == change['at'] and cite.get('file', change['file']) == change['file']
+                            and cite.get('lines') is None
+                            for c in touching for cite in review.citations(c, stored)):
+                            covered = True
+                    applicable.append(covered)
+                    if not any(k[0] == name for k in relevant):
+                        relevant[(name, ())] = {'rule': name, 'status': 'unchecked', 'checks': [], 'labels': {}, 'outdated': []}
+                if not matched_rule:
+                    applicable.append(False)
+            turn['checks'] = list(relevant.values())
+            turn['fully_checked'] = bool(applicable) and all(applicable) and all(
+                row['status'].lower() in review.PASS for row in relevant.values())
+    snapshot['id'] = digest({k: v for k, v in snapshot.items() if k != 'id'})
+
+
 def transcript_context():
     cache = {}
     def read(op):
@@ -85,6 +124,7 @@ def prepare(directory):
         output.cmd_viz(SimpleNamespace(cmd='data', n=0, output=None))
     data = json.loads(stream.getvalue())
     snapshot = build_snapshot(data, str(git_store.root()), transcript_context())
+    attach_checks(snapshot, checks.coverage(commits=[c['hash'] for c in data['commits']]), checks.read_rules()[1], checks.checks())
     directory.mkdir(parents=True)
     (directory / 'snapshot.json').write_text(json.dumps(snapshot, indent=2) + '\n', encoding='utf-8')
     (directory / 'prompt.md').write_text(review2_state.PROMPT, encoding='utf-8')
@@ -128,7 +168,7 @@ def create_server(directory):
 
         def do_POST(self):
             host = f'127.0.0.1:{self.server.server_port}'
-            if (self.headers.get('Host') != host or self.path != '/' + token + '/ack'
+            if (self.headers.get('Host') != host or self.path != '/' + token + '/view'
                     or self.headers.get('Origin') != 'http://' + host):
                 self.send_error(403)
                 return
@@ -138,7 +178,7 @@ def create_server(directory):
                     raise ValueError('Expected a small JSON acknowledgment.')
                 if load(directory)['id'] != snapshot['id']:
                     raise ValueError('Snapshot changed; reopen the review.')
-                result = review2_state.acknowledge(directory, snapshot, json.loads(self.rfile.read(size)))
+                result = review2_state.record_view(directory, snapshot, json.loads(self.rfile.read(size)))
                 body = json.dumps(result).encode()
             except (ValueError, OSError) as error:
                 self.send_error(400, str(error))

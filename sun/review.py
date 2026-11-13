@@ -66,9 +66,12 @@ def review_data(base=None, head=None, evidence_head=None, use_checks=True):
         return ancestry[key]
 
     items, hidden = [], []
+    rule_results = {n: {'name': n, 'definition': rules[n]['text'], 'files': [], 'checks': set()} for n in rules}
     for path in filter(None, paths):
         last = git_store.git('--literal-pathspecs', 'log', '-1', '--format=%H', evidence_head, '--', path).strip()
-        passing, blocking, partial, stale, changed = [], [], [], [], []
+        buckets = {n: [] for n in ('passing', 'blocking', 'partial', 'stale', 'changed')}
+        passing, blocking, partial, stale, changed = (buckets[n] for n in ('passing', 'blocking', 'partial', 'stale', 'changed'))
+        by_rule = {n: {k: [] for k in buckets} for n in rules if checks.matches(rules[n], [path])}
         for c, cites in scoped:
             rule = rules[c['rule']]
             if not checks.matches(rule, [path]): continue
@@ -79,15 +82,23 @@ def review_data(base=None, head=None, evidence_head=None, use_checks=True):
                 if checked_version is None and (current_version is not None or not after(last, owners[at])):
                     continue  # a check before a file existed is not a check of that file
                 if checked_version != current_version or not after(last, owners[at]):
-                    changed.append(c['id'])
+                    kind = 'changed'
                 elif c.get('rule_text', rule['hash']) != rule['hash']:
-                    stale.append(c['id'])
+                    kind = 'stale'
                 elif c['verdict'].lower() not in PASS:
-                    blocking.append(c['id'])
+                    kind = 'blocking'
                 elif cite.get('lines') is not None:
-                    partial.append(c['id'])
+                    kind = 'partial'
                 else:
-                    passing.append(c['id'])
+                    kind = 'passing'
+                buckets[kind].append(c['id'])
+                by_rule[c['rule']][kind].append(c['id'])
+        for name, result in by_rule.items():
+            status = ('Unknown' if not use_checks else 'Nonpassing' if result['blocking'] else
+                      'Passed' if result['passing'] else 'Partial' if result['partial'] else
+                      'Outdated' if result['stale'] or result['changed'] else 'Not recorded')
+            rule_results[name]['files'].append({'file': path, 'status': status})
+            rule_results[name]['checks'].update(cid for ids in result.values() for cid in ids)
         if passing and not blocking:
             hidden.append({'file': path, 'patch': git_store.git('--literal-pathspecs', 'diff', '--no-ext-diff', '--no-textconv', '--no-color', '--no-renames', base, head, '--', path), 'checks': sorted(set(passing)),
                            'reason': 'Passing check covers this file since its last edit.'})
@@ -102,8 +113,15 @@ def review_data(base=None, head=None, evidence_head=None, use_checks=True):
         items.append({'commit': head, 'base': base, 'file': path, 'last_change': last,
                       'reason': reason, 'checks': sorted(set(blocking + partial + stale + changed)),
                       'patch': patch})
+    check_results = []
+    for result in rule_results.values():
+        statuses = {f['status'] for f in result['files']}
+        result['status'] = next((s for s in ('Unknown', 'Nonpassing', 'Outdated', 'Not recorded', 'Partial', 'Passed')
+                                 if s in statuses), 'Not applicable')
+        result['checks'] = [stored[cid] for cid in sorted(result['checks'])]
+        check_results.append(result)
     return {'head': head, 'base': base, 'files': len(items) + len(hidden),
-            'hidden_files': hidden, 'items': items}
+            'hidden_files': hidden, 'items': items, 'check_results': check_results}
 
 
 def clean(text):

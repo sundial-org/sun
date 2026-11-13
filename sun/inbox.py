@@ -91,7 +91,7 @@ def snapshot(pr, directory):
     repo = repo_name(pr['repository']['nameWithOwner'])
     number = int(pr['number'])
     info = gh('pr', 'view', str(number), '--repo', repo, '--json',
-              'headRefOid,baseRefOid,headRepository,headRepositoryOwner')
+              'headRefOid,baseRefOid,headRepository,headRepositoryOwner,statusCheckRollup')
     head, base = info['headRefOid'], info['baseRefOid']
     if not all(re.fullmatch(r'[0-9a-f]{40,64}', x) for x in (head, base)):
         raise ValueError('Invalid PR revision')
@@ -138,6 +138,15 @@ def snapshot(pr, directory):
             cites = {x['at'] for x in review.citations(c, stored)}
             checked.update(turn(e) for e in events
                            if e['commit'] in cites or e.get('snapshot') in cites)
+        data['github_checks'] = []
+        for check in info.get('statusCheckRollup') or []:
+            state = (check.get('conclusion') or check.get('state') or check.get('status') or '').upper()
+            status = ('Passed' if state == 'SUCCESS' else
+                      'Running' if state in ('PENDING', 'QUEUED', 'IN_PROGRESS', 'WAITING', 'REQUESTED') else
+                      'Skipped' if state in ('SKIPPED', 'NEUTRAL') else
+                      'Nonpassing' if state in ('FAILURE', 'ERROR', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE') else 'Unknown')
+            data['github_checks'].append({'name': check.get('name') or check.get('context') or 'GitHub check',
+                                          'status': status, 'detail': 'GitHub CI at ' + head})
         data['coverage'] = {'turns': len(turns) if evidence else None,
                             'checked_turns': len(turns & checked) if evidence else None,
                             'covered_files': len(data['hidden_files']) if evidence else None,
@@ -147,22 +156,27 @@ def snapshot(pr, directory):
         os.chdir(old)
 
 
+def collect(limit, directory):
+    prs = gh('search', 'prs', '--review-requested=@me', '--state=open',
+             '--limit', str(limit), '--json', 'number,title,url,repository,author,updatedAt')
+    rows = []
+    for index, pr in enumerate(prs):
+        row = dict(pr)
+        print(f"sun: preparing {index + 1}/{len(prs)} {pr['url']}", file=sys.stderr)
+        root = str(Path(directory) / str(index))
+        try:
+            row['review'] = snapshot(pr, root)
+            row['root'] = root
+        except (RuntimeError, ValueError, OSError, SystemExit) as exc:
+            row['error'] = str(exc)
+        rows.append(row)
+    return rows
+
+
 def run(a):
     try:
-        prs = gh('search', 'prs', '--review-requested=@me', '--state=open',
-                 '--limit', str(a.limit), '--json', 'number,title,url,repository,author,updatedAt')
         with tempfile.TemporaryDirectory(prefix='sun-inbox-') as directory:
-            rows = []
-            for index, pr in enumerate(prs):
-                row = dict(pr)
-                print(f"sun: preparing {index + 1}/{len(prs)} {pr['url']}", file=sys.stderr)
-                root = str(Path(directory) / str(index))
-                try:
-                    row['review'] = snapshot(pr, root)
-                    row['root'] = root
-                except (RuntimeError, ValueError, OSError, SystemExit) as exc:
-                    row['error'] = str(exc)
-                rows.append(row)
+            rows = collect(a.limit, directory)
             if a.json:
                 return print(json.dumps({'prs': [{k: v for k, v in r.items() if k != 'root'} for r in rows]}))
             review_web.run({'prs': rows})

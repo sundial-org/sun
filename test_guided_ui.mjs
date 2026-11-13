@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {queue, requiredChecks, githubUrl, pageSize} from './sun/guided_assets/model.mjs';
+const prs=Array.from({length:102},(_,i)=>({id:`org/repo${i}#7`,title:`Change ${i}`,analysis:{waiting:i>=100},url:`https://github.com/org/repo${i}/pull/7`}));
+assert.equal(pageSize,5);
+assert.equal(queue(prs,'focus').length,5);
+assert.equal(queue(prs,'later').length,95);
+assert.equal(queue(prs,'waiting').length,2);
+assert.equal(queue(prs,'focus','repo101#7')[0].id,'org/repo101#7');
+assert.equal(queue(prs,'focus','',new Set([prs[0].id]))[0].id,prs[1].id);
+const pr={analysis:{required_checks:['tests','security']},review:{check_results:[{name:'tests',status:'Outdated'}],github_checks:[{name:'build',status:'Running'}]}};
+assert.deepEqual(requiredChecks(pr).map(c=>c.status),['Outdated','Running','Not recorded']);
+assert.equal(pr.review.check_results.length,1);
+assert.equal(githubUrl(prs[0]),'https://github.com/org/repo0/pull/7/files');
+for(const url of ['javascript:alert(1)','https://github.com.evil.test/org/repo/pull/7','http://github.com/org/repo/pull/7','https://user@github.com/org/repo/pull/7']) assert.equal(githubUrl({url}),null);
+console.log('Guided UI tests passed: large queue, repository identity, evidence, and GitHub links.');

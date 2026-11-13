@@ -8,20 +8,17 @@ function element(tag, text, className) {
 }
 
 function cellText(cell) {
-  if (!cell) return '∅';
-  const saved = cell.value ? `${cell.value.text} (${cell.value.type})` : 'not saved';
-  return cell.formula ? `${cell.formula}\nSaved value: ${saved}` : saved;
+  if (!cell) return '';
+  return [cell.formula, cell.value?.text].filter(value => value != null).join('\n');
 }
 
 function spreadsheet(doc, container) {
-  const count = doc.sheets.reduce((n, sheet) => n + sheet.cells.length, 0);
-  container.append(element('h2', `${count} changed cells · ${doc.sheets.length} sheets`));
-  if (!doc.sheets.length) container.append(element('p', 'No cell-value or formula changes. The file may contain formatting or other changes.'));
+  if (!doc.sheets.length) container.append(element('p', 'No cell changes.'));
   for (const sheet of doc.sheets) {
     const section = element('section', null, 'sheet-diff');
-    section.append(element('h3', `${sheet.name} · ${sheet.status}`));
+    section.append(element('h3', sheet.name + (sheet.status === 'changed' ? '' : ` · ${sheet.status}`)));
     const table = element('table');
-    const caption = element('caption', `Cell changes in ${sheet.name}`);
+    table.setAttribute('aria-label', sheet.name);
     const head = element('thead'), headings = element('tr');
     for (const title of ['Cell', 'Before', 'After']) {
       const th = element('th', title); th.scope = 'col'; headings.append(th);
@@ -33,7 +30,7 @@ function spreadsheet(doc, container) {
       row.append(label, element('td', cellText(cell.before), 'removed'), element('td', cellText(cell.after), 'added'));
       body.append(row);
     }
-    table.append(caption, head, body); section.append(table); container.append(section);
+    table.append(head, body); section.append(table); container.append(section);
   }
 }
 
@@ -56,8 +53,6 @@ export function documentView(index, container, notice, fallback) {
     notice.textContent = '';
     if (doc.kind === 'unavailable') { fallback(doc.notice); return; }
     if (doc.kind === 'spreadsheet') { spreadsheet(doc, container); return; }
-    const changed = doc.slides.filter(s => s.status !== 'unchanged').length;
-    container.append(element('h2', `${changed} changed slides · ${doc.slides.length} comparisons`));
     const label = element('label', 'Slide '), picker = element('select');
     picker.setAttribute('aria-label', 'Slide to compare');
     doc.slides.forEach((slide, i) => {
@@ -81,11 +76,6 @@ export function documentView(index, container, notice, fallback) {
       const version = ++selection;
       clearSlides(); details.replaceChildren();
       const slide = doc.slides[Number(picker.value)];
-      const summary = element('ul', null, 'change-list');
-      for (const change of slide.changes) summary.append(element('li', change));
-      if (!slide.changes.length) summary.append(element('li', slide.status === 'unchanged' ?
-        'No summarized shape or note changes. Inspect the previews for other changes.' : `Slide ${slide.status}`));
-      details.append(summary);
       const pair = element('div', null, 'slide-pair'); details.append(pair);
       for (const [i, side] of ['before', 'after'].entries()) {
         const info = slide[side], panel = element('section', null, 'slide-panel');

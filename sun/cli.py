@@ -16,6 +16,7 @@ import sys
 from . import branches
 from . import checks
 from . import review
+from . import review2
 from . import git_store
 from . import history
 from . import hooks
@@ -266,6 +267,7 @@ def main(argv=None):
         ("check", "record a verdict on a rule, or run the rules that name a command, model, or agent"),
         ("coverage", "show which commits were checked against each rule, and by whom"),
         ("review", "inspect only remaining changes in a terminal queue and Vim"),
+        ("review2", "review your own threads and turns in a minimal browser pane"),
         ("extract", "record the verdicts you gave your agents in conversation"),
         ("pr", "summarize checks for the pull request as Markdown, or update its description"),
         ("trust", "let hooks on this machine run the commands RULES.md names"),
@@ -365,7 +367,16 @@ def main(argv=None):
     review_format.add_argument("--web", action="store_true", help="open the review in a browser using Pierre diffs")
     ps["blame"].add_argument("file", help="path to inspect")
     ps["blame"].add_argument("line", type=int, help="1-based line number")
+    source = ps["review2"].add_mutually_exclusive_group(required=True)
+    source.add_argument("--prepare", metavar="WORKSPACE", help="capture current repository history")
+    source.add_argument("--open", metavar="WORKSPACE", help="open a captured review")
+    ps["review2"].add_argument("--json", action="store_true")
+    ps["review2"].add_argument("--no-browser", action="store_true")
     a = ap.parse_args(argv)
+    if a.cmd == "review2" and a.prepare:
+        a.prepare = os.path.abspath(os.path.expanduser(a.prepare))
+    if a.cmd == "review2" and a.open:
+        return review2.cmd_review2(a)
     if a.cmd == "review" and a.inbox:
         if a.base or a.limit < 1: ap.error("--inbox needs a positive --limit and cannot use --base")
         return review.cmd_review(a)
@@ -375,7 +386,7 @@ def main(argv=None):
         "init": cmd_init, "hook": hooks.cmd_hook, "git-hook": branches.cmd_hook, "sync": history.cmd_sync, "push": history.cmd_push, "pull": history.cmd_pull,
         "log": output.cmd_log, "show": output.cmd_show, "undo": history.cmd_undo, "restore": history.cmd_restore,
         "viz": output.cmd_viz, "data": output.cmd_viz, "sessions": session_store.cmd_sessions, "update": cmd_update,
-        "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage, "review": review.cmd_review,
+        "export": output.cmd_export, "blame": output.cmd_blame, "check": checks.cmd_check, "coverage": checks.cmd_coverage, "review": review.cmd_review, "review2": review2.cmd_review2,
         "extract": checks.cmd_extract, "pr": checks.cmd_pr, "trust": checks.cmd_trust,
     }
     if a.cmd not in ("init", "hook", "git-hook", "update"):  # hook locates its repo from the payload
@@ -384,7 +395,7 @@ def main(argv=None):
             a.raw = "" if sys.stdin.isatty() else sys.stdin.read()
         os.chdir(git_store.root())
         if not adopt(): git_store.sun_dir()  # exits with the `sun init` hint
-        if a.cmd in ("viz", "data", "review") or a.cmd == "coverage" and a.tui:
+        if a.cmd in ("viz", "data", "review", "review2") or a.cmd == "coverage" and a.tui:
             commands[a.cmd](a)
         elif a.cmd in ("extract", "pr") or a.cmd == "check" and a.run:  # may start a judge, whose hooks need the lock
             with git_store.lock(): history.ensure_branch()

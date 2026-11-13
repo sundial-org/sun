@@ -1,0 +1,154 @@
+"""A local, snapshot-based thread review. Existing review commands stay independent."""
+import contextlib
+import hashlib
+import io
+import json
+from pathlib import Path
+import secrets
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from types import SimpleNamespace
+import webbrowser
+
+from . import git_store, output, sessions
+
+ASSETS = Path(__file__).with_name('review2_assets')
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+def build_snapshot(data, repo, context=None):
+    """Preserve ancestry order; identity never depends on generated titles."""
+    threads, seen = {}, set()
+    for commit in reversed(data['commits']):
+        for op in commit['operations']:
+            if op['id'] in seen:
+                continue
+            seen.add(op['id'])
+            key = (op['actor'], op.get('session_id'), op.get('branch'))
+            thread_id = digest(key)
+            thread = threads.setdefault(thread_id, {'id': thread_id, 'title': '',
+                'actor': op['actor'], 'branch': op.get('branch'), 'turns': []})
+            turn_id = digest([key, op.get('turn') or op['id']])
+            turn = next((t for t in thread['turns'] if t['id'] == turn_id), None)
+            if turn is None:
+                turn = {'id': turn_id, 'label': op.get('turn') or 'Observed edit',
+                        'prompt': '', 'changes': []}
+                thread['turns'].append(turn)
+            if context and not turn['prompt']:
+                turn['prompt'] = context(op) or ''
+            for index, edit in enumerate(op.get('edits') or []):
+                patch = edit.get('patch') or ''
+                # Each operation edit remains available, including changes later undone.
+                change = {'file': edit['file'], 'patch': patch,
+                          'at': op.get('snapshot') or op.get('commit'), 'operation': op['id']}
+                change['id'] = digest([op['id'], index, change])
+                turn['changes'].append(change)
+            if not thread['title']:
+                thread['title'] = turn['prompt'].split('\n')[0][:100] if turn['prompt'] else ''
+    result = []
+    for thread in threads.values():
+        thread['turns'] = [t for t in thread['turns'] if t['changes']]
+        if not thread['turns']:
+            continue
+        thread['title'] = thread['title'] or thread['turns'][0]['changes'][0]['file']
+        result.append(thread)
+    snapshot = {'version': 1, 'repo': repo, 'threads': list(reversed(result))}
+    snapshot['id'] = digest(snapshot)
+    return snapshot
+
+
+def transcript_context():
+    cache = {}
+    def read(op):
+        path = op.get('session_path')  # Resolved by sun data, never guess a directory.
+        if not path:
+            return ''
+        if path not in cache:
+            try:
+                cache[path] = list(sessions.scan_transcript(path, op['actor_info'].get('harness') or 'claude'))
+            except (OSError, ValueError):
+                cache[path] = []
+        ids = [c.get('id') for c in op.get('tool_calls', []) if c.get('id')]
+        matches = [chunk for chunk in cache[path] if any(tid in chunk for tid in ids)]
+        return (sessions.chunk_prompt(matches[0]) or '')[:6000] if len(matches) == 1 else ''
+    return read
+
+
+def prepare(directory):
+    directory = Path(directory).expanduser().resolve()
+    if directory.exists():
+        raise ValueError('Choose a new workspace directory; existing reviews are preserved.')
+    stream = io.StringIO()
+    with contextlib.redirect_stdout(stream):
+        output.cmd_viz(SimpleNamespace(cmd='data', n=0, output=None))
+    data = json.loads(stream.getvalue())
+    snapshot = build_snapshot(data, str(git_store.root()), transcript_context())
+    directory.mkdir(parents=True)
+    (directory / 'snapshot.json').write_text(json.dumps(snapshot, indent=2) + '\n', encoding='utf-8')
+    return snapshot
+
+
+def load(directory):
+    snapshot = json.loads((Path(directory) / 'snapshot.json').read_text(encoding='utf-8'))
+    expected = digest({k: v for k, v in snapshot.items() if k != 'id'})
+    if snapshot.get('version') != 1 or snapshot.get('id') != expected:
+        raise ValueError('Review snapshot changed. Prepare a new workspace.')
+    return snapshot
+
+
+def create_server(directory):
+    snapshot = load(directory)
+    token = secrets.token_urlsafe(24)
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.headers.get('Host') != f'127.0.0.1:{self.server.server_port}' or not self.path.startswith('/' + token + '/'):
+                self.send_error(404)
+                return
+            name = self.path[len(token) + 2:]
+            if name == 'data.json':
+                body, mime = json.dumps(snapshot).encode(), 'application/json'
+            elif name in ('index.html', 'app.js', 'style.css'):
+                body = (ASSETS / name).read_bytes()
+                mime = {'index.html': 'text/html', 'app.js': 'text/javascript', 'style.css': 'text/css'}[name]
+            else:
+                self.send_error(404)
+                return
+            self.send_response(200)
+            self.send_header('Content-Type', mime + '; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-Content-Type-Options', 'nosniff')
+            self.send_header('Referrer-Policy', 'no-referrer')
+            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    return server, f'http://127.0.0.1:{server.server_port}/{token}/index.html'
+
+
+def cmd_review2(a):
+    try:
+        if a.prepare:
+            prepare(a.prepare)
+            print(str(Path(a.prepare).expanduser().resolve()))
+            return
+        if a.json:
+            print(json.dumps(load(a.open)))
+            return
+        server, url = create_server(a.open)
+        print(url, flush=True)
+        if not a.no_browser:
+            webbrowser.open(url)
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            server.server_close()
+    except (OSError, ValueError) as error:
+        raise SystemExit(f'sun: {error}')

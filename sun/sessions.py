@@ -278,8 +278,13 @@ def chunk_prompt(text):  # first user message of a stored transcript chunk (clau
             return p.get("message")
         if o.get("type") == "response_item" and p.get("type") == "message" \
                 and p.get("role") == "user":
-            return "".join(b.get("text", "") for b in p.get("content") or []
-                           if isinstance(b, dict))
+            t = "".join(b.get("text", "") for b in p.get("content") or [] if isinstance(b, dict))
+            if not injected(t): return t
+
+
+def injected(text):  # context a harness adds as a user message, e.g. Codex's <environment_context>
+    t = (text or "").strip()
+    return bool(re.fullmatch(r"<([\w-]+)>.*</\1>", t, re.S))
 
 
 def blame_context(chunk, tid):  # first user prompt + last agent text before tool call `tid`
@@ -298,7 +303,8 @@ def blame_context(chunk, tid):  # first user prompt + last agent text before too
                 (c if isinstance(c, list) else []):
             if not isinstance(b, dict): continue
             if b.get("type") == "tool_use" and b.get("id") == tid: tool = b.get("name")
-            elif b.get("type") in ("text", "input_text") and role == "user" and not prompt:
+            elif b.get("type") in ("text", "input_text") and role == "user" and not prompt \
+                    and not injected(b.get("text")):
                 prompt = b.get("text")
             elif b.get("type") in ("text", "output_text") and role == "assistant":
                 ctx = b.get("text")

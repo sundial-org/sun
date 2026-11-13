@@ -427,6 +427,16 @@ class ReliabilityTest(unittest.TestCase):
         self.assertEqual(sessions.blame_context(chunk, "tool0"), ("new prompt", None, "apply_patch"))
         self.assertFalse(git_store.refs("refs/sun/sessions/"))
 
+    def test_codex_prompt_skips_injected_environment_context(self):
+        msg = lambda role, text: {"type": "response_item", "payload": {
+            "type": "message", "role": role, "content": [{"type": "input_text", "text": text}]}}
+        chunk = "\n".join(map(json.dumps, [
+            msg("user", "<environment_context>\n  <cwd>/repo</cwd>\n</environment_context>"),
+            msg("user", "Fix the table."),
+            {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "apply_patch", "call_id": "c1"}}]))
+        self.assertEqual(sessions.blame_context(chunk, "c1"), ("Fix the table.", None, "apply_patch"))
+        self.assertEqual(sessions.chunk_prompt(chunk), "Fix the table.")
+
     def test_two_clones_same_identity_keep_all_operations(self):
         with tempfile.TemporaryDirectory() as remote, tempfile.TemporaryDirectory() as clone:
             self.git("init", "--bare", remote)

@@ -31,6 +31,24 @@ def example():
         commits.insert(0,{'operations':[op]})
     snapshot=build_snapshot({'commits':commits}, 'example', lambda op:prompts[op['id']])
     for thread in snapshot['threads']:thread['title']=titles[thread['actor']]
+    def check(turn, rule, verdicts):
+        rows=[]
+        for i,(verdict,note) in enumerate(verdicts):
+            rows.append({'id':f"example-{turn['id'][:8]}-{rule}-{i}", 'actor':'example/program:tests' if i==0 else 'example/agent:review',
+                         'verdict':verdict,'note':note,'cites':[{'at':turn['changes'][0]['at'],'file':turn['changes'][0]['file']}]})
+        return {'rule':rule,'status':'mixed' if len({c['verdict'] for c in rows})>1 else rows[0]['verdict'],
+                'checks':rows,'labels':{},'outdated':[]}
+    for thread in snapshot['threads']:
+        for turn in thread['turns']:
+            turn['checks']=[];turn['fully_checked']=False
+        if thread['title']=='Make retries safe':
+            thread['turns'][0]['checks']=[check(thread['turns'][0],'idempotency',[('pass','Both attempts use the original request key.')])]
+            thread['turns'][1]['checks']=[check(thread['turns'][1],'timeout recovery',[
+                ('fail','The lookup returned pending. The code treats every lookup as a completed payment.'),
+                ('pass','The successful lookup fixture returns the existing payment.')])]
+        elif thread['title']=='Keep session history local':
+            turn=thread['turns'][0];turn['fully_checked']=True
+            turn['checks']=[check(turn,'session privacy',[('pass','Native paths resolve locally. Missing transcripts stay unavailable.')])]
     snapshot['example']=True
     snapshot['id']=digest({k:v for k,v in snapshot.items() if k!='id'})
     return snapshot

@@ -86,7 +86,7 @@ class OfficeDiffTest(unittest.TestCase):
         b = io.BytesIO(); book.save(b)
         result = docs.compare('a.xlsx', a.getvalue(), b.getvalue())
         self.assertEqual(result['sheets'], [])
-        self.assertIn('Formatting', result['notice'])
+        self.assertNotIn('notice', result)
 
     def test_real_presentation_reorder_text_layout_notes_add_delete(self):
         from examples.demo_documents import write_examples
@@ -97,6 +97,7 @@ class OfficeDiffTest(unittest.TestCase):
             write_examples(directory, revised=True)
             result = docs.compare('launch.pptx', old, path.read_bytes())
         self.assertEqual(result['kind'], 'presentation')
+        self.assertNotIn('notice', result)
         slides = result['slides']
         self.assertEqual([s['status'] for s in slides], ['changed', 'changed', 'added', 'removed'])
         overview = slides[1]

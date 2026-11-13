@@ -37,6 +37,7 @@ def main():
             expect(page.get_by_role('heading', name='5 changed cells · 2 sheets')).to_be_visible()
             expect(page.get_by_role('cell', name='=SUM(B2:B4)*1.1', exact=False)).to_be_visible()
             expect(page.locator('#layout')).to_be_disabled()
+            expect(page.locator('#notice')).to_be_empty()
             if destination:
                 page.screenshot(path=str(destination / 'spreadsheet.png'), full_page=True)
                 page.wait_for_timeout(1800)
@@ -47,6 +48,7 @@ def main():
             expect(page.get_by_text('Metric: moved or resized', exact=True)).to_be_visible()
             expect(page.locator('.slide-preview')).to_have_count(2)
             expect(page.locator('.slide-preview').last.get_by_text('42 teams', exact=True)).to_be_visible()
+            expect(page.locator('#notice')).to_be_empty()
             if destination:
                 page.screenshot(path=str(destination / 'slides.png'), full_page=True)
                 page.wait_for_timeout(2200)

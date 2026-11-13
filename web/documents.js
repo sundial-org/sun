@@ -53,7 +53,7 @@ export function documentView(index, container, notice, fallback) {
     if (!response.ok) throw new Error('Document comparison could not be loaded');
     const doc = await response.json();
     if (disposed) return;
-    notice.textContent = doc.notice;
+    notice.textContent = '';
     if (doc.kind === 'unavailable') { fallback(doc.notice); return; }
     if (doc.kind === 'spreadsheet') { spreadsheet(doc, container); return; }
     const changed = doc.slides.filter(s => s.status !== 'unchanged').length;

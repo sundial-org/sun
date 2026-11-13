@@ -101,10 +101,7 @@ def spreadsheet_diff(old, new, extension):
         status = 'added' if name not in before else 'removed' if name not in after else 'changed'
         if changes or status != 'changed':
             result.append({'name': name, 'status': status, 'cells': changes})
-    return {'kind': 'spreadsheet', 'sheets': result,
-            'notice': 'Cells are matched by sheet name and address. Row insertions can shift subsequent cells. '
-                      'Formulas and saved values are compared; formulas are not recalculated. '
-                      'Formatting, charts, and macros are not compared.'}
+    return {'kind': 'spreadsheet', 'sheets': result}
 
 
 def slides(raw):
@@ -159,10 +156,7 @@ def presentation_diff(old, new):
             if a['notes'] != b['notes']: changes.append('Speaker notes changed')
         status = 'added' if a is None else 'removed' if b is None else 'changed' if changes else 'unchanged'
         result.append({'before': a, 'after': b, 'status': status, 'changes': changes})
-    return {'kind': 'presentation', 'slides': result,
-            'notice': 'Slides are matched by stored slide ID. Previews approximate PowerPoint rendering. '
-                      'Summaries cover top-level shapes and notes; themes, masters, animations, and grouped '
-                      'objects may change without a summary. Inspect both previews.'}
+    return {'kind': 'presentation', 'slides': result}
 
 
 def compare(path, old, new):

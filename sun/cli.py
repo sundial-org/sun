@@ -370,9 +370,12 @@ def main(argv=None):
     source = ps["review2"].add_mutually_exclusive_group(required=True)
     source.add_argument("--prepare", metavar="WORKSPACE", help="capture current repository history")
     source.add_argument("--open", metavar="WORKSPACE", help="open a captured review")
+    ps["review2"].add_argument("--select", metavar="JSON", help="validate and save agent-selected highlights")
     ps["review2"].add_argument("--json", action="store_true")
     ps["review2"].add_argument("--no-browser", action="store_true")
     a = ap.parse_args(argv)
+    if a.cmd == "review2" and a.select and not a.open:
+        ap.error("--select requires --open")
     if a.cmd == "review2" and a.prepare:
         a.prepare = os.path.abspath(os.path.expanduser(a.prepare))
     if a.cmd == "review2" and a.open:

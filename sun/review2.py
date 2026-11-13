@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 import webbrowser
 
-from . import git_store, output, sessions
+from . import git_store, output, sessions, review2_state
 
 ASSETS = Path(__file__).with_name('review2_assets')
 
@@ -87,6 +87,7 @@ def prepare(directory):
     snapshot = build_snapshot(data, str(git_store.root()), transcript_context())
     directory.mkdir(parents=True)
     (directory / 'snapshot.json').write_text(json.dumps(snapshot, indent=2) + '\n', encoding='utf-8')
+    (directory / 'prompt.md').write_text(review2_state.PROMPT, encoding='utf-8')
     return snapshot
 
 
@@ -108,7 +109,7 @@ def create_server(directory):
                 return
             name = self.path[len(token) + 2:]
             if name == 'data.json':
-                body, mime = json.dumps(snapshot).encode(), 'application/json'
+                body, mime = json.dumps({**snapshot, **review2_state.state(directory, snapshot)}).encode(), 'application/json'
             elif name in ('index.html', 'app.js', 'style.css'):
                 body = (ASSETS / name).read_bytes()
                 mime = {'index.html': 'text/html', 'app.js': 'text/javascript', 'style.css': 'text/css'}[name]
@@ -125,6 +126,30 @@ def create_server(directory):
             self.end_headers()
             self.wfile.write(body)
 
+        def do_POST(self):
+            host = f'127.0.0.1:{self.server.server_port}'
+            if (self.headers.get('Host') != host or self.path != '/' + token + '/ack'
+                    or self.headers.get('Origin') != 'http://' + host):
+                self.send_error(403)
+                return
+            try:
+                size = int(self.headers.get('Content-Length', '0'))
+                if not 0 < size <= 16384 or self.headers.get('Content-Type') != 'application/json':
+                    raise ValueError('Expected a small JSON acknowledgment.')
+                if load(directory)['id'] != snapshot['id']:
+                    raise ValueError('Snapshot changed; reopen the review.')
+                result = review2_state.acknowledge(directory, snapshot, json.loads(self.rfile.read(size)))
+                body = json.dumps(result).encode()
+            except (ValueError, OSError) as error:
+                self.send_error(400, str(error))
+                return
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(body)
+
         def log_message(self, *args):
             pass
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
@@ -137,8 +162,12 @@ def cmd_review2(a):
             prepare(a.prepare)
             print(str(Path(a.prepare).expanduser().resolve()))
             return
+        snapshot = load(a.open)
+        if a.select:
+            plan = json.loads(Path(a.select).expanduser().read_text(encoding='utf-8'))
+            review2_state.save_selection(a.open, snapshot, plan)
         if a.json:
-            print(json.dumps(load(a.open)))
+            print(json.dumps({**snapshot, **review2_state.state(a.open, snapshot)}))
             return
         server, url = create_server(a.open)
         print(url, flush=True)

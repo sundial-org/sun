@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sun / review inbox</title><link rel="stylesheet" href="style.css?v=3"><script type="module" src="app.mjs?v=3"></script></head>
+<body><header><a class="brand" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4M4 4l3 3m10 10 3 3M4 20l3-3M17 7l3-3"/></svg>sun <span>/ review</span></a><nav aria-label="Preferences"><button id="personalize">Skills</button><button id="settings">Settings</button></nav></header>
+<main><div class="workspace"><aside><div class="queue-tabs"><button class="active" id="focus-tab">Focus <span id="focus-count">5</span></button><button id="waiting-tab">Waiting <span id="waiting-count">18</span></button><button id="later-tab">Later <span id="later-count">77</span></button></div><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="search" placeholder="Search PRs" aria-label="Search all PRs"></label><div id="queue"></div><div class="pagination"><button id="prev" aria-label="Previous page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></button><span id="page"></span><button id="next" aria-label="Next page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div></aside>
+<article id="brief" aria-live="polite"><p class="muted">Loading reviews…</p></article></div></main>
+<dialog id="preferences" aria-labelledby="preferences-title"><form method="dialog"><div class="dialog-head"><div><h2 id="preferences-title">Review preferences</h2></div><button value="cancel" aria-label="Close preferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div><p class="muted">Sun default + your skills.</p>
+<div class="skill default"><div><b>Sun PR review</b><p>Impact and check coverage.</p></div><span class="badge">Always on</span></div>
+<label class="skill"><div><b>Security review</b><p>Prioritize access boundaries.</p></div><input type="checkbox" id="security"></label>
+<label class="skill"><div><b>Reliability</b><p>Prioritize failures.</p></div><input type="checkbox" id="reliability"></label>
+<label class="skill"><div><b>Ponytail</b><p>Require a simplicity check.</p></div><input type="checkbox" id="ponytail"></label>
+<label class="field">Instructions<textarea id="instructions" rows="3" placeholder="For example: explain behavior changes before code. Focus on workspace isolation."></textarea></label>
+<label class="upload">Add your own SKILL.md<input id="skill-file" type="file" accept=".md,.txt"></label><p id="skill-loaded" class="muted">Preview only. Skills are not executed.</p>
+<div class="dialog-footer"><button id="apply" type="button" class="primary">Apply</button></div></form></dialog>
+<dialog id="handoff" aria-labelledby="handoff-title"><div class="dialog-head"><h2 id="handoff-title">Agent handoff</h2><button id="close-handoff" aria-label="Close agent handoff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div><p class="muted">Preview prompt. No agent or checks run.</p><pre id="prompt"></pre><button id="download-prompt">Download prompt</button></dialog>
+<dialog id="action-settings" aria-labelledby="action-settings-title">
+<form id="action-form">
+<div class="dialog-head"><h2 id="action-settings-title">Review action</h2><button id="close-settings" type="button" aria-label="Close settings">Close</button></div>
+<label class="field">When I finish<select id="review-action"><option value="local">Mark reviewed locally</option><option value="github">Review on GitHub</option></select></label>
+<p id="action-help" class="muted"></p>
+<div id="github-link-field" hidden><label class="field"><span id="github-link-label">PR URL</span><input id="github-link" type="url" placeholder="https://github.com/owner/repo/pull/123" aria-describedby="action-help action-error"></label></div>
+<p id="action-error" class="error" role="alert"></p>
+<div class="dialog-footer"><button type="submit" class="primary">Save</button></div>
+</form></dialog>
+<div id="toast" role="status"></div>
+</body></html>

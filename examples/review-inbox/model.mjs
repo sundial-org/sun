@@ -1,0 +1,27 @@
+const examples = [
+{ id:184,title:'Keep payment retries idempotent',area:'Payments',kind:'correctness',score:98,minutes:6,files:4,lines:86,author:'Maya · Codex',head:'a8e21c4',why:'A timeout can repeat a charge. Two other PRs depend on this retry contract.',question:'Does every retry reuse the original idempotency key?',before:'One attempt; timeouts return an error.',after:'Retries transient failures up to three times.',path:'payments/retry.py',old:'return charge(request, key=request.id)',code:'for attempt in range(3):\n    return charge(request, key=new_key())',evidence:'The new key is created inside the retry loop. The existing test covers successful retries, not duplicate charges.',tests:'Passed',review:'Outdated',depends:[185,186]},
+{ id:172,title:'Backfill accounts before enforcing uniqueness',area:'Data',kind:'correctness',score:94,minutes:8,files:6,lines:142,author:'Jon · Claude Code',head:'b9f32d1',why:'A unique index can fail on existing duplicate accounts. The migration has no rollback check.',question:'Can this migration run safely on existing customer data?',before:'Duplicate external IDs are accepted.',after:'Backfill and enforce a unique external ID.',path:'migrations/accounts.sql',old:'CREATE INDEX accounts_external ON accounts(external_id);',code:'CREATE UNIQUE INDEX accounts_external\nON accounts(external_id);',evidence:'Index creation precedes the duplicate cleanup. Dry-run evidence is missing.',tests:'Passed',review:'Not run',depends:[]},
+{ id:191,title:'Preserve pagination for older API clients',area:'API',kind:'compatibility',score:89,minutes:5,files:3,lines:67,author:'Lee · Codex',head:'c7e18f2',why:'The response format changes for existing clients. A release is scheduled today.',question:'Do older clients still receive the next-page token?',before:'Clients receive next_cursor.',after:'A nested pagination object replaces next_cursor.',path:'api/list.py',old:'return {"items": items, "next_cursor": cursor}',code:'return {"items": items,\n        "pagination": {"next": cursor}}',evidence:'The old field disappears without a version gate. Contract tests ran before this change.',tests:'Outdated',review:'Passed',depends:[]},
+{ id:163,title:'Bound the worker retry queue',area:'Infrastructure',kind:'reliability',score:85,minutes:4,files:2,lines:49,author:'Ari · Claude Code',head:'d2c41a8',why:'An outage can create unbounded queued work. The load test failed on the current revision.',question:'What happens when the retry queue reaches capacity?',before:'Workers retry immediately.',after:'Failed work goes to a retry queue.',path:'workers/retry.py',old:'retry(job)',code:'retry_queue.append(job)\nnotify_worker()',evidence:'No queue capacity or backpressure is defined. The load test reports increasing memory.',tests:'Failed',review:'Passed',depends:[]},
+{ id:187,title:'Scope service tokens to one workspace',area:'Security',kind:'security',score:81,minutes:5,files:5,lines:104,author:'Sam · Codex',head:'e6b74a1',why:'This changes the authorization boundary for service tokens.',question:'Can a token from workspace A access workspace B?',before:'Service tokens have account-wide access.',after:'Every token should be restricted to its workspace.',path:'auth/token.py',old:'return token.account_id == resource.account_id',code:'return token.account_id == resource.account_id\n# workspace scope checked by the caller',evidence:'The shared validator still checks only the account. Cross-workspace coverage is not recorded.',tests:'Passed',review:'Passed',depends:[]},
+];
+export const prs = Array.from({length:100},(_,i)=> i<5 ? {...examples[i],waiting:false} : ({
+ id:200+i,title:['Refresh dependency pins','Clarify settings copy','Simplify cache lookup','Improve empty state','Add client fixture'][i%5]+' '+(i-4),
+ area:['Platform','Web','SDK'][i%3],kind:'maintenance',score:60-i/3,minutes:3,files:2,lines:12+i,
+ author:'Team · agent',head:'f'+String(i).padStart(6,'0'),why:'Routine change with a smaller immediate impact than the current focus queue.',
+ question:'Does the change preserve existing behavior?',before:'Existing behavior.',after:'A small maintenance update.',
+ path:'src/component.py',old:'value = old_default',code:'value = new_default',evidence:'Inspect the changed default and its caller.',
+ tests:i%3===0?'Not run':'Passed',review:'Passed',depends:[],waiting:i>=82
+}));
+export function ranked(items,preferences,done=new Set()){
+ return items.filter(p=>!p.waiting&&!done.has(p.id)).sort((a,b)=>score(b,preferences)-score(a,preferences)||a.id-b.id);
+}
+export function score(p,prefs){return p.score+(prefs.security&&p.kind==='security'?35:0)+(prefs.reliability&&p.kind==='reliability'?30:0);}
+export function requiredChecks(p,prefs){
+ const result=[{name:'Tests',status:p.tests,detail:p.tests==='Outdated'?'Ran before the latest edit; not verified at '+p.head:p.tests==='Not run'?'No run recorded at '+p.head:'Current revision · '+p.head},
+ {name:'Sun PR review',status:p.review,detail:p.review==='Outdated'?'2 commits behind '+p.head:p.review==='Not run'?'No review recorded at '+p.head:'Behavior, scope, and evidence · '+p.head}];
+ if(prefs.reliability)result.push({name:'Reliability',status:'Not run',detail:'Your skill · failure handling; no run recorded at '+p.head});
+ if(prefs.ponytail)result.push({name:'Ponytail',status:'Not run',detail:'Your skill · simplicity review'});
+ if(prefs.security)result.push({name:'Security review',status:p.kind==='security'?'Not run':'Not applicable',detail:'Your skill · workspace boundaries'});
+ return result;
+}

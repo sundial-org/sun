@@ -48,7 +48,7 @@ function renderReader(){
     const other=el('details');
     if(context.length){other.append(el('summary',`${context.length} other ${context.length===1?'change':'changes'}`));for(const c of context)other.append(changeView(c));section.append(other);}
     const actions=el('div',undefined,'actions'),button=el('button',undefined,'text-button'),status=el('span','','muted');button.type='button';
-    const scope=()=>choice&&context.length&&!other.open?'highlights':'all';
+    const scope=()=>!acknowledged(turn)&&choice&&context.length&&!other.open?'highlights':'all';
     const ids=()=>scope()==='all'?turn.changes.map(c=>c.id):focus.map(c=>c.id);
     const isDone=()=>ids().length>0&&ids().every(id=>data.reviewed?.some(r=>r.id===id&&r.scope===scope()));
     function update(){

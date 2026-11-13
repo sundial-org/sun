@@ -55,3 +55,29 @@ changes source files or submits a GitHub review. Review state persists in the
 workspace's `review.sqlite`, independently of browser storage or the random URL.
 A new workspace starts a separate review. Cross-capture progress and live refresh
 are deliberately deferred in this prototype. Captured content never silently moves.
+
+## Local Codex plugin
+
+Install this checkout with Python 3.10+ and the optional official MCP SDK:
+
+```sh
+uv pip install -e '.[review2-plugin]'
+python -m sun.review2_mcp /tmp/my-review --package /tmp/sun-review2-plugin
+```
+
+The generated package contains a compatible `.codex-plugin/plugin.json`, the
+review skill, and `.mcp.json` with the current Python interpreter and a single
+absolute workspace path. Keep that interpreter, package, and workspace available.
+Packaging does not install or enable anything or modify personal Codex settings.
+Add the generated folder to a local Codex marketplace to install it. See the
+[official local plugin instructions](https://developers.openai.com/plugins/build/plugins#install-a-local-plugin-manually).
+
+The MCP tools read this snapshot, save validated highlights, and return the same
+local browser pane. There is intentionally no tool to claim human review. The
+browser server lives until the MCP connection closes. The current adapter does
+not embed an MCP Apps widget; its returned URL can open in the host browser or a
+normal browser. No second model/API key or external hosting is required.
+
+Run `python -m unittest test_review2 test_review2_mcp` in the SDK environment. The
+integration test initializes a real stdio session, lists tools, reads the snapshot,
+rejects an invalid selection, saves a valid one, and fetches the browser pane.

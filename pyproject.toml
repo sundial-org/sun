@@ -5,6 +5,7 @@ description = "Share your team's memory - you, your agents, and your teammate's 
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
+review2-plugin = ["mcp>=1.12,<2; python_version >= '3.10'"]
 documents = ["openpyxl==3.1.5", "python-pptx==1.0.2", "defusedxml>=0.7.1,<1"]
 
 [project.scripts]

@@ -6,8 +6,9 @@ import secrets
 import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import webbrowser
+import zipfile
 
-from . import git_store
+from . import document_diff, git_store
 
 ASSETS = Path(__file__).with_name('review_assets')
 
@@ -62,6 +63,34 @@ def create_server(data):
                 assets['data.json'] = ('application/json; charset=utf-8', json.dumps(current).encode())
             if name in assets:
                 content_type, body = assets[name]
+            elif name.startswith('documents/') and directory:
+                try:
+                    parts = name.split('/')
+                    if len(parts) != 3: raise ValueError('Unknown document')
+                    index = int(parts[1])
+                    if not 0 <= index < len(current['items'] + current['hidden_files']): raise ValueError('Unknown file')
+                    item, action = (current['items'] + current['hidden_files'])[index], parts[2]
+                    if Path(item['file']).suffix.lower() not in document_diff.EXTENSIONS:
+                        raise ValueError('Unsupported document')
+                    if action == 'diff.json':
+                        try:
+                            old = document_diff.read_blob(directory, current['base'], item['file'])
+                            new = document_diff.read_blob(directory, current['head'], item['file'])
+                            result = document_diff.compare(item['file'], old, new)
+                        except ValueError as error:
+                            result = {'kind': 'unavailable', 'notice': str(error)}
+                        body = json.dumps(result).encode()
+                        content_type = 'application/json; charset=utf-8'
+                    elif action in ('before.pptx', 'after.pptx') and item['file'].lower().endswith('.pptx'):
+                        at = current['base'] if action == 'before.pptx' else current['head']
+                        body = document_diff.read_blob(directory, at, item['file'])
+                        if body is None: raise ValueError('Absent file')
+                        document_diff.validate_archive(body)
+                        content_type = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                    else: raise ValueError('Unknown document route')
+                except (ValueError, zipfile.BadZipFile, RuntimeError, subprocess.CalledProcessError):
+                    self.send_error(404)
+                    return
             elif name.startswith('files/') and name.endswith('.json') and directory:
                 try:
                     index = int(name[6:-5])
@@ -86,7 +115,7 @@ def create_server(data):
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'no-referrer')
-            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'")
+            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; media-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'")
             self.end_headers()
             self.wfile.write(body)
 

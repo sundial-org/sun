@@ -106,5 +106,5 @@ class WebReviewTest(unittest.TestCase):
         status, _, body = self.get(self.prefix + 'prs/0/files/0.json')
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)['newFile']['contents'], 'print("snapshot")\n')
-        for suffix in ['prs/-1/data.json', 'prs/1/data.json', 'prs/0/../../data.json']:
+        for suffix in ['documents/0/diff.json', 'prs/-1/data.json', 'prs/1/data.json', 'prs/0/../../data.json']:
             self.assertEqual(self.get(self.prefix + suffix)[0], 404)

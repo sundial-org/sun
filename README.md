@@ -321,7 +321,28 @@ conversation is never read as the person's words. `sun show <check id>` prints o
 [Pierre diffs](https://diffs.com/). Select a file, switch between unified and split
 views, and expand unchanged context from the recorded base and head. Review reasons
 and check IDs remain visible; checked files are omitted from the queue and listed
-separately. Binary and metadata-only changes show their raw Git summary.
+separately. CSV/TSV files show cell comparisons. With the `documents` extra,
+XLSX files show values and formulas by sheet/cell, and PPTX files show rendered
+slides side by side with shape and speaker-note change summaries. Other binary
+and metadata-only changes show their raw Git summary.
+
+```sh
+python3 -m pip install -e '.[documents]'  # from this checkout
+sun review --web
+```
+
+Spreadsheet cells match by sheet name and address; inserting rows can report
+subsequent cells as changed. Formulas use saved values, without recalculation.
+Spreadsheet formatting/charts/macros are not compared. Slides match by stored IDs,
+so decks regenerated with different IDs may appear added/removed. Slide rendering
+is approximate, and summaries do not cover all themes, masters, grouped objects,
+or animations. Native Keynote files show guidance to export both versions to PPTX.
+Previews are read-only, block external media, and never merge or modify documents.
+Malformed files, missing optional dependencies, and files exceeding preview limits
+fall back to the Git summary with an explanation. Limits: 20 MiB per file,
+64 MiB expanded ZIP content, 2,000 ZIP entries, 50,000 spreadsheet cells, 200 slides.
+
+See the [document demo, screenshots, and video](examples/document-diffs/README.md).
 
 The page and its assets are served only on loopback at a random port with an
 unguessable URL. No CDN or Node runtime is needed. Keep the command running while
@@ -461,6 +482,7 @@ version to migrate it before upgrading.
 ```sh
 python3 examples/demo_init.py   # pick any repo you've used Claude Code on -> timed sun init
 python3 examples/demo_fresh.py  # synthetic end-to-end story -> examples/demo.html
+python3 examples/demo_documents.py  # slide and spreadsheet diffs (requires documents extra)
 python3 -m unittest test_sun test_reliability.ReliabilityTest test_checks test_check_collaboration test_branches  # full test suite
 ```
 

@@ -1,4 +1,5 @@
 import { FileDiff, parsePatchFiles } from '@pierre/diffs';
+import { documentView } from './documents.js';
 
 const $ = id => document.getElementById(id);
 let data, items = [], selected = 0, instances = [], generation = 0;
@@ -17,7 +18,9 @@ function select(index) {
   selected = index;
   const version = ++generation;
   clearDiff();
-  const item = items[index];
+const item = items[index];
+  const documentFile = /\.(csv|tsv|xlsx|pptx|key)$/i.test(item.file);
+  $('layout').disabled = documentFile;
   $('notice').textContent = '';
   $('position').textContent = `${index + 1} / ${items.length}`;
   $('previous').disabled = index === 0;
@@ -28,6 +31,11 @@ function select(index) {
     clearDiff();
     rawPatch(item, message);
   };
+  if (documentFile) {
+    $('notice').textContent = 'Loading document comparison…';
+    instances.push(documentView(item.sourceIndex, $('diff'), $('notice'), showRaw));
+    return;
+  }
   if (!item.patch.includes('\n@@ ')) {
     rawPatch(item, 'Metadata or binary change. No text hunks to render.');
     return;

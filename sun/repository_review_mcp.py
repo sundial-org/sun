@@ -44,5 +44,3 @@ def create(workspace):
         m=prototype.load(workspace)
         return {'repo':m['repo'],'summary':m['summary'],'turns_count':len(m['turns']),'presentation':'inline','example':m['example']}
     return app
-
-

@@ -97,5 +97,4 @@ and commit diffs. The base requires local or remote Sun history. Existing captur
 human-viewed state through explicit file navigation; repository captures use the
 separate mark-reviewed action described above.
 
-Run `python -m unittest test_repository_review test_review2 test_review2_mcp
- test_branches.RepositoryDataTest` and `node --check sun/repository_review_assets/app.js`.
+Run `python -m unittest test_repository_review test_review2 test_review2_mcp test_branches.RepositoryDataTest` and `node --check sun/repository_review_assets/app.js`.

@@ -161,7 +161,7 @@ def render_html(workspace, inline=False):
         end=js.index('reviewed.disabled=viewed(t);',start)
         js=js[:start]+" const reviewed=button(viewed(t)?'reviewed':'mark turn reviewed',()=>{data.reviewed=[...(data.reviewed||[]),...t.changes.map(c=>c.id)];render();});"+js[end:]
         js=js[:js.index('// Standard MCP Apps')]+"render();\n})();"
-    root = '<div id="sun-terminal"></div>' 
+    root = '<div id="sun-terminal"></div>'
     script = '<script>\n'+js.replace('/* DATA */', 'const initialData = '+content+';')+'\n</script>'
     if inline:
         # A response preview cannot call network APIs. Its complete small fixture diffs are embedded.

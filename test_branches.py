@@ -1,5 +1,6 @@
 """Exercise real Git hooks, branch creation and independent worktrees."""
 import contextlib
+import json
 import os
 import shlex
 import subprocess
@@ -325,6 +326,27 @@ class BranchTest(unittest.TestCase):
         with open(index, "rb") as f: self.assertEqual(f.read(), before)
         self.assertEqual(git_store.ref_oid("HEAD"), head)
         self.assertEqual(self.git("rev-list", "--count", "HEAD"), count)
+
+
+
+
+class RepositoryDataTest(unittest.TestCase):
+    setUp, tearDown = BranchTest.setUp, BranchTest.tearDown
+    git, sun_head, tool_call = BranchTest.git, BranchTest.sun_head, BranchTest.tool_call
+    baseline = BranchTest.baseline
+    def test_all_data_includes_sibling_turns_without_changing_checkout(self):
+        self.baseline()
+        original = self.git('branch', '--show-current').strip()
+        self.git('switch', '-c', 'sibling')
+        self.tool_call('sibling-session', 'sibling.py', 'sibling only\n')
+        self.git('add', 'sibling.py'); self.git('commit', '-qm', 'sibling work')
+        self.git('switch', original)
+        scoped = json.loads(run('data'))
+        all_data = json.loads(run('data', '--all'))
+        actors = lambda d: {o['actor'] for c in d['commits'] for o in c['operations']}
+        self.assertFalse(any('sibling-session' in a for a in actors(scoped)))
+        self.assertTrue(any('sibling-session' in a for a in actors(all_data)))
+        self.assertEqual(self.git('branch', '--show-current').strip(), original)
 
 
 if __name__ == "__main__": unittest.main()

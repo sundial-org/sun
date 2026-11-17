@@ -194,7 +194,7 @@ def serve(workspace):
                 value=json.loads(self.rfile.read(size))
                 reviewed=review_turn(workspace,load(workspace),value['turn'])
                 self.send(json.dumps({'reviewed':reviewed}).encode(),'application/json')
-            except (ValueError,KeyError): self.send_error(400)
+            except (ValueError,KeyError,TypeError): self.send_error(400)
         def log_message(self,*args): pass
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
     return server,f'http://127.0.0.1:{server.server_port}/{token}/index.html'

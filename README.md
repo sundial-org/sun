@@ -181,7 +181,7 @@ agent write; use separate worktrees if precise ownership of overlapping edits is
 | `sun sync` | record local changes since the last Sun snapshot; never fetch or publish |
 | `sun log [-n COUNT]` | list Sun commits with actors and turns |
 | `sun show <commit>` | show a commit's operations and patches, including hidden operation snapshots |
-| `sun data [-n COUNT]` | JSON history, attribution, patches, and resolved session paths for agents |
+| `sun data [-n COUNT] [--all]` | JSON history, attribution, patches, and resolved session paths for agents |
 | `sun viz [-n COUNT]` | interactive terminal history for humans |
 | `sun viz --html [-o path]` | optional self-contained HTML export |
 | `sun blame <file> <line>` | show the operation and stored conversation behind a line |
@@ -526,3 +526,13 @@ Current send support targets the origin repository on github.com. Fork PRs can
 be read in the inbox when accessible, but creating fork-to-upstream PRs through
 send is not yet supported. Line-hover session summaries and guided agent review
 are not part of these commands yet.
+
+
+### Repository-wide review prototype
+
+`sun review2 --prepare WORKSPACE` captures agent turns across all locally recorded
+branches. Open it with `sun review2 --open WORKSPACE` for the browser UI or add
+`--tui` for terminal review. Both show recorded check coverage, turn squares, and
+session/turn diffs. The browser and optional inline plugin also show saved AI
+assessments. Human review is explicit and independent of checks.
+See [setup and prototype limits](examples/review2/README.md).

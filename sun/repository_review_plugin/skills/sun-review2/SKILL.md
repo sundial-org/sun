@@ -15,4 +15,6 @@ All unreviewed repository turns are the primary queue. Sessions organize drill-d
 
 Never invoke review_turn as an agent. It is an app-only action for a person's explicit review click. Reading or explaining work does not mark it reviewed.
 
-For a fresh capture, use sun data --all -n 0 from the repository with the repository-wide prototype runtime. Read session paths returned by that command rather than guessing a native transcript location. This prototype uses a fixed snapshot; refresh it explicitly to include new work. Clearly label illustrative data.
+For a fresh capture, use sun data --all -n 0 from the repository with this Sun runtime. Read session paths returned by that command rather than guessing a native transcript location. This prototype uses a fixed snapshot; refresh it explicitly to include new work. Clearly label illustrative data.
+
+Prepare the repository UI with `sun review2 --prepare WORKSPACE`. The browser fallback is `sun review2 --open WORKSPACE --no-browser`; use `--tui` for the deterministic terminal view.

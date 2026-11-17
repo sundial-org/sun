@@ -30,6 +30,36 @@ class Review2Test(unittest.TestCase):
     def test_missing_transcript_never_invents_context(self):
         self.assertEqual(review2.transcript_context()({'session_path':None}),'')
 
+    def test_pr_capture_preserves_all_branch_turns_and_real_commit_diffs(self):
+        from test_sun import SunTest, run
+        repo=SunTest();repo.setUp()
+        try:
+            repo.agent_turn('baseline',[('base.py','baseline\n')])
+            repo.git('add','base.py');repo.git('commit','-m','Base work')
+            base=repo.git('branch','--show-current').strip()
+            repo.git('checkout','-b','feature')
+            repo.agent_turn('feature-session',[('new.py','first\n')])
+            repo.git('add','new.py');repo.git('commit','-m','First change')
+            repo.agent_turn('feature-session',[('new.py','second\n')])
+            repo.git('add','new.py');repo.git('commit','-m','Second change')
+            with tempfile.TemporaryDirectory() as parent:
+                workspace=str(Path(parent)/'review')
+                run('review2','--prepare',workspace,'--base',base,'--pr','PR #42')
+                snapshot=review2.load(workspace)
+                changes=[c for th in snapshot['threads'] for t in th['turns'] for c in t['changes']]
+                self.assertTrue(changes)
+                self.assertNotIn('base.py',{c['file'] for c in changes})
+                agent_turns=[t for th in snapshot['threads'] if 'feature-session' in th['actor'] for t in th['turns']]
+                self.assertEqual(len(agent_turns),2)
+                self.assertIn('+first',agent_turns[0]['changes'][0]['patch'])
+                self.assertIn('+second',agent_turns[1]['changes'][0]['patch'])
+                commits=snapshot['pr']['commits']
+                self.assertEqual([c['subject'] for c in commits],['First change','Second change'])
+                self.assertIn('-first',commits[1]['changes'][0]['patch'])
+                self.assertIn('+second',snapshot['pr']['changes'][0]['patch'])
+        finally:
+            repo.tearDown();repo.doCleanups()
+
     def test_snapshot_and_server_boundaries(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'snapshot.json';path.write_text(json.dumps(example()))
@@ -37,6 +67,14 @@ class Review2Test(unittest.TestCase):
             worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
             try:
                 self.assertEqual(json.load(urlopen(url.replace('index.html','data.json')))['id'],example()['id'])
+                turn=example()['threads'][0]['turns'][0]
+                payload=json.dumps({'snapshot':example()['id'],'turn':turn['id'],'file':turn['changes'][0]['file']}).encode()
+                endpoint=url.replace('index.html','view')
+                with self.assertRaises(HTTPError):
+                    urlopen(Request(endpoint,data=payload,headers={'Content-Type':'application/json','Origin':'https://evil.example'}))
+                origin='/'.join(url.split('/')[:3])
+                result=json.load(urlopen(Request(endpoint,data=payload,headers={'Content-Type':'application/json','Origin':origin})))
+                self.assertEqual(len(result['reviewed']),1)
                 for target in [url.replace('index.html','../snapshot.json'),url.split('/')[0]+'//'+url.split('/')[2]+'/data.json']:
                     with self.assertRaises(HTTPError):urlopen(target)
                 with self.assertRaises(HTTPError):urlopen(Request(url,headers={'Host':'evil.example'}))
@@ -44,3 +82,72 @@ class Review2Test(unittest.TestCase):
                 server.shutdown();server.server_close();worker.join()
             value=example();value['repo']='changed';path.write_text(json.dumps(value))
             with self.assertRaisesRegex(ValueError,'changed'):review2.load(directory)
+
+
+class Review2SelectionTest(unittest.TestCase):
+    def setUp(self):
+        from sun import review2_state
+        self.state=review2_state
+        self.snapshot=example()
+        self.plan={'version':1,'snapshot':self.snapshot['id'],'turns':[
+            {'id':t['id'],'summary':'A specific change.','focus':[{'id':t['changes'][0]['id'],'why':'Changes behavior.'}],
+             'context':[c['id'] for c in t['changes'][1:]]}
+            for thread in self.snapshot['threads'] for t in thread['turns']]}
+
+    def test_selection_rejects_omissions_unknown_ids_and_stale_snapshot(self):
+        self.state.validate(self.snapshot,self.plan)
+        for mutate in [lambda p:p.update(snapshot='stale'),lambda p:p['turns'].pop(),
+                       lambda p:p['turns'][0]['context'].append('invented'),
+                       lambda p:p['turns'][0]['focus'].append(p['turns'][0]['focus'][0])]:
+            plan=copy.deepcopy(self.plan);mutate(plan)
+            with self.assertRaises(ValueError):self.state.validate(self.snapshot,plan)
+
+    def test_file_view_never_marks_other_files_or_versions_viewed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.state.save_selection(directory,self.snapshot,self.plan)
+            turn=self.snapshot['threads'][0]['turns'][0]
+            payload={'snapshot':self.snapshot['id'],'turn':turn['id'],'file':turn['changes'][0]['file']}
+            result=self.state.record_view(directory,self.snapshot,payload)
+            self.assertEqual(result['reviewed'],[{'id':turn['changes'][0]['id'],'scope':'viewed'}])
+            self.assertEqual(self.state.state(directory,self.snapshot),result)
+            self.assertNotIn({'id':'new-version','scope':'viewed'},result['reviewed'])
+            self.assertEqual(self.state.record_view(directory,self.snapshot,payload),result)
+            payload['file']=turn['changes'][1]['file']
+            self.assertEqual(len(self.state.record_view(directory,self.snapshot,payload)['reviewed']),2)
+            turn['changes'][1]['patch']=''
+            with self.assertRaisesRegex(ValueError,'unavailable'):self.state.record_view(directory,self.snapshot,payload)
+            payload['snapshot']='stale'
+            with self.assertRaises(ValueError):self.state.record_view(directory,self.snapshot,payload)
+
+    def test_agent_priorities_reference_recorded_checks_without_changing_verdicts(self):
+        from examples.review2.make_demo import selection
+        plan=selection(self.snapshot);before=copy.deepcopy(self.snapshot)
+        self.state.validate(self.snapshot,plan)
+        self.assertEqual(self.snapshot,before)
+        item=next(t for t in plan['turns'] if t['priority_checks'])
+        item['priority_checks'].append(item['priority_checks'][0])
+        with self.assertRaisesRegex(ValueError,'Priority checks'):self.state.validate(self.snapshot,plan)
+        item['priority_checks']=[{'id':'invented','why':'Important'}]
+        with self.assertRaisesRegex(ValueError,'Priority checks'):self.state.validate(self.snapshot,plan)
+
+    def test_only_complete_exact_checks_collapse_turns(self):
+        snapshot=example();turn=snapshot['threads'][0]['turns'][0]
+        changes=turn['changes']
+        from sun import checks
+        rule={'files':[], 'text':'Safe', 'hash':'rule'}
+        records={}
+        for i,c in enumerate(changes):
+            records[str(i)]={'id':str(i),'rule':'safe','verdict':'pass','cites':[{'at':c['at'],'file':c['file']}], 'actor':'test/program:tests'}
+        row={'rule':'safe','status':'pass','checks':list(records.values()),'outdated':[],'labels':{}}
+        table=[{'rules':[row]}]
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertTrue(turn['fully_checked'])
+        records['0']['cites'][0]['lines']=[1,2]
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertFalse(turn['fully_checked'])
+        records['0']['cites'][0].pop('lines');row['status']='mixed'
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertFalse(turn['fully_checked'])
+        row['status']='pass';records['0']['cites'][0]['at']='another revision'
+        review2.attach_checks(snapshot,table,{'safe':rule},records)
+        self.assertFalse(turn['fully_checked'])

@@ -87,6 +87,20 @@ browser server lives until the MCP connection closes. The current adapter does
 not embed an MCP Apps widget; its returned URL can open in the host browser or a
 normal browser. No second model/API key or external hosting is required.
 
+To demo the generated or installed package over a real MCP connection:
+
+```sh
+python examples/review2/demo_plugin.py /tmp/sun-review2-plugin \
+  --selection /tmp/my-review/selection.json
+```
+
+The client reads the snapshot, saves the supplied highlights, and prints the
+review URL. Omit `--selection` to keep existing highlights. Leave the command
+running while reviewing; Ctrl-C closes the connection and browser server.
+Turn labels, summaries, and explanations share one text size. Relevant changes
+stay visible inline, including on checked or viewed turns; file links open the
+full diff.
+
 Run `python -m unittest test_review2 test_review2_mcp` in the SDK environment. The
 integration test initializes a real stdio session, lists tools, reads the snapshot,
 rejects an invalid selection, saves a valid one, and fetches the browser pane.

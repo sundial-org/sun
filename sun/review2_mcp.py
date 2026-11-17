@@ -35,7 +35,7 @@ def create_mcp(directory):
 
     @app.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
     def read_snapshot() -> dict[str, Any]:
-        """Read the bound snapshot and instructions for selecting relevant changes."""
+        """Read PR turns, diffs, checks, and instructions for choosing priority checks and changes."""
         return {'snapshot': snapshot, 'instructions': review2_state.PROMPT}
 
     @app.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=False, idempotentHint=True))
@@ -67,14 +67,14 @@ def package(directory, destination):
     review2.load(directory)
     destination = Path(destination).expanduser().resolve()
     shutil.copytree(Path(__file__).with_name('review2_plugin'), destination)
-    manifest = {'name': 'sun-review2', 'version': '0.1.0',
-                'description': 'A minimal review of your own agent work, one turn at a time.',
+    manifest = {'name': 'sun-review2', 'version': '0.2.0',
+                'description': 'Agent-prioritized PR checks with turn, file, and commit diffs.',
                 'skills': './skills/', 'mcpServers': './.mcp.json'}
     (destination / '.codex-plugin').mkdir()
     (destination / '.codex-plugin' / 'plugin.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    launch = f'import sys; sys.path.insert(0, {str(Path(__file__).resolve().parent.parent)!r}); from sun.review2_mcp import main; main()'
     config = {'mcpServers': {'sun-review2': {'command': sys.executable,
-        'args': ['-m', 'sun.review2_mcp', str(directory)],
-        'env': {'PYTHONPATH': str(Path(__file__).resolve().parent.parent)}}}}
+        'args': ['-I', '-c', launch, str(directory)], 'env': {}}}}
     (destination / '.mcp.json').write_text(json.dumps(config, indent=2) + '\n')
     return str(destination)
 

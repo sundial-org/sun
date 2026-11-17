@@ -156,16 +156,19 @@ def viz_operation(ev):
             "git_action": ev.get("git_action"), "edits": ev.get("edits") or []}
 
 
-def viz_data(n=0):
+def viz_data(n=0, all_branches=False):
     limit = [f"-{n}"] if n else []
-    scope = git_store.history_refs()
+    scope = ([ref for ref, _ in git_store.refs("refs/sun/heads/") + git_store.refs("refs/sun/remotes/")]
+             if all_branches else git_store.history_refs())
+    if all_branches and not scope:
+        return {"commits": [], "events": [], "actors": [], "sessions": [], "summary": {"commits": 0, "operations": 0}}
     log = git_store.git("log", "--topo-order", *scope, *limit, "--date=iso",
               "--pretty=%H\x1f%h\x1f%P\x1f%D\x1f%ad\x1f%s\x1f%an\x1f%ae\x1f%cn\x1f%ce")
     cols = ["hash", "short", "parents", "refs", "date", "subject", "author_name",
             "author_email", "committer_name", "committer_email"]
     commits = [dict(zip(cols, l.split("\x1f"))) for l in log.splitlines()]
     sessions = session_store.session_data()
-    all_events, by_commit, by_pid = history.events(), {}, {}
+    all_events, by_commit, by_pid = history.events(scope=scope), {}, {}
     for ev in all_events:
         by_commit.setdefault(ev.get("commit"), []).append(ev)
         if ev.get("patch_id"): by_pid.setdefault(ev["patch_id"], []).append(ev)
@@ -385,7 +388,7 @@ def cmd_viz(a):
     with git_store.lock():
         history.ensure_branch()
         history.maybe_sync([git_store.rel_to_root(a.output)] if a.output else stdout_file())
-        data = viz_data(a.n if a.cmd == "data" else 0)
+        data = viz_data(a.n if a.cmd == "data" else 0, getattr(a, "all_branches", False))
         if a.cmd != "data": data = turn_history(data, a.n)
     if getattr(a, "html", False) or a.output:
         return write_viz_html(data, a.output or os.path.join(git_store.sun_dir(), "viz.html"))

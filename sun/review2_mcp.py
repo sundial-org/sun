@@ -8,7 +8,7 @@ import sys
 import threading
 from typing import Any
 
-from . import review2, review2_state
+from . import review2, review2_state, repository_review
 
 
 def create_mcp(directory):
@@ -18,6 +18,9 @@ def create_mcp(directory):
     except ImportError:
         raise SystemExit('Install Sun with the review2-plugin extra using Python 3.10 or newer.')
     directory = Path(directory).expanduser().resolve()
+    if repository_review.is_workspace(directory):
+        from .repository_review_mcp import create
+        return create(directory)
     snapshot = review2.load(directory)
     servers = []
 
@@ -64,11 +67,12 @@ def create_mcp(directory):
 def package(directory, destination):
     """Generate machine-specific wiring without changing the user's plugin settings."""
     directory = Path(directory).expanduser().resolve()
-    review2.load(directory)
+    repository = repository_review.is_workspace(directory)
+    (repository_review.load if repository else review2.load)(directory)
     destination = Path(destination).expanduser().resolve()
-    shutil.copytree(Path(__file__).with_name('review2_plugin'), destination)
-    manifest = {'name': 'sun-review2', 'version': '0.2.0',
-                'description': 'Agent-prioritized PR checks with turn, file, and commit diffs.',
+    shutil.copytree(Path(__file__).with_name('repository_review_plugin' if repository else 'review2_plugin'), destination)
+    manifest = {'name': 'sun-review2', 'version': '0.4.0' if repository else '0.2.0',
+                'description': 'Repository-wide check coverage, terminal review, and inline AI assessments.' if repository else 'Agent-prioritized PR checks with turn, file, and commit diffs.',
                 'skills': './skills/', 'mcpServers': './.mcp.json'}
     (destination / '.codex-plugin').mkdir()
     (destination / '.codex-plugin' / 'plugin.json').write_text(json.dumps(manifest, indent=2) + '\n')

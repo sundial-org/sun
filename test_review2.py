@@ -30,6 +30,36 @@ class Review2Test(unittest.TestCase):
     def test_missing_transcript_never_invents_context(self):
         self.assertEqual(review2.transcript_context()({'session_path':None}),'')
 
+    def test_pr_capture_preserves_all_branch_turns_and_real_commit_diffs(self):
+        from test_sun import SunTest, run
+        repo=SunTest();repo.setUp()
+        try:
+            repo.agent_turn('baseline',[('base.py','baseline\n')])
+            repo.git('add','base.py');repo.git('commit','-m','Base work')
+            base=repo.git('branch','--show-current').strip()
+            repo.git('checkout','-b','feature')
+            repo.agent_turn('feature-session',[('new.py','first\n')])
+            repo.git('add','new.py');repo.git('commit','-m','First change')
+            repo.agent_turn('feature-session',[('new.py','second\n')])
+            repo.git('add','new.py');repo.git('commit','-m','Second change')
+            with tempfile.TemporaryDirectory() as parent:
+                workspace=str(Path(parent)/'review')
+                run('review2','--prepare',workspace,'--base',base,'--pr','PR #42')
+                snapshot=review2.load(workspace)
+                changes=[c for th in snapshot['threads'] for t in th['turns'] for c in t['changes']]
+                self.assertTrue(changes)
+                self.assertNotIn('base.py',{c['file'] for c in changes})
+                agent_turns=[t for th in snapshot['threads'] if 'feature-session' in th['actor'] for t in th['turns']]
+                self.assertEqual(len(agent_turns),2)
+                self.assertIn('+first',agent_turns[0]['changes'][0]['patch'])
+                self.assertIn('+second',agent_turns[1]['changes'][0]['patch'])
+                commits=snapshot['pr']['commits']
+                self.assertEqual([c['subject'] for c in commits],['First change','Second change'])
+                self.assertIn('-first',commits[1]['changes'][0]['patch'])
+                self.assertIn('+second',snapshot['pr']['changes'][0]['patch'])
+        finally:
+            repo.tearDown();repo.doCleanups()
+
     def test_snapshot_and_server_boundaries(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'snapshot.json';path.write_text(json.dumps(example()))
@@ -88,6 +118,17 @@ class Review2SelectionTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'unavailable'):self.state.record_view(directory,self.snapshot,payload)
             payload['snapshot']='stale'
             with self.assertRaises(ValueError):self.state.record_view(directory,self.snapshot,payload)
+
+    def test_agent_priorities_reference_recorded_checks_without_changing_verdicts(self):
+        from examples.review2.make_demo import selection
+        plan=selection(self.snapshot);before=copy.deepcopy(self.snapshot)
+        self.state.validate(self.snapshot,plan)
+        self.assertEqual(self.snapshot,before)
+        item=next(t for t in plan['turns'] if t['priority_checks'])
+        item['priority_checks'].append(item['priority_checks'][0])
+        with self.assertRaisesRegex(ValueError,'Priority checks'):self.state.validate(self.snapshot,plan)
+        item['priority_checks']=[{'id':'invented','why':'Important'}]
+        with self.assertRaisesRegex(ValueError,'Priority checks'):self.state.validate(self.snapshot,plan)
 
     def test_only_complete_exact_checks_collapse_turns(self):
         snapshot=example();turn=snapshot['threads'][0]['turns'][0]

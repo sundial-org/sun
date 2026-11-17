@@ -92,7 +92,8 @@ def attach_checks(snapshot, table, rules, stored):
                         relevant[(name, ())] = {'rule': name, 'status': 'unchecked', 'checks': [], 'labels': {}, 'outdated': []}
                 if not matched_rule:
                     applicable.append(False)
-            turn['checks'] = list(relevant.values())
+            turn['checks'] = [{**row, 'id': digest([row['rule'], row['status'], [c['id'] for c in row['checks']]])}
+                              for row in relevant.values()]
             turn['fully_checked'] = bool(applicable) and all(applicable) and all(
                 row['status'].lower() in review.PASS for row in relevant.values())
     snapshot['id'] = digest({k: v for k, v in snapshot.items() if k != 'id'})
@@ -115,7 +116,38 @@ def transcript_context():
     return read
 
 
-def prepare(directory):
+def pr_scope(data, base, label=None):
+    """Use named Sun ancestry for turns and ordinary Git ancestry for PR commits."""
+    ref = git_store.git('rev-parse', '--symbolic-full-name', '--verify', '--end-of-options', base).strip()
+    if ref.startswith('refs/heads/'):
+        sun_base = ref.replace('refs/heads/', 'refs/sun/heads/', 1)
+    elif ref.startswith('refs/remotes/'):
+        sun_base = ref.replace('refs/remotes/', 'refs/sun/remotes/', 1)
+    else:
+        raise ValueError('--base must name a local or remote branch with recorded Sun history.')
+    if not git_store.ref_oid(sun_base):
+        raise ValueError('The base branch has no Sun history. Fetch its shared Sun history before capturing a PR.')
+    ancestry = set(git_store.git('rev-list', git_store.history_head(), '^' + sun_base).split())
+    scoped = {**data, 'commits': [c for c in data['commits'] if c['hash'] in ancestry]}
+    head = git_store.git('rev-parse', 'HEAD').strip()
+    merge_base = git_store.git('merge-base', head, ref).strip()
+
+    def changes(before, after):
+        paths = git_store.git('diff', '--no-ext-diff', '--no-renames', '--name-only', '-z', before, after, '--').split('\0')
+        return [{'file': path, 'patch': git_store.git('--literal-pathspecs', 'diff', '--no-ext-diff',
+                 '--no-textconv', '--no-color', '--no-renames', before, after, '--', path)} for path in paths if path]
+
+    commits = []
+    for sha in reversed(git_store.git('rev-list', head, '^' + merge_base).split()):
+        before = git_store.git('rev-parse', sha + '^1').strip()
+        commits.append({'id': sha, 'subject': git_store.git('show', '-s', '--format=%s', sha).strip(),
+                        'changes': changes(before, sha)})
+    pr = {'title': label or git_store.git('branch', '--show-current').strip(), 'base': base,
+          'merge_base': merge_base, 'head': head, 'commits': commits, 'changes': changes(merge_base, head)}
+    return scoped, pr
+
+
+def prepare(directory, base=None, pr=None):
     directory = Path(directory).expanduser().resolve()
     if directory.exists():
         raise ValueError('Choose a new workspace directory; existing reviews are preserved.')
@@ -123,7 +155,12 @@ def prepare(directory):
     with contextlib.redirect_stdout(stream):
         output.cmd_viz(SimpleNamespace(cmd='data', n=0, output=None))
     data = json.loads(stream.getvalue())
+    metadata = None
+    if base:
+        data, metadata = pr_scope(data, base, pr)
     snapshot = build_snapshot(data, str(git_store.root()), transcript_context())
+    if metadata:
+        snapshot['pr'] = metadata
     attach_checks(snapshot, checks.coverage(commits=[c['hash'] for c in data['commits']]), checks.read_rules()[1], checks.checks())
     directory.mkdir(parents=True)
     (directory / 'snapshot.json').write_text(json.dumps(snapshot, indent=2) + '\n', encoding='utf-8')
@@ -199,7 +236,7 @@ def create_server(directory):
 def cmd_review2(a):
     try:
         if a.prepare:
-            prepare(a.prepare)
+            prepare(a.prepare, getattr(a, 'base', None), getattr(a, 'pr', None))
             print(str(Path(a.prepare).expanduser().resolve()))
             return
         snapshot = load(a.open)

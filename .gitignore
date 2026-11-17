@@ -1,0 +1,6 @@
+__pycache__/
+example/demo/
+example/demo.html
+.DS_Store
+dist/
+web/node_modules/

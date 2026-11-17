@@ -1,7 +1,6 @@
 const $=id=>document.getElementById(id);
 const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
 let data,selected,currentTurn,currentFile,viewing=false;
-const pass=new Set(['pass','passed','supported']);
 const failures=new Set(['fail','failed','contradicted','needs revision','needs-revision','mixed']);
 const selectionFor=turn=>data.selection?.turns.find(t=>t.id===turn.id);
 const viewed=change=>data.reviewed?.some(r=>r.id===change.id&&(r.scope==='viewed'||r.scope==='all'));
@@ -44,9 +43,9 @@ function renderThreads(){
  }
  if(!$('threads').children.length)$('threads').append(el('p','No matching threads.','muted empty'));
 }
-function fileList(turn){
+function fileList(turn,shown=new Set()){
  const list=el('div',undefined,'files');
- for(const path of files(turn)){
+ for(const path of files(turn).filter(path=>!shown.has(path))){
   const done=turn.changes.filter(c=>c.file===path).every(viewed);
   const b=button(path,()=>openFile(turn,path),'file-row');
   b.append(el('span',done?'Viewed':turn.fully_checked?'Checked':'','muted'));list.append(b);
@@ -57,23 +56,22 @@ function renderReader(){
  const reader=$('reader');reader.replaceChildren();const th=thread();
  if(!th){reader.append(el('p','No recorded changes to review.','muted'));return;}
  reader.append(el('h1',th.title));
- const allDone=th.turns.every(complete);
- if(allDone)reader.append(el('p','All turns reviewed. You can still open every diff.','muted notice'));
  for(const [index,turn] of th.turns.entries()){
   const choice=selectionFor(turn),done=complete(turn),section=el('section',undefined,'turn');
   section.append(el('h2',`Turn ${index+1}${humanViewed(turn)?' · human-viewed':turn.fully_checked?' · checked':''}`));
   section.append(el('p',choice?.summary||turn.prompt||'The request for this turn is unavailable.','prompt'));
   section.append(checkView(turn,true));
+  const shown=new Set();
+  for(const highlight of choice?.focus||[]){
+   const change=turn.changes.find(c=>c.id===highlight.id),block=el('div',undefined,'change');
+   shown.add(change.file);
+   block.append(button(change.file,()=>openFile(turn,change.file),'file-link'),el('p',highlight.why,'relevance'));
+   block.append(change.patch?patch(change.patch,true):el('p','No text diff recorded for this change.','muted'));
+   section.append(block);
+  }
   if(done){
-   if(choice?.focus.length){
-    const showcase=el('details');showcase.open=allDone;showcase.append(el('summary','Show changes'));
-    for(const highlight of choice.focus){
-     const change=turn.changes.find(c=>c.id===highlight.id);const block=el('div',undefined,'change');
-     block.append(button(change.file,()=>openFile(turn,change.file),'file-link'),el('p',highlight.why,'muted'),patch(change.patch,true));showcase.append(block);
-    }section.append(showcase);
-   }
-   const all=el('details');all.append(el('summary',`${files(turn).length} ${files(turn).length===1?'file':'files'}`),fileList(turn));section.append(all);
-  }else section.append(fileList(turn));
+   const all=el('details');all.append(el('summary',`All files (${files(turn).length})`),fileList(turn));section.append(all);
+  }else section.append(fileList(turn,shown));
   const other=(turn.checks||[]).filter(c=>!failures.has(c.status.toLowerCase()));
   if(other.length){const details=el('details');details.append(el('summary',`${turn.checks.length} ${turn.checks.length===1?'check':'checks'}`),checkView(turn));section.append(details);}
   else if(!turn.checks?.length)section.append(el('p','No checks recorded.','muted checks-empty'));

@@ -21,7 +21,7 @@ def example():
             ('payments/retry.py', 'except TimeoutError:\n    raise\n', 'except TimeoutError:\n    return lookup_payment(request.id)\n'),
             ('tests/test_retry.py', 'assert result.status == "paid"\n', 'assert result.status == "paid"\nassert provider.charge_calls == 1\n')]),
     ]
-    commits, prompts, titles, counts = [], {}, {}, {}
+    commits, prompts, titles, counts, git_commits, net = [], {}, {}, {}, [], {}
     for i,(sid,title,prompt,files) in enumerate(records):
         counts[sid]=counts.get(sid,0)+1
         op={'id':f'example-operation-{i}', 'actor':'you/agent:codex/'+sid, 'session_id':sid,
@@ -29,6 +29,9 @@ def example():
             'edits':[{'file':path,'patch':''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile='a/'+path,tofile='b/'+path))} for path,old,new in files]}
         prompts[op['id']]=prompt;titles[op['actor']]=title
         commits.insert(0,{'operations':[op]})
+        git_commits.append({'id':str(i+5)*40,'subject':prompt.rstrip('.'),'changes':op['edits']})
+        for path,old,new in files:
+            before,after=net.get(path,('',''));net[path]=(before+old,after+new)
     snapshot=build_snapshot({'commits':commits}, 'example', lambda op:prompts[op['id']])
     for thread in snapshot['threads']:thread['title']=titles[thread['actor']]
     def check(turn, rule, verdicts):
@@ -36,7 +39,7 @@ def example():
         for i,(verdict,note) in enumerate(verdicts):
             rows.append({'id':f"example-{turn['id'][:8]}-{rule}-{i}", 'actor':'example/program:tests' if i==0 else 'example/agent:review',
                          'verdict':verdict,'note':note,'cites':[{'at':turn['changes'][0]['at'],'file':turn['changes'][0]['file']}]})
-        return {'rule':rule,'status':'mixed' if len({c['verdict'] for c in rows})>1 else rows[0]['verdict'],
+        return {'id':digest([turn['id'],rule]),'rule':rule,'status':'mixed' if len({c['verdict'] for c in rows})>1 else rows[0]['verdict'],
                 'checks':rows,'labels':{},'outdated':[]}
     for thread in snapshot['threads']:
         for turn in thread['turns']:
@@ -49,12 +52,31 @@ def example():
         elif thread['title']=='Keep session history local':
             turn=thread['turns'][0];turn['fully_checked']=True
             turn['checks']=[check(turn,'session privacy',[('pass','Native paths resolve locally. Missing transcripts stay unavailable.')])]
+    snapshot['pr']={'title':'PR #42 · Prepare the next release','base':'main','merge_base':'0'*40,'head':'8'*40,
+                    'commits':git_commits,'changes':[{'file':path,'patch':''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile='a/'+path,tofile='b/'+path))} for path,(old,new) in net.items()]}
     snapshot['example']=True
     snapshot['id']=digest({k:v for k,v in snapshot.items() if k!='id'})
     return snapshot
 
 
+def selection(snapshot):
+    """Explicit editorial choices for the synthetic demo, not generated verdicts."""
+    turns=[]
+    for thread in snapshot['threads']:
+        for turn in thread['turns']:
+            reason={'payments/retry.py':'This controls whether a retry can charge the customer twice.',
+                    'sun/sessions.py':'Keeping native paths avoids copying private session transcripts.',
+                    'notes/launch.md':'The smaller measured effect changes the rollout decision.'}[turn['changes'][0]['file']]
+            priorities=[{'id':row['id'],'why':'A pending payment may be treated as completed. The passing fixture and failing check disagree on the outcome.'}
+                        for row in turn['checks'] if row['status']=='mixed']
+            turns.append({'id':turn['id'],'summary':turn['prompt'],'focus':[{'id':turn['changes'][0]['id'],'why':reason}],
+                          'context':[c['id'] for c in turn['changes'][1:]],'priority_checks':priorities})
+    return {'version':1,'snapshot':snapshot['id'],'turns':turns}
+
+
 if __name__=='__main__':
     path=Path(sys.argv[1]);path.mkdir(parents=True,exist_ok=False)
-    (path/'snapshot.json').write_text(json.dumps(example(),indent=2)+'\n')
+    snapshot=example()
+    (path/'snapshot.json').write_text(json.dumps(snapshot,indent=2)+'\n')
+    (path/'selection.json').write_text(json.dumps(selection(snapshot),indent=2)+'\n')
     print(path)

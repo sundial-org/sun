@@ -235,10 +235,18 @@ def create_server(directory):
 
 def cmd_review2(a):
     try:
+        from . import repository_review
         if a.prepare:
-            prepare(a.prepare, getattr(a, 'base', None), getattr(a, 'pr', None))
+            if getattr(a, 'base', None):
+                prepare(a.prepare, a.base, getattr(a, 'pr', None))
+            else:
+                repository_review.prepare(a.prepare)
             print(str(Path(a.prepare).expanduser().resolve()))
             return
+        if repository_review.is_workspace(a.open):
+            return repository_review.open_workspace(a)
+        if getattr(a, 'tui', False) or getattr(a, 'plain', False):
+            raise ValueError('Terminal mode requires a repository-wide capture (prepare without --base).')
         snapshot = load(a.open)
         if a.select:
             plan = json.loads(Path(a.select).expanduser().read_text(encoding='utf-8'))

@@ -267,7 +267,7 @@ def main(argv=None):
         ("check", "record a verdict on a rule, or run the rules that name a command, model, or agent"),
         ("coverage", "show which commits were checked against each rule, and by whom"),
         ("review", "inspect only remaining changes in a terminal queue and Vim"),
-        ("review2", "review your own threads and turns in a minimal browser pane"),
+        ("review2", "review repository-wide agent turns in a browser or terminal"),
         ("extract", "record the verdicts you gave your agents in conversation"),
         ("pr", "summarize checks for the pull request as Markdown, or update its description"),
         ("trust", "let hooks on this machine run the commands RULES.md names"),
@@ -330,6 +330,7 @@ def main(argv=None):
     viz_format.add_argument("--tui", action="store_true", help="open interactive terminal history")
     ps["data"].add_argument("-n", type=int, default=0, metavar="COUNT")
     ps["data"].set_defaults(output=None)
+    ps["data"].add_argument("--all", dest="all_branches", action="store_true", help="include all locally recorded repository branches")
     ps["viz"].add_argument("-o", "--output", default=None,
                             help="HTML output path (implies --html)")
     ps["viz"].add_argument("-n", type=int, default=0, metavar="COUNT",
@@ -373,9 +374,14 @@ def main(argv=None):
     ps["review2"].add_argument("--base", metavar="BRANCH", help="capture PR turns and Git diffs relative to this branch")
     ps["review2"].add_argument("--pr", metavar="TITLE", help="PR title or reference to display with --prepare --base")
     ps["review2"].add_argument("--select", metavar="JSON", help="validate and save agent-selected highlights")
-    ps["review2"].add_argument("--json", action="store_true")
+    review2_format = ps["review2"].add_mutually_exclusive_group()
+    review2_format.add_argument("--json", action="store_true")
+    review2_format.add_argument("--tui", action="store_true", help="open the repository review in a terminal")
+    review2_format.add_argument("--print", dest="plain", action="store_true", help="print repository coverage and sessions")
     ps["review2"].add_argument("--no-browser", action="store_true")
     a = ap.parse_args(argv)
+    if a.cmd == "review2" and (a.tui or a.plain) and not a.open:
+        ap.error("--tui and --print require --open")
     if a.cmd == "review2" and a.select and not a.open:
         ap.error("--select requires --open")
     if a.cmd == "review2" and ((a.base and not a.prepare) or (a.pr and not (a.prepare and a.base))):

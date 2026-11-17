@@ -32,12 +32,13 @@ class PluginPackageTest(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as parent:
                 workspace=str(Path(parent)/'review')
-                write('note.md','A real recorded edit.\n')
-                run('sync')
+                repo.agent_turn('repository-session',[('note.md','A real recorded edit.\n')])
                 run('review2','--prepare',workspace)
                 value=json.loads(run('review2','--open',workspace,'--json'))
-                self.assertTrue(any(c['file']=='note.md' for th in value['threads'] for t in th['turns'] for c in t['changes']))
+                self.assertTrue(any(c['file']=='note.md' for t in value['turns'] for c in t['changes']))
                 self.assertTrue((Path(workspace)/'prompt.md').exists())
+                self.assertIn('agent edits',run('review2','--open',workspace,'--print'))
+                self.assertEqual(value['format'],'sun-repository-review-v1')
         finally:
             repo.tearDown()
             repo.doCleanups()

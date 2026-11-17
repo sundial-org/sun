@@ -35,12 +35,34 @@
     "hooks": [
      {
       "type": "command",
-      "command": "sun hook"
+      "command": "sun hook",
+      "timeout": 1200
      }
     ]
    }
   ],
   "Stop": [
+   {
+    "hooks": [
+     {
+      "type": "command",
+      "command": "sun hook",
+      "timeout": 1200
+     }
+    ]
+   }
+  ],
+  "PostToolUseFailure": [
+   {
+    "hooks": [
+     {
+      "type": "command",
+      "command": "sun hook"
+     }
+    ]
+   }
+  ],
+  "SessionEnd": [
    {
     "hooks": [
      {
